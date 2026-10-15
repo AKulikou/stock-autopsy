@@ -23,6 +23,9 @@ JUDGE_MODEL = "claude-haiku-5-5"
 JUDGE_EFFORT = "low"
 JUDGE_LABEL = "Eval judge"
 JUDGE_MAX_TOKENS = 8000
+# The judge decides each statement by majority of this many independent answers: one
+# answer flipped borderline statements between passes on identical text (M5 baseline).
+JUDGE_VOTES = 3
 
 JUDGE_PRINCIPLES = """\
 You check a stock analysis report against a list of statements. For each statement,
@@ -134,43 +137,62 @@ def judge_report(case: dict, synthesis: dict, forensic: dict | None) -> dict:
     text = report_text(synthesis, forensic)
     started = time.monotonic()
     base = {"key": "judge", "label": JUDGE_LABEL, "model": JUDGE_MODEL}
-    try:
-        response = request_structured(
-            get_client(),
-            label=JUDGE_LABEL,
-            model=JUDGE_MODEL,
-            max_tokens=JUDGE_MAX_TOKENS,
-            system=JUDGE_PRINCIPLES,
-            user=judge_user_prompt(case, text),
-            output_format=JudgeResult,
-            validate=judge_validator(expected, text),
-            effort=JUDGE_EFFORT,
-        )
-    except Exception as e:
-        usage = billed_usage(e)
-        usage.pop("rejected_output", None)
-        cost = call_cost({**base, **usage}) if usage else 0.0
+    ballots, errors, usage = [], [], {}
+    for _ in range(JUDGE_VOTES):
+        try:
+            response = request_structured(
+                get_client(),
+                label=JUDGE_LABEL,
+                model=JUDGE_MODEL,
+                max_tokens=JUDGE_MAX_TOKENS,
+                system=JUDGE_PRINCIPLES,
+                user=judge_user_prompt(case, text),
+                output_format=JudgeResult,
+                validate=judge_validator(expected, text),
+                effort=JUDGE_EFFORT,
+            )
+        except Exception as e:
+            spent = billed_usage(e)
+            spent.pop("rejected_output", None)
+            errors.append(f"{type(e).__name__}: {e}")
+        else:
+            spent = response.usage.as_dict()
+            ballots.append({c.index: c for c in response.result.checks})
+        for key, value in spent.items():
+            usage[key] = usage.get(key, 0) + value
+    cost = call_cost({**base, **usage}) if usage else 0.0
+    if not ballots:
         return {
             **base,
             "status": "error",
-            "error": f"{type(e).__name__}: {e}",
+            "error": "; ".join(errors),
             **usage,
             "cost_usd": cost,
             "duration_s": time.monotonic() - started,
         }
-    checks = [
-        {"kind": kind, "statement": s, "present": c.present, "evidence": c.evidence}
-        for c in sorted(response.result.checks, key=lambda c: c.index)
-        for kind, s in [expected[c.index - 1]]
-    ]
+    checks = []
+    for index, (kind, s) in enumerate(expected, start=1):
+        votes = [b[index] for b in ballots]
+        present = sum(v.present for v in votes) * 2 > len(votes)
+        evidence = next((v.evidence for v in votes if v.present == present), "none")
+        checks.append(
+            {
+                "kind": kind,
+                "statement": s,
+                "present": present,
+                "evidence": evidence,
+                "votes": f"{sum(v.present for v in votes)}/{len(votes)} present",
+            }
+        )
     result = {
         **base,
         "status": "success",
         "checks": checks,
-        **response.usage.as_dict(),
+        "ballots": len(ballots),
+        **usage,
+        "cost_usd": cost,
         "duration_s": time.monotonic() - started,
     }
-    result["cost_usd"] = call_cost(result)
     if case.get("must_find"):
         result["flaw_found"] = int(all(c["present"] for c in checks if c["kind"] == "must_find"))
     if case.get("must_not"):

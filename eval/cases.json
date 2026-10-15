@@ -22,7 +22,7 @@
     "acceptable": ["CONDITIONAL_CASE"],
     "rationale": "Strong growth, but GAAP operating losses every year (about -1.24 billion TTM), stock-based compensation about 30% of revenue that carries the positive free cash flow, and a price of about 22 times revenue that requires exceptional execution.",
     "must_find": [
-      "Snowflake has GAAP operating or net losses in every year of the data.",
+      "Snowflake is loss-making on a GAAP basis (operating or net losses).",
       "Stock-based compensation is a large share of revenue, or the positive free cash flow rests largely on non-cash stock-based compensation."
     ],
     "must_not": [

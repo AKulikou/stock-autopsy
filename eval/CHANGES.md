@@ -8,6 +8,27 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — M5 variant: ANALYSIS_EFFORT=medium (request setting change, measured)
+
+- **Changed (variant only, default unchanged):** `ANALYSIS_EFFORT=medium` for every
+  evaluator and the committee; same prompts, schemas, model and labels as the baseline.
+  Run as `ANALYSIS_EFFORT=medium python -m eval.run_eval --reps 2 --batch --variant effort_medium`.
+- **Expected:** fewer output tokens (thinking) and a lower cost per run; the question is
+  whether verdicts, Forensic findings and grounding hold.
+- **Risk to watch:** shallower Forensic work (missed restatement trail), more bad paths.
+- **Result:** below, once the run finishes.
+
+## 2026-10-15 — eval instrument: judge by majority of 3, substance-only must_find (no system change)
+
+- **Changed:** the judge answers three times and each statement is decided by majority
+  (`JUDGE_VOTES`); the SNOW must_find "losses in every year" now reads "loss-making on a GAAP
+  basis" (owner-approved), as the owner first asked.
+- **Why:** one judge answer flipped borderline statements between passes on identical text
+  (must_find 6/6 -> 4/6; a must_not on SNOW rep1 judged present from "debt of 2.28B appeared
+  after FY2024", which does not claim zero debt before; checked by hand).
+- **Baseline regraded:** must_find 6/6, must_not clean 6/6; votes unanimous except one
+  1/3 must_not on KO rep1 (outvoted). Judge cost about 0.003 USD per attempt.
+
 ## 2026-10-15 — M5 baseline: golden tickers, 2 reps each (no prompt, schema or model change)
 
 - **Setup:** Sonnet 5.5, default effort, `--batch`; variant `baseline` in

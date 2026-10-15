@@ -9,7 +9,7 @@ from sample_outputs import handler_for
 
 from eval import grading as g
 from eval import run_eval
-from eval.judge import JudgeResult, StatementCheck, judge_validator, quote_in_report
+from eval.judge import JUDGE_VOTES, JudgeResult, StatementCheck, judge_validator, quote_in_report
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
 
 # ---- grading ---------------------------------------------------------------------
@@ -268,7 +268,7 @@ def test_rejudge_updates_judge_grades_without_rerunning_the_pipeline(fake_claude
     row = run_eval.read_jsonl(tmp_path / "results.jsonl")[0]
     assert "flaw_found" not in row["grade"] and row["grade"]["must_not_ok"] == 1
     assert len(row["meta"]["judge"]["checks"]) == 2
-    assert len(fake.requests) == pipeline_calls + 1  # one judge call, no pipeline call
+    assert len(fake.requests) == pipeline_calls + JUDGE_VOTES  # judge votes only, no pipeline call
 
 
 def test_a_number_computed_from_cited_values_is_not_an_invention():
@@ -286,3 +286,39 @@ def test_a_number_computed_from_cited_values_is_not_an_invention():
     assert g.invented_numbers(check, roots) == []
     check["checked"][0]["statement"] = statement.replace("38%", "52%")
     assert [i["number"] for i in g.invented_numbers(check, roots)] == [0.52]
+
+
+def test_the_judge_decides_by_majority(fake_claude, tmp_path):
+    from eval.judge import judge_report
+
+    answers = iter([True, False, True])
+
+    def judge(request):
+        present = next(answers)
+        return response(
+            JudgeResult(
+                checks=[
+                    StatementCheck(
+                        index=1,
+                        kind="must_find",
+                        present=present,
+                        evidence="Verdict: WEAK_CASE" if present else "none",
+                    )
+                ]
+            )
+        )
+
+    fake_claude(judge)
+    synthesis = {
+        "verdict": "WEAK_CASE",
+        "confidence": "LOW",
+        "judge_summary": "s",
+        "bull_case": "b",
+        "bear_case": "b",
+        "conflicts": [],
+        "genuinely_uncertain": [],
+        "next_research_steps": [],
+    }
+    result = judge_report({"must_find": ["a finding"]}, synthesis, None)
+    assert result["checks"][0]["present"] is True and result["checks"][0]["votes"] == "2/3 present"
+    assert result["flaw_found"] == 1 and result["ballots"] == 3
