@@ -162,14 +162,50 @@ def company_display(name: str) -> str:
     return name.title() if name.isupper() else name
 
 
+# Tickers that are also ordinary words, abbreviations or codes in report text. Such a
+# ticker is replaced only where it cannot be the word: "LOW's", "(T)", "IT shares".
+# Single letters are always treated so ("A strong year").
+TICKERS_THAT_ARE_WORDS = {
+    "AN", "AS", "AT", "BE", "BY", "DO", "GO", "HE", "IF", "IN", "IS", "IT", "ME", "MY", "NO", "OF",
+    "OK", "ON", "OR", "SO", "TO", "UP", "US", "WE", "AI", "EV", "PE", "CEO", "CFO", "USA", "GDP",
+    "ALL", "ANY", "ARE", "BIG", "CAN", "CASH", "FAST", "FIVE", "FOR", "FUN", "GOOD", "HAS", "HOME",
+    "KEY", "LIFE", "LOW", "MAIN", "NEW", "NOW", "ONE", "OPEN", "OUT", "PAY", "REAL", "SAFE", "SEE",
+    "TRUE", "TWO", "WELL", "YOU", *CODE_WORDS,
+}
+_TICKER_CONTEXT = r"(?:'s\b|\s+(?:shares|stock|stockholders|shareholders|common\s+stock)\b)"
+# Spans no pass may rewrite: URLs, file names, long hex hashes.
+_PROTECTED = re.compile(
+    r"https?://[^\s)>\]]+"
+    r"|\b(?:[\w.-]+/)*[\w.-]+\.(?:json|md|csv|txt|html?|xml|pdf|zip|gz)\b"
+    r"|\b[0-9a-f]{16,}\b"
+)
+
+
+def _replace_ticker(text: str, ticker: str, company: str) -> str:
+    name = re.escape(ticker)
+    if len(ticker) == 1 or ticker in TICKERS_THAT_ARE_WORDS:
+        text = re.sub(rf"\b{name}(?={_TICKER_CONTEXT})", company, text)
+        return re.sub(rf"(?<=\(){name}(?=\))", company, text)
+    return re.sub(rf"(?<![\w.$]){name}\b(?![.-]\w)", company, text)
+
+
 def humanize(text: str, ticker: str | None = None, company: str | None = None) -> str:
     """Replace codes with words in report text (see the module docstring)."""
+    protected: list[str] = []
+
+    def protect(match: re.Match) -> str:
+        protected.append(match.group(0))
+        return f"\x00{len(protected) - 1}\x00"
+
+    text = _PROTECTED.sub(protect, text)
+    # The ticker goes first, so a ticker that is also a code word (LOW) becomes the
+    # company name before the code pass lowers it.
+    if ticker and company:
+        text = _replace_ticker(text, ticker, company)
     text = _TAG.sub(lambda m: f"({CLAIM_TAGS[m.group(1)]})", text)
     text = _PATH.sub(lambda m: path_words(m.group(0)), text)
     text = _CODE.sub(lambda m: CODE_WORDS[m.group(1)], text)
     text = _UPPER_SNAKE.sub(lambda m: m.group(0).lower().replace("_", " "), text)
     text = _SNAKE.sub(lambda m: field(m.group(0)), text)
     text = _QUARTER_TOKEN.sub(lambda m: f"Q{m.group(2)} FY{m.group(1)}", text)
-    if ticker and company:
-        text = re.sub(rf"\b{re.escape(ticker)}\b", company, text)
-    return text
+    return re.sub(r"\x00(\d+)\x00", lambda m: protected[int(m.group(1))], text)

@@ -71,3 +71,41 @@ def test_paths_and_names_in_words():
 def test_ordinary_words_are_left_alone():
     text = "Revenue fell 3% in FY2024; the 10-K, P/E and EV/EBIT are standard terms. Item 4.02 matters."
     assert humanize(text, "KO", "Coca Cola Co") == text
+
+
+@pytest.mark.parametrize(
+    "ticker, company, text, expected",
+    [
+        ("A", "Agilent Technologies Inc", "A strong year for A's margins.",
+         "A strong year for Agilent Technologies Inc's margins."),
+        ("IT", "Gartner Inc", "IT spending slowed; IT shares fell.",
+         "IT spending slowed; Gartner Inc shares fell."),
+        ("ALL", "Allstate Corp", "ALL segments grew (ALL).", "ALL segments grew (Allstate Corp)."),
+        ("LOW", "Lowes Companies Inc", "Confidence LOW; LOW's margin held.",
+         "Confidence low; Lowes Companies Inc's margin held."),
+        ("ON", "On Semiconductor Corp", "Turn ON the lights; ON stock rose.",
+         "Turn ON the lights; On Semiconductor Corp stock rose."),
+        ("NOW", "Servicenow Inc", "NOW is the time; NOW's growth is high.",
+         "NOW is the time; Servicenow Inc's growth is high."),
+        ("F", "Ford Motor Co", "Rated F for effort; F shares fell.",
+         "Rated F for effort; Ford Motor Co shares fell."),
+        ("T", "AT&T Inc", "AT&T is the same as T (T).", "AT&T is the same as T (AT&T Inc)."),
+        ("KO", "Coca Cola Co", "KO grew; KO's margin held.",
+         "Coca Cola Co grew; Coca Cola Co's margin held."),
+    ],
+)
+def test_a_ticker_that_is_also_a_word_is_replaced_only_where_it_names_the_company(
+    ticker, company, text, expected
+):
+    assert humanize(text, ticker, company) == expected
+
+
+def test_urls_file_names_and_hashes_are_left_as_they_are():
+    text = (
+        "Source: https://www.sec.gov/files/company_tickers.json and data_cache/KO/pack.json, "
+        "hash `0a1b2c3d4e5f60718293a4b5c6d7e8f9`; field total_debt."
+    )
+    assert humanize(text, "KO", "Coca Cola Co") == (
+        "Source: https://www.sec.gov/files/company_tickers.json and data_cache/KO/pack.json, "
+        "hash `0a1b2c3d4e5f60718293a4b5c6d7e8f9`; field total debt."
+    )
