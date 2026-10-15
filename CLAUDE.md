@@ -65,6 +65,7 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 ## Layout
 
 - `docs/stock_autopsy_prompts.md` — source of truth (see above)
+- `docs/test_companies.md` — golden tickers and candidates, with what each tests; personal research tickers live in git-ignored `private/` and never appear in tracked files, commits or fixtures
 - `datalayer/sec.py` — `SecClient`: throttled SEC GETs (User-Agent check, one retry on transient errors), ticker → CIK
 - `datalayer/prices.py` — last close before `as_of`, Yahoo's share count and market cap (cross-checks only), splits; via yfinance
 - `datalayer/cache.py` — `DailyCache`: `data_cache/<as_of>/...json`, atomic writes
@@ -208,5 +209,8 @@ are not fetched in Phase 1).
   instead of `derived.ttm.free_cash_flow`); the number check reports these as bad_path.
 - Form 4 (insider transactions), peers, news and transcripts are not fetched in Phase 1:
   null with reason `not_fetched`, never an empty list.
+- Only standard `us-gaap` concepts are read. A company that reports a line item under its
+  own extension concept (seen for receivables and interest expense) gets it as unknown
+  with `not_reported` or `tag_not_found`, never as zero; extensions are not mapped yet.
 - Total debt is assembled from reported concepts (long-term incl. current, convertible,
   short-term borrowings); shapes not in `line_items.py` show up as `partial` or missing.

@@ -41,3 +41,6 @@ Thumbs.db
 
 # Crash dumps from Git Bash tools
 *.stackdump
+
+# Personal research (tickers, notes): never committed
+private/
