@@ -66,6 +66,7 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 
 - `docs/stock_autopsy_prompts.md` — source of truth (see above)
 - `docs/test_companies.md` — golden tickers and candidates, with what each tests; personal research tickers live in git-ignored `private/` and never appear in tracked files, commits or fixtures
+- `scripts/check_private_tickers.py` — refuses private tickers in the test list, tracked files (gzipped fixtures too), commit messages and authors; run by `tests/test_private_tickers.py` and the local git hooks (see Privacy)
 - `datalayer/sec.py` — `SecClient`: throttled SEC GETs (User-Agent check, one retry on transient errors), ticker → CIK
 - `datalayer/prices.py` — last close before `as_of`, Yahoo's share count and market cap (cross-checks only), splits; via yfinance
 - `datalayer/cache.py` — `DailyCache`: `data_cache/<as_of>/...json`, atomic writes
@@ -199,6 +200,22 @@ DATA PACK extensions over the source-of-truth schema (Phase 1 evaluators need th
 `filing_events`, `annual_report_timing`; `data_quality.missing` groups periods per field and
 reason and adds the reason `not_fetched` (insider transactions, peers, news, transcripts
 are not fetched in Phase 1).
+
+## Privacy
+
+- Tickers researched for personal reasons are listed only in `private/companies.md`
+  (git-ignored). Their reports, logs and caches stay local and are deleted when no
+  longer needed; they never become fixtures, eval cases, examples or commit text.
+- The guard runs in pytest (skipped where the private list is absent, as in CI) and
+  as local hooks, which git does not version; install them in a new clone with:
+
+  ```bash
+  printf '#!/bin/sh\nexec venv/Scripts/python.exe -m scripts.check_private_tickers\n' > .git/hooks/pre-commit
+  printf '#!/bin/sh\nexec venv/Scripts/python.exe -m scripts.check_private_tickers --commit-msg "$1"\n' > .git/hooks/commit-msg
+  ```
+- Status 2026-10-15: tracked files, every commit message, author and patch, all git
+  objects, fixtures (including gzipped) and eval checked: no private ticker. Local
+  results, logs and caches of personal research deleted. No remote yet.
 
 ## Known issues
 
