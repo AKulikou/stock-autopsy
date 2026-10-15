@@ -208,6 +208,11 @@ Decisions:
 | D2 | Golden tickers | KO (boring quality), SNOW (fast-growing, loss-making), KHC (2019 restatement) (2026-10-15) |
 | D3 | Evaluator VERDICT block | Structured-output schema fields; confidence as LOW / MEDIUM / HIGH with a one-sentence reason instead of 0-100 (2026-10-15) |
 | D4 | Phase 1 valuation scope | Python multiples on TTM + base DCF for bear/base/bull from step A; reverse DCF by Python (implied revenue growth at base-case margins, with a reason when it cannot be solved); no peer multiples; sensitivity grid in Phase 2 (2026-10-15) |
+| D5 | Company name or brand to ticker (web UI) | One Haiku 5.5 call proposes up to three US-listed companies; Python keeps only those in the SEC ticker map; the person confirms; the suggestion never enters the pack (2026-10-15) |
+| D6 | Plain-language text | Fields in the committee schema (headline, for, against, unknowns, watch) and a one-sentence headline per evaluator, not a separate call (2026-10-15) |
+| D7 | Valuation framing and effort | Reverse DCF also solves the implied annual return; valuation is presented as "what the price assumes"; default effort stays (medium was 38% cheaper but produced the one "no debt" slip of M5) (2026-10-15) |
+| D8 | Language on screen | English UI and report; translated copy as an option (same list as Startup Autopsy, no Chinese) (2026-10-15) |
+| D9 | Order of work | Grounding fixes, then valuation framing with more golden tickers, then the plain-language layer, then the web page; the shared shell is copied from Startup Autopsy and moves to autopsy-template later (2026-10-15) |
 
 DATA PACK extensions over the source-of-truth schema (Phase 1 evaluators need them):
 `shares_outstanding`, `ttm`, `balance_sheet_latest`, `derived` (Python math with formulas),
@@ -234,6 +239,8 @@ are not fetched in Phase 1).
 ## Later (not scheduled; the owner decides)
 
 - Measure the plain-words / DERIVED prompt change (67404ad) with one eval pass.
+- After 67404ad is measured: a `PATH_HELP` line asking for one exact value per quoted number (no table as a basis).
+  Not added on 2026-10-15: a second unmeasured prompt change, and no evaluator used a table basis in M5.
 - More golden tickers: three cannot tell the committee verdict from a constant answer.
 - One shared output schema for all evaluators, so the prompt cache carries across them
   (about 13% of a run's cost; each schema invalidates the cache today).

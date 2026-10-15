@@ -104,7 +104,7 @@ was checked so far, and the eval result once there is one.
 - **Reading:** medium effort is much cheaper and found the restatement trail every time,
   but produced the one grounding failure of M5 and moved KHC's committee verdict. Two reps
   per ticker cannot separate that from noise.
-- **Decision:** pending the owner (suggested: keep the default effort).
+- **Decision (2026-10-15, delegated by the owner):** keep the default effort; medium is not the default.
 
 ## 2026-10-15 — eval instrument: judge by majority of 3, substance-only must_find (no system change)
 
