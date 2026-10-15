@@ -196,7 +196,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
-| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during M5) | baseline done (eval/CHANGES.md): 6/6 acceptable, 0 invented numbers, committee stable but WEAK_CASE everywhere (no better than a constant on 3 tickers), judge not deterministic on borderline statements; 2.33 of 4 USD spent. Next, owner decides: reword SNOW losses must_find; ANALYSIS_EFFORT=medium as a separate stage; prompt points queued (plain words, DERIVED tagging) |
+| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during the runs) | baseline done and regraded (eval/CHANGES.md): acceptable 6/6, must_find 6/6, no must_not 6/6, 0 invented numbers, committee verdict stable but WEAK_CASE everywhere (no better than a constant on 3 tickers); judge by majority of 3. Variant ANALYSIS_EFFORT=medium started 2026-10-15 18:06 (before the prompt change 67404ad): if `.claude/hillclimb/stock/effort_medium/results.jsonl` lacks 6 rows, resume with `ANALYSIS_EFFORT=medium python -m eval.run_eval --reps 2 --batch --variant effort_medium` (done attempts are skipped), then compare with baseline and fill its CHANGES entry. Spent about 2.36 USD before the variant (estimate 1.1-1.3) |
 
 Decisions:
 
@@ -228,6 +228,17 @@ are not fetched in Phase 1).
 - Status 2026-10-15: tracked files, every commit message, author and patch, all git
   objects, fixtures (including gzipped) and eval checked: no private ticker. Local
   results, logs and caches of personal research deleted. No remote yet.
+
+## Later (not scheduled; the owner decides)
+
+- Measure the plain-words / DERIVED prompt change (67404ad) with one eval pass.
+- More golden tickers: three cannot tell the committee verdict from a constant answer.
+- One shared output schema for all evaluators, so the prompt cache carries across them
+  (about 13% of a run's cost; each schema invalidates the cache today).
+- Form 4 insider transactions, peers and peer multiples, news, transcripts (Phase 2/3).
+- Company extension concepts beyond receivables (interest expense, others).
+- DCF sensitivity grid (Phase 2), remaining evaluators 2, 4, 6, 7.
+- A pack check for definition switches in other line items (as done for receivables growth).
 
 ## Known issues
 
