@@ -26,6 +26,8 @@ from datalayer.sec import SecClient, find_cik, format_cik, normalize_ticker
 logger = logging.getLogger(__name__)
 
 OK, FAILED, NOT_FETCHED = "ok", "failed", "not_fetched"
+HISTORY_YEARS = 11  # ten fiscal years in the pack, plus the year before for growth
+SUBMISSIONS_FILE_URL = "https://data.sec.gov/submissions/"
 
 PriceProvider = Callable[[str, date], dict]
 
@@ -43,6 +45,9 @@ class RawCompanyData:
     company_facts: dict
     submissions: dict | None
     price: dict | None
+    # Older submissions files ("filings.files"), fetched when the 'recent' block
+    # does not reach back HISTORY_YEARS; each has the same columns as 'recent'.
+    older_submissions: list[dict] = field(default_factory=list)
     fetch_status: dict[str, str] = field(default_factory=dict)
     fetch_errors: dict[str, str] = field(default_factory=dict)
     from_cache: dict[str, bool] = field(default_factory=dict)
@@ -85,6 +90,24 @@ def fetch_company(
         logger.warning(f"{symbol}: filing history not fetched: {e}")
         submissions, status["edgar_submissions"], errors["edgar_submissions"] = None, FAILED, str(e)
 
+    older: list[dict] = []
+    if submissions:
+        window_start = date(as_of.year - HISTORY_YEARS, as_of.month, min(as_of.day, 28)).isoformat()
+        for file in submissions.get("filings", {}).get("files", []):
+            if file.get("filingTo", "") < window_start:
+                continue
+            name = file["name"]
+            try:
+                block, _ = cache.load_or_fetch(
+                    symbol,
+                    name.removesuffix(".json"),
+                    fetch=lambda n=name: sec.get_json(SUBMISSIONS_FILE_URL + n),
+                )
+                older.append(block)
+            except Exception as e:
+                logger.warning(f"{symbol}: older filing history {name} not fetched: {e}")
+                errors["edgar_submissions_older"] = f"{name}: {e}"
+
     try:
         price, hits["yfinance"] = cache.load_or_fetch(
             symbol, "price", fetch=lambda: price_provider(symbol, as_of)
@@ -102,6 +125,7 @@ def fetch_company(
         company_facts=facts,
         submissions=submissions,
         price=price,
+        older_submissions=older,
         fetch_status=status,
         fetch_errors=errors,
         from_cache=hits,

@@ -52,6 +52,8 @@ pip install -r requirements-dev.txt            # app + pytest + ruff
 pytest                                         # unit tests, fake Claude client, no API calls, no network
 ruff check .                                   # lint (config in pyproject.toml, target Python 3.10)
 python -m datalayer.fetch KO                   # fetch SEC + price data for one ticker into data_cache/ (free, no LLM)
+python -m datalayer.pack KO                    # build the DATA PACK (+ provenance) into data_cache/ (free, no LLM)
+python -m scripts.freeze_golden 2026-10-15 KO SNOW KHC  # refreeze golden fixtures from data_cache/; review the diff
 python -m examples.minimal_run                 # smallest real run, a few cents (paid)
 ```
 
@@ -67,6 +69,14 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `datalayer/cache.py` — `DailyCache`: `data_cache/<as_of>/...json`, atomic writes
 - `datalayer/fetch.py` — `fetch_company()`: all sources through the cache, `fetch_status` per source (company facts required; filings and price may fail and are recorded); CLI
 - `datalayer/http.py` — stdlib GET with gzip; the getter is a parameter so tests never reach the network
+- `datalayer/xbrl.py` — `Fact`, statement forms (proxy statements ignored), period lengths, value preference, materiality of a change
+- `datalayer/line_items.py` — pack line items and the us-gaap concepts each is read from; debt alternatives
+- `datalayer/financials.py` — `Financials`: annual rows (10 fiscal years), discrete quarters, TTM, latest balance sheet, restatements, split adjustment, total debt
+- `datalayer/filings.py` — filing events (amended reports, late notices, 8-K 4.01/4.02) and annual report timing
+- `datalayer/derived.py` — margins, growth, FCF, valuation multiples on TTM (`FORMULAS`)
+- `datalayer/quality.py` — `DataQuality`: the `data_quality` block (missing with reason, restated, conflicts, partial, notes)
+- `datalayer/pack.py` — `build_pack()` → (pack, provenance), `pack_hash()`, freshness and source cross-checks; CLI
+- `scripts/freeze_golden.py` — freezes trimmed inputs + packs of the golden tickers into `tests/fixtures/golden/`
 - `config.py` — API key check, model, prices (including cache multipliers and Haiku 5.5's long-prompt rate), request settings from `.env`
 - `core/claude_client.py` — one shared Anthropic client; logs rate-limit headers at DEBUG; `use_batches()` for the eval
 - `core/batch_client.py` — `BatchingClient`: answers `messages.parse()` through Message Batches (half price, minutes of latency)
@@ -77,7 +87,7 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `perspectives/perspective.py` — `Perspective` as data, prompt layout, `evaluate()`
 - `examples/minimal_run.py` — two perspectives end to end; also run by the tests with the fake client
 - `eval/CHANGES.md` — behavior changes log
-- `tests/` — pytest; `conftest.py` has the fake client (optionally simulating the prompt cache); data layer tests run on fixtures in `tests/fixtures/`, never on the network
+- `tests/` — pytest; `conftest.py` has the fake client (optionally simulating the prompt cache); data layer tests run on hand-built inputs (`tests/xbrl_samples.py`) and golden fixtures, never on the network
 
 ## Data sources
 
@@ -86,7 +96,7 @@ Checked against the SEC documentation on 2026-10-15; check again before relying 
 | Data | Source | Notes |
 |------|--------|-------|
 | Ticker → CIK | `https://www.sec.gov/files/company_tickers.json` | CIK is 10 digits with leading zeros |
-| Financial facts | `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` | No API key; updates within about a minute of a filing |
+| Financial facts | `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` | No API key. SEC says it updates within about a minute of a filing, yet on 2026-10-15 KO's 10-Q filed 2026-07-29 was missing: the pack checks freshness against the filing history |
 | Filing history | `https://data.sec.gov/submissions/CIK##########.json` | |
 | Price, market cap | yfinance, version pinned | Unofficial; can break without notice; cache results |
 
@@ -153,8 +163,8 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 |-----------|-------|--------|
 | M0 | Repository, docs, prices, default model | done |
 | M1 | Data layer for one ticker: EDGAR + yfinance, live fetch plus daily cache; no LLM calls | done |
-| M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` | next |
-| M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | |
+| M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
+| M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | next |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | |
 | M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict | |
 
@@ -163,13 +173,22 @@ Decisions:
 | # | Decision | Status |
 |---|----------|--------|
 | D1 | Default model | `claude-sonnet-5-5` (2026-10-15) |
-| D2 | Golden tickers (boring quality, fast-growing unprofitable, accounting scandal within XBRL years) | open — owner chooses |
-| D3 | Evaluator VERDICT block as structured-output schema fields | open — owner chooses |
-| D4 | Phase 1 valuation scope (multiples + base DCF; sensitivity grid in Phase 2) | open — owner chooses |
+| D2 | Golden tickers | KO (boring quality), SNOW (fast-growing, loss-making), KHC (2019 restatement) (2026-10-15) |
+| D3 | Evaluator VERDICT block | Structured-output schema fields; confidence as LOW / MEDIUM / HIGH with a one-sentence reason instead of 0-100 (2026-10-15) |
+| D4 | Phase 1 valuation scope | Python multiples on TTM + base DCF for bear/base/bull from step A; reverse DCF by Python where FCF is positive; no peer multiples; sensitivity grid in Phase 2 (2026-10-15) |
+
+DATA PACK extensions over the source-of-truth schema (Phase 1 evaluators need them):
+`shares_outstanding`, `ttm`, `balance_sheet_latest`, `derived` (Python math with formulas),
+`filing_events`, `annual_report_timing`; `data_quality.missing` groups periods per field and
+reason and adds the reason `not_fetched` (insider transactions, peers, news, transcripts
+are not fetched in Phase 1).
 
 ## Known issues
 
 - `THINKING=off` sends no thinking parameter. On Sonnet 5.5 (the default), Opus 5.5
   and Haiku 5.5 the model still thinks adaptively; `ANALYSIS_EFFORT` is the real
   control there. Output tokens at the default effort (`high`) are not measured yet.
-- The data pack size is not measured yet; cost estimates are planning figures until M2.
+- Form 4 (insider transactions), peers, news and transcripts are not fetched in Phase 1:
+  null with reason `not_fetched`, never an empty list.
+- Total debt is assembled from reported concepts (long-term incl. current, convertible,
+  short-term borrowings); shapes not in `line_items.py` show up as `partial` or missing.
