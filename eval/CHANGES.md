@@ -8,6 +8,23 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — first prompts: Phase 1 evaluators and the Investment Committee
+
+- **Changed:** `SHARED_RULES`, Business Model, Forensic, Valuation (step A assumptions,
+  step B interpretation) and Pre-Mortem in `evaluators/definitions.py`; committee
+  principles in `synthesis/committee.py`; schemas per D3 (confidence LOW/MEDIUM/HIGH);
+  validators. Adapted from the source of truth where the Phase 1 pack has no data
+  (peers, Form 4, transcripts): those questions ask for INSUFFICIENT DATA.
+- **Expected:** every number traceable to the pack (DATA claims name a pack path; the
+  number check compares them); Forensic separates KHC's restatement (4.02 notices,
+  late 10-K) from KO's recasts.
+- **Risk to watch:** too many UNVERIFIED claims (general knowledge about well-known
+  companies) lowering confidence; DATA claims quoting rounded figures that the number
+  check rejects; validators rejecting good answers twice (check the run log for
+  "invalid result on attempt").
+- **Checked so far:** offline only (fake client): prompt layout, identical cached
+  prefix, step order, validators, number check, reports. No real run yet.
+
 ## 2026-10-15 — default model Sonnet 5.5 (decision D1)
 
 - **Changed:** `DEFAULT_MODEL` from `claude-sonnet-4-6` (template default) to

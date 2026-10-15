@@ -54,6 +54,7 @@ ruff check .                                   # lint (config in pyproject.toml,
 python -m datalayer.fetch KO                   # fetch SEC + price data for one ticker into data_cache/ (free, no LLM)
 python -m datalayer.pack KO                    # build the DATA PACK (+ provenance) into data_cache/ (free, no LLM)
 python -m scripts.freeze_golden 2026-10-15 KO SNOW KHC  # refreeze golden fixtures from data_cache/; review the diff
+python main.py KO                              # full run: 6 Claude calls, results/<ticker>_<date>_<time>/ (paid)
 python -m examples.minimal_run                 # smallest real run, a few cents (paid)
 ```
 
@@ -77,6 +78,16 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `datalayer/quality.py` — `DataQuality`: the `data_quality` block (missing with reason, restated, conflicts, partial, notes)
 - `datalayer/pack.py` — `build_pack()` → (pack, provenance), `pack_hash()`, freshness and source cross-checks; CLI
 - `scripts/freeze_golden.py` — freezes trimmed inputs + packs of the golden tickers into `tests/fixtures/golden/`
+- `evaluators/definitions.py` — `SHARED_RULES` and the Phase 1 evaluators as `Perspective` data (Business Model, Forensic, Valuation steps A and B, Pre-Mortem)
+- `evaluators/schemas.py` — structured outputs: the verdict block (D3), tagged `Claim`s with a basis, per-evaluator fields, DCF scenario assumptions
+- `evaluators/validation.py` — validators per evaluator: lengths and counts, DATA claims must name an existing pack path, RED_FLAG iff a severity-5 flag, sane and ordered DCF assumptions
+- `evaluators/paths.py` — pack paths (`financials_annual.FY2025.revenue`) and `resolve()`
+- `valuation/dcf.py` — DCF for bear/base/bull, reverse DCF (implied growth), one-at-a-time sensitivities; a missing input stops it with a reason
+- `synthesis/committee.py` — Investment Committee schema, principles, validator; code lowers confidence for a high UNVERIFIED share or a missing perspective
+- `analysis/runner.py` — `run_autopsy()`: pack → valuation step A (warms the cache) → DCF → the other evaluators and step B in parallel → committee → number check
+- `reporting/number_check.py` — every number in a DATA claim must match the pack value at its basis (precision-aware)
+- `reporting/markdown.py`, `reporting/json_export.py` — `report.md` (committee first, Python valuation math, evaluator appendix, data quality, number check, cost) and `report.json`
+- `main.py` — CLI for a full run; writes the report, the exact pack and its provenance
 - `config.py` — API key check, model, prices (including cache multipliers and Haiku 5.5's long-prompt rate), request settings from `.env`
 - `core/claude_client.py` — one shared Anthropic client; logs rate-limit headers at DEBUG; `use_batches()` for the eval
 - `core/batch_client.py` — `BatchingClient`: answers `messages.parse()` through Message Batches (half price, minutes of latency)
@@ -164,8 +175,8 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M0 | Repository, docs, prices, default model | done |
 | M1 | Data layer for one ticker: EDGAR + yfinance, live fetch plus daily cache; no LLM calls | done |
 | M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
-| M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | next |
-| M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | |
+| M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
+| M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | next |
 | M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict | |
 
 Decisions:

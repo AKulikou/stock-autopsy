@@ -407,9 +407,10 @@ class Financials:
         quarter = max(ends)
         days = {1: QUARTER_DAYS, 2: HALF_DAYS, 3: NINE_MONTH_DAYS}[quarter]
         end = ends[quarter]
+        quarters = "Q1" if quarter == 1 else f"Q1-Q{quarter}"
         row = {
-            "basis": f"TTM: FY{fiscal_year_label(last.end)} + Q1-Q{quarter} of the current year "
-            f"- the same quarters a year earlier",
+            "basis": f"TTM: FY{fiscal_year_label(last.end)} + {quarters} of the current year "
+            f"- the same {'quarter' if quarter == 1 else 'quarters'} a year earlier",
             "period_end": end.isoformat(),
         }
         for item in li.FLOW_ITEMS:

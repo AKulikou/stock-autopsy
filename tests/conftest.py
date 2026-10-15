@@ -12,6 +12,7 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "sk-ant-test-key-not-used")
 
 import pytest
 
+from analysis import runner as runner_module
 from core import claude_client as claude_client_module
 from perspectives import perspective as perspective_module
 
@@ -76,6 +77,7 @@ def fake_claude(monkeypatch):
     def install(handler, simulate_cache=False) -> FakeClaude:
         fake = FakeClaude(handler, simulate_cache)
         monkeypatch.setattr(perspective_module, "get_client", lambda: fake)
+        monkeypatch.setattr(runner_module, "get_client", lambda: fake)
         return fake
     return install
 

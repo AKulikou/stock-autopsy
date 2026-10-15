@@ -41,9 +41,11 @@ def perspective_system(perspective: Perspective) -> str:
     return f"You are {perspective.role}.\n\nYour perspective: {perspective.focus}"
 
 
-def perspective_user(perspective: Perspective) -> str:
+def perspective_user(perspective: Perspective, material: str | None = None) -> str:
+    """The questions, then any material for this call only (results an earlier step computed)."""
     questions = "\n".join(f"{n}. {q}" for n, q in enumerate(perspective.questions, start=1))
-    return f"Analyze the shared context through your perspective. Address these questions:\n\n{questions}"
+    text = f"Analyze the shared context through your perspective. Address these questions:\n\n{questions}"
+    return f"{text}\n\n{material}" if material else text
 
 
 def evaluate(
@@ -51,10 +53,12 @@ def evaluate(
     prefix: str,
     output_format: type[BaseModel],
     validate: Callable[[BaseModel], list[str]],
+    material: str | None = None,
 ) -> dict:
     """
     Run one perspective and return a result dict: "status": "success" with the
     structured fields, or "status": "error" with the message. Never raises.
+    `material` goes after the questions, outside the cached prefix.
     """
     started = time.monotonic()
     base = {"key": perspective.key, "label": perspective.name, "model": MODEL}
@@ -65,7 +69,7 @@ def evaluate(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=perspective_system(perspective),
-            user=perspective_user(perspective),
+            user=perspective_user(perspective, material),
             output_format=output_format,
             validate=validate,
             cached_prefix=prefix if PROMPT_CACHING else None,

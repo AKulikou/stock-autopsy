@@ -437,7 +437,7 @@
    "sbc_to_revenue": 0.0055
   },
   "valuation": {
-   "basis": "TTM: FY2025 + Q1-Q1 of the current year - the same quarters a year earlier",
+   "basis": "TTM: FY2025 + Q1 of the current year - the same quarter a year earlier",
    "enterprise_value": 427606836324,
    "ev_ebit": 29.57,
    "ev_ebitda": 27.57,
@@ -848,7 +848,7 @@
  },
  "ticker": "KO",
  "ttm": {
-  "basis": "TTM: FY2025 + Q1-Q1 of the current year - the same quarters a year earlier",
+  "basis": "TTM: FY2025 + Q1 of the current year - the same quarter a year earlier",
   "capex": 2069000000,
   "depreciation_amortization": 1047000000,
   "dividends_paid": 10971000000,
