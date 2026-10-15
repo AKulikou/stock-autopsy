@@ -63,6 +63,11 @@ allowed.
 A failed analyst report is missing evidence: name the missing perspective and lower your
 confidence; never fill it in. Never recommend buying, selling or holding. Brutally honest,
 plain language, no marketing words.
+
+Every text field is read by a person. Write meanings, not codes: verdicts in words ("the
+Valuation Analyst finds the price weak"), analysts by role, data by name, the company by
+name. Evaluator keys belong only in the fields that ask for them (conflicts.between,
+monitoring_plan.from_evaluator); verdict codes only in the verdict field.
 """
 
 

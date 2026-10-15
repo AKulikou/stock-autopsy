@@ -8,6 +8,22 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — prompts: plain words in prose, DERIVED for in-sentence arithmetic (prompt change, NOT measured yet)
+
+- **Changed:** `SHARED_RULES` rule 12 (every text field is read by a person: verdicts,
+  analysts, data and the company in words; codes, paths and tickers only where a field asks
+  for them) and a sharper DERIVED rule (a statement that computes any number itself is
+  DERIVED even when it quotes its inputs); the same plain-words paragraph in
+  `SYNTHESIS_PRINCIPLES`. Prefix 9,907 tokens on the KHC pack (count_tokens), about +150.
+- **Why:** the M5 baseline: committee prose such as "Valuation=WEAK" and "business_model vs
+  pre_mortem"; three in-sentence calculations tagged DATA on KO.
+- **Expected:** fewer codes in model text (report.md already rewrites them in code), more
+  DERIVED tags, number check unchanged or better; verdicts unaffected.
+- **Risk to watch:** evaluators stop citing pack paths in DATA bases (rule 12 must not leak
+  into the basis field); judge evidence quotes change wording.
+- **Checked so far:** offline tests only. Made after the effort=medium variant started, so
+  neither M5 run includes it. Needs one eval pass when budget allows.
+
 ## 2026-10-15 — M5 variant: ANALYSIS_EFFORT=medium (request setting change, measured)
 
 - **Changed (variant only, default unchanged):** `ANALYSIS_EFFORT=medium` for every
