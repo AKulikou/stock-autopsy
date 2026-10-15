@@ -93,8 +93,11 @@ if ANALYSIS_EFFORT and ANALYSIS_EFFORT not in EFFORT_LEVELS:
         f"ANALYSIS_EFFORT must be one of {', '.join(EFFORT_LEVELS)}, got {ANALYSIS_EFFORT!r}"
     )
 
-# Per-call output limit; a truncated response is treated as an error.
-MAX_TOKENS = 16000
+# Per-call output limit, thinking included; a truncated response is treated as an error.
+# Sonnet 5.5 at its default effort used 12,227 output tokens for one Forensic answer
+# (2026-10-15). Without streaming the SDK refuses requests that may run over 10 minutes,
+# which it estimates as max_tokens above 21,333 (anthropic 1.7.0, _base_client.py).
+MAX_TOKENS = 20000
 
 # Web search, for the perspectives that need live facts. Billed per search on top
 # of tokens (10 USD per 1,000 searches when this was written; check the price).
