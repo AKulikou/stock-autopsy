@@ -2,16 +2,47 @@
   {
     "id": "KO",
     "fixture": "tests/fixtures/golden/KO",
-    "label_status": "unlabelled: labels proposed in M5 step 2, waiting for the owner's OK"
+    "label_status": "owner-approved 2026-10-15; labelled from the pack, before any run of this ticker",
+    "primary": "CONDITIONAL_CASE",
+    "acceptable": ["WEAK_CASE"],
+    "rationale": "Undisputed quality (operating margin about 29%, ten steady years) at a premium price (P/E about 29, EV/EBIT about 30) for low single-digit growth: 'great company, priced for perfection'. STRONG_CASE would need the price to support interest too.",
+    "must_find": [
+      "The valuation is high relative to the company's growth (a premium multiple, for example a P/E around 29)."
+    ],
+    "must_not": [
+      "Treats Coca-Cola's changed FY2017-FY2018 figures (recasts filed 2019-2021) as evidence of accounting manipulation."
+    ],
+    "forensic_not": ["RED_FLAG"]
   },
   {
     "id": "SNOW",
     "fixture": "tests/fixtures/golden/SNOW",
-    "label_status": "unlabelled: labels proposed in M5 step 2, waiting for the owner's OK"
+    "label_status": "owner-approved 2026-10-15; labelled from the pack, before any run of this ticker; the most debatable label",
+    "primary": "WEAK_CASE",
+    "acceptable": ["CONDITIONAL_CASE"],
+    "rationale": "Strong growth, but GAAP operating losses every year (about -1.24 billion TTM), stock-based compensation about 30% of revenue that carries the positive free cash flow, and a price of about 22 times revenue that requires exceptional execution.",
+    "must_find": [
+      "Snowflake has GAAP operating or net losses in every year of the data.",
+      "Stock-based compensation is a large share of revenue, or the positive free cash flow rests largely on non-cash stock-based compensation."
+    ],
+    "must_not": [
+      "States as a fact that Snowflake had no debt (zero debt) before FY2024."
+    ]
   },
   {
     "id": "KHC",
     "fixture": "tests/fixtures/golden/KHC",
-    "label_status": "unlabelled: labels proposed in M5 step 2, waiting for the owner's OK"
+    "label_status": "owner-approved 2026-10-15; labelled after one real run of this ticker (verdict WEAK_CASE), so possibly anchored on it",
+    "primary": "WEAK_CASE",
+    "acceptable": ["CONDITIONAL_CASE"],
+    "rationale": "Shrinking revenue, repeated multi-billion impairments (Q2 FY2025, Q2 FY2026), a TTM operating loss and the 2017-2019 restatement history; cheap on free cash flow (about 7x) if the charges are non-cash. Not RED_FLAGGED: the accounting failures are seven years old and filings have been timely since.",
+    "must_find": [
+      "The 2019 restatement: the 10-K filed 2019-06-07 restated FY2016-FY2017 figures (for example operating cash flow or operating income).",
+      "The 8-K Item 4.02 non-reliance notices or the late annual report (the NT 10-K, the 10-K filed about 160 days after year end)."
+    ],
+    "must_not": [
+      "Describes the large Q2 operating losses as cash losses, although operating cash flow in those quarters was positive."
+    ],
+    "forensic_not": ["STRONG"]
   }
 ]
