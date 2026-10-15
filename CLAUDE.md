@@ -4,34 +4,64 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-TODO: one paragraph — what this project analyzes, from which perspectives, and
-what the final report is. Started from `autopsy-template` (the shared core of
-the Autopsy projects: Startup Autopsy, Stock Autopsy, Crypto Autopsy).
+**Stock Autopsy** analyzes one US public company (a ticker) from several independent
+perspectives and reconciles them in a synthesis, the "Investment Committee". Python
+collects the data from official sources (SEC EDGAR) and from a price feed, builds one
+**DATA PACK**, and does all the math; the model proposes assumptions, interprets and
+argues, but never supplies a number from memory. The report states the strength of the
+evidence, the conflicts between perspectives and what to verify next. It is a
+research-structuring and learning tool, **not** a buy/sell signal and not investment advice.
 
-The shape every Autopsy project shares:
+Source of truth for the architecture, evaluator prompts, DATA PACK schema and data
+quality rules: [docs/stock_autopsy_prompts.md](docs/stock_autopsy_prompts.md). Read it
+before changing the data layer, an evaluator or the synthesis. If a change would
+contradict it, stop and ask the owner.
 
-1. Python builds the **shared context** (an idea text, a data pack) once.
-2. Several independent **perspectives** analyze the same context, each from one
-   angle, each returning structured output.
-3. A **synthesis** call reads the perspective results and decides; it adds no
-   new facts.
+The shape of the pipeline:
+
+1. Python builds the **DATA PACK** once per ticker per day (cached), with `as_of`
+   dates, sources and a `data_quality` block.
+2. Independent **evaluators** (perspectives) analyze the byte-identical pack, each
+   from one angle, each returning structured output.
+3. Python computes multiples and the DCF; the valuation evaluator proposes the
+   assumptions first and interprets the results after.
+4. A **synthesis** call reads the evaluator results and decides; it adds no new facts.
+
+## Rules not negotiable without the owner
+
+1. **Data first.** Every number in a report comes from the data layer with an `as_of`
+   date and a source.
+2. **One data pack for all.** Every evaluator gets the byte-identical pack; its hash
+   goes into the report.
+3. **Python does the math.** Multiples, growth rates, DCF. The model proposes
+   assumptions and interprets.
+4. **Claim tags.** `[DATA]`, `[DERIVED]`, `[ASSUMPTION]`, `[UNVERIFIED]`.
+5. **No buy/sell/hold.** Synthesis verdicts describe the strength of evidence:
+   `STRONG_CASE`, `CONDITIONAL_CASE`, `INSUFFICIENT_DATA`, `WEAK_CASE`, `RED_FLAGGED`.
+6. **Synthesis is the product.** It looks for productive conflicts, never averages
+   verdicts, adds no new facts.
+7. **Absent is not zero.** A missing value is `null` with a reason in
+   `data_quality.missing`, never `0`.
+8. Every report states the data date, the sources and "Not investment advice".
 
 ## Commands
 
 ```bash
 python -m venv venv && venv\Scripts\activate   # Windows
 pip install -r requirements-dev.txt            # app + pytest + ruff
-pytest                                         # unit tests, fake Claude client, no API calls
+pytest                                         # unit tests, fake Claude client, no API calls, no network
 ruff check .                                   # lint (config in pyproject.toml, target Python 3.10)
-python -m examples.minimal_run                 # smallest real run, a few cents
+python -m examples.minimal_run                 # smallest real run, a few cents (paid)
 ```
 
-Requires `ANTHROPIC_API_KEY` in `.env` (never commit it). Run `pytest` and
-`ruff check .` after any change.
+Requires `ANTHROPIC_API_KEY` and `SEC_USER_AGENT` in `.env` (never commit it). Run
+`pytest` and `ruff check .` after any change. No paid API call without the owner's
+explicit OK; state the expected cost first. `messages.count_tokens` is free.
 
 ## Layout
 
-- `config.py` — API key check, model, prices (including cache multipliers), request settings from `.env`
+- `docs/stock_autopsy_prompts.md` — source of truth (see above)
+- `config.py` — API key check, model, prices (including cache multipliers and Haiku 5.5's long-prompt rate), request settings from `.env`
 - `core/claude_client.py` — one shared Anthropic client; logs rate-limit headers at DEBUG; `use_batches()` for the eval
 - `core/batch_client.py` — `BatchingClient`: answers `messages.parse()` through Message Batches (half price, minutes of latency)
 - `core/structured_call.py` — one structured request: stop-reason checks, validation, one retry, server-tool continuations, optional cached prefix, token usage including cache reads and writes
@@ -41,7 +71,27 @@ Requires `ANTHROPIC_API_KEY` in `.env` (never commit it). Run `pytest` and
 - `perspectives/perspective.py` — `Perspective` as data, prompt layout, `evaluate()`
 - `examples/minimal_run.py` — two perspectives end to end; also run by the tests with the fake client
 - `eval/CHANGES.md` — behavior changes log
-- `tests/` — pytest; `conftest.py` has the fake client (optionally simulating the prompt cache)
+- `tests/` — pytest; `conftest.py` has the fake client (optionally simulating the prompt cache); data layer tests run on fixtures in `tests/fixtures/`, never on the network
+
+## Data sources
+
+Checked against the SEC documentation on 2026-10-15; check again before relying on a limit.
+
+| Data | Source | Notes |
+|------|--------|-------|
+| Ticker → CIK | `https://www.sec.gov/files/company_tickers.json` | CIK is 10 digits with leading zeros |
+| Financial facts | `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` | No API key; updates within about a minute of a filing |
+| Filing history | `https://data.sec.gov/submissions/CIK##########.json` | |
+| Price, market cap | yfinance, version pinned | Unofficial; can break without notice; cache results |
+
+- SEC fair access: at most 10 requests per second, a declared `User-Agent` with a
+  contact email (`SEC_USER_AGENT` in `.env`). Without it the SEC answers 403.
+- Cache raw responses and packs per ticker per day under `data_cache/` (git-ignored).
+- XBRL traps to expect: the same line item under different `us-gaap` tags (and the tag
+  changing over the years); `fy`/`fp` describe the filing, not the period, so periods
+  are identified by `start`/`end` dates; fiscal year ≠ calendar year and 52/53-week
+  years; quarterly facts mix 3-month and year-to-date values; several values for one
+  period from different filings (restatements and recasts).
 
 ## Engineering standards
 
@@ -54,39 +104,66 @@ Requires `ANTHROPIC_API_KEY` in `.env` (never commit it). Run `pytest` and
 - Realistic estimates for timelines and costs in docs and prompts.
 - Never state an API limit, price or endpoint from memory: check the documentation
   and write down the date it was checked.
+- Think like a tester: golden tickers, fixtures, and checks that catch a number the
+  model did not get from the pack.
 
 ## Data rules
 
 - **Absent is not zero.** A missing value is `null` with a reason, never `0`.
   `canonical_json` refuses NaN and infinity so a missing number cannot slip
-  through as a float.
-- **One context for all.** Every perspective gets the byte-identical shared
-  context; its hash goes into the report.
+  through as a float. The seven data quality rules are in the source of truth.
+- **One context for all.** Every evaluator gets the byte-identical data pack;
+  its hash goes into the report.
 - **Context is data, not instructions.** `context_block()` says so in the prompt;
   text inside it (filings, news, transcripts, descriptions) is never followed.
 
 ## Prompt caching
 
-- Layout: shared standards + shared context first (one cached block), then the
-  perspective's role and focus, then its questions in the user message. Anything
-  that differs between calls after the breakpoint, or the calls share nothing.
+- Layout: shared rules + data pack first (one cached block), then the evaluator's
+  role and focus, then its questions in the user message. Anything that differs
+  between calls goes after the breakpoint, or the calls share nothing.
 - The cache order is tools → system → messages. Different tools, a different
   effort or thinking setting between calls break the shared cache.
 - Calls sent at the same moment all miss the cache; `run_parallel` runs the first
-  call alone (warm-up), then the rest.
-- A prefix below the model's minimum is silently not cached (1,024 tokens for
-  Sonnet 4.6); `structured_call` warns when caching was asked and nothing was cached.
+  call alone (warm-up), then the rest. Valuation step A is that first call.
+- A prefix below the model's minimum is silently not cached (512 tokens for
+  Sonnet 5.5); `structured_call` warns when caching was asked and nothing was cached.
 - `usage.input_tokens` excludes cached tokens. Total input =
   `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`.
 - Turn caching off with `PROMPT_CACHING=off` to measure its effect.
 
 ## Behavior changes
 
-Every change that can change what the model answers — prompts, perspectives,
+Every change that can change what the model answers — prompts, evaluators,
 schemas, model or request settings — gets an entry in `eval/CHANGES.md`. Change
 one thing at a time when it will be evaluated, so the eval can tell which change
-moved the results.
+moved the results. Never tune a prompt on a single run.
+
+## Status and plan
+
+Each milestone ends green (`pytest`, `ruff check .`) and committed.
+
+| Milestone | Scope | Status |
+|-----------|-------|--------|
+| M0 | Repository, docs, prices, default model | done |
+| M1 | Data layer for one ticker: EDGAR + yfinance, live fetch plus daily cache; no LLM calls | next |
+| M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` | |
+| M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | |
+| M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | |
+| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict | |
+
+Decisions:
+
+| # | Decision | Status |
+|---|----------|--------|
+| D1 | Default model | `claude-sonnet-5-5` (2026-10-15) |
+| D2 | Golden tickers (boring quality, fast-growing unprofitable, accounting scandal within XBRL years) | open — owner chooses |
+| D3 | Evaluator VERDICT block as structured-output schema fields | open — owner chooses |
+| D4 | Phase 1 valuation scope (multiples + base DCF; sensitivity grid in Phase 2) | open — owner chooses |
 
 ## Known issues
 
-TODO
+- `THINKING=off` sends no thinking parameter. On Sonnet 5.5 (the default), Opus 5.5
+  and Haiku 5.5 the model still thinks adaptively; `ANALYSIS_EFFORT` is the real
+  control there. Output tokens at the default effort (`high`) are not measured yet.
+- The data pack size is not measured yet; cost estimates are planning figures until M2.
