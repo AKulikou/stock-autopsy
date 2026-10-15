@@ -21,6 +21,8 @@ from evaluators.schemas import ScenarioAssumptions
 
 SCENARIOS = ("bear", "base", "bull")
 REVERSE_GROWTH_RANGE = (-0.5, 1.0)
+IMPLIED_RETURN_MARGIN = 0.005  # the lowest rate tried is terminal growth + this
+IMPLIED_RETURN_MAX = 0.5
 SENSITIVITY_STEPS = {
     "discount_rate": 0.01,
     "terminal_growth": 0.005,
@@ -149,6 +151,69 @@ def reverse_dcf(base: ScenarioAssumptions, inputs: DcfInputs) -> dict:
     }
 
 
+def implied_annual_return(base: ScenarioAssumptions, inputs: DcfInputs) -> dict:
+    """
+    The discount rate at which the base-case cash flows are worth today's price: the
+    yearly return a buyer at this price gets if the base case comes true. Unlike the
+    implied growth, it does not depend on the discount rate the model chose.
+    """
+    if inputs.price is None:
+        return {"implied_annual_return": None, "reason": "price unknown"}
+
+    def value(rate: float) -> float:
+        return project(_with(base, discount_rate=rate), inputs)["value_per_share"] - inputs.price
+
+    low, high = base.terminal_growth + IMPLIED_RETURN_MARGIN, IMPLIED_RETURN_MAX
+    v_low, v_high = value(low), value(high)
+    if v_low < 0:
+        return {
+            "implied_annual_return": None,
+            "below": round(low, 4),
+            "reason": f"even at a return of {low:.1%} a year the base case is worth less than the price",
+        }
+    if v_high > 0:
+        return {
+            "implied_annual_return": None,
+            "above": IMPLIED_RETURN_MAX,
+            "reason": "the base case is worth more than the price even at a return of "
+            f"{IMPLIED_RETURN_MAX:.0%} a year",
+        }
+    for _ in range(80):
+        middle = (low + high) / 2
+        if value(middle) > 0:
+            low = middle
+        else:
+            high = middle
+    return {
+        "implied_annual_return": round((low + high) / 2, 4),
+        "holding": "base-case revenue growth, operating margins, tax, reinvestment and terminal growth",
+    }
+
+
+def price_assumes(base: ScenarioAssumptions, inputs: DcfInputs, implied: dict) -> str | None:
+    """One plain sentence on what today's price assumes, filled in by Python, not the model."""
+    if inputs.price is None:
+        return None
+    growth = f"{base.revenue_growth[0]:.0%} to {base.revenue_growth[-1]:.0%}"
+    margin = f"{base.operating_margin[0]:.0%} to {base.operating_margin[-1]:.0%}"
+    case = f"revenue growth of {growth} a year and an operating margin of {margin} over five years"
+    rate = implied.get("implied_annual_return")
+    if rate is not None:
+        return (
+            f"At today's price of {inputs.price:,.2f}, if the base case comes true ({case}), "
+            f"a buyer earns about {rate:.1%} a year."
+        )
+    if "below" in implied:
+        return (
+            f"At today's price of {inputs.price:,.2f}, the base case ({case}) does not pay back the price "
+            f"even at a return of {implied['below']:.1%} a year: the price assumes more than the base case."
+        )
+    return (
+        f"At today's price of {inputs.price:,.2f}, the base case ({case}) would pay more than "
+        f"{IMPLIED_RETURN_MAX:.0%} a year: the price assumes much less than the base case."
+    )
+
+
 def sensitivities(base: ScenarioAssumptions, inputs: DcfInputs) -> list[dict]:
     """Base-case value per share when one assumption moves up or down, largest effect first."""
     reference = project(base, inputs)["value_per_share"]
@@ -183,6 +248,7 @@ def run_valuation(scenarios: dict[str, ScenarioAssumptions], pack: dict) -> dict
     if inputs is None:
         return {"computed": False, "reasons": notes}
     results = {name: project(scenarios[name], inputs) for name in SCENARIOS}
+    implied = implied_annual_return(scenarios["base"], inputs)
     return {
         "computed": True,
         "inputs": asdict(inputs),
@@ -191,5 +257,7 @@ def run_valuation(scenarios: dict[str, ScenarioAssumptions], pack: dict) -> dict
         "value_per_share": {name: results[name]["value_per_share"] for name in SCENARIOS},
         "price": inputs.price,
         "reverse_dcf": reverse_dcf(scenarios["base"], inputs),
+        "implied_return": implied,
+        "price_assumes": price_assumes(scenarios["base"], inputs, implied),
         "sensitivities": sensitivities(scenarios["base"], inputs),
     }

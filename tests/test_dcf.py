@@ -3,7 +3,16 @@ import pytest
 from evaluators.paths import PathError, resolve
 from evaluators.schemas import ScenarioAssumptions
 from reporting.number_check import quantities
-from valuation.dcf import DcfInputs, inputs_from_pack, project, reverse_dcf, run_valuation, sensitivities
+from valuation.dcf import (
+    DcfInputs,
+    implied_annual_return,
+    inputs_from_pack,
+    price_assumes,
+    project,
+    reverse_dcf,
+    run_valuation,
+    sensitivities,
+)
 
 INPUTS = DcfInputs(revenue=100.0, shares=10.0, total_debt=20.0, cash_and_investments=5.0, price=50.0)
 
@@ -51,6 +60,27 @@ def test_reverse_dcf_finds_the_growth_that_reproduces_the_price():
 def test_reverse_dcf_says_why_when_no_growth_reaches_the_price():
     result = reverse_dcf(flat(margin=0.01), DcfInputs(**{**INPUTS.__dict__, "price": 10_000.0}))
     assert result["implied_revenue_growth"] is None and "no constant growth" in result["reason"]
+
+
+def test_implied_return_is_the_rate_at_which_the_base_case_equals_the_price():
+    price = project(flat(r=0.08), INPUTS)["value_per_share"]
+    result = implied_annual_return(flat(r=0.12), DcfInputs(**{**INPUTS.__dict__, "price": price}))
+    assert result["implied_annual_return"] == pytest.approx(0.08, abs=1e-3)  # independent of the chosen 12%
+
+
+def test_implied_return_says_when_the_price_is_out_of_reach():
+    expensive = implied_annual_return(flat(), DcfInputs(**{**INPUTS.__dict__, "price": 10_000.0}))
+    assert expensive["implied_annual_return"] is None and "worth less than the price" in expensive["reason"]
+    cheap = implied_annual_return(flat(), DcfInputs(**{**INPUTS.__dict__, "price": 0.01}))
+    assert cheap["implied_annual_return"] is None and "even at a return of 50%" in cheap["reason"]
+
+
+def test_the_price_sentence_is_written_by_python():
+    price = project(flat(r=0.08), INPUTS)["value_per_share"]
+    inputs = DcfInputs(**{**INPUTS.__dict__, "price": price})
+    sentence = price_assumes(flat(), inputs, implied_annual_return(flat(), inputs))
+    assert sentence.endswith("a buyer earns about 8.0% a year.")
+    assert "revenue growth of 0% to 0% a year and an operating margin of 20% to 20%" in sentence
 
 
 def test_sensitivities_are_sorted_by_effect():

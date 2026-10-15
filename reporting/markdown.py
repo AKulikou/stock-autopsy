@@ -91,6 +91,21 @@ def header(run: AutopsyRun) -> list[str]:
     ]
 
 
+def plain_words(s: dict, valuation_math: dict) -> list[str]:
+    """The answer for a reader who is not an analyst (committee fields; the price sentence is Python's)."""
+    if not s.get("headline"):
+        return []  # a run from before the plain-language fields
+    lines = ["### In plain words", "", f"**{s['headline']}**", ""]
+    lines += ["**For:**", *bullets(s["reasons_for"]), "", "**Against:**", *bullets(s["reasons_against"]), ""]
+    if valuation_math.get("price_assumes"):
+        lines += [f"**What the price assumes:** {valuation_math['price_assumes']}", ""]
+    lines += [
+        "This is an assessment of the evidence, not advice to buy or sell.",
+        "",
+    ]
+    return lines
+
+
 def synthesis_section(run: AutopsyRun) -> list[str]:
     s = run.synthesis
     if s.get("status") != "success":
@@ -101,6 +116,8 @@ def synthesis_section(run: AutopsyRun) -> list[str]:
         f"Confidence: {CONFIDENCE[s['confidence']]}.",
         "",
         s["confidence_reason"],
+        "",
+        *plain_words(s, run.valuation_math),
     ]
     if s["confidence_adjustments"]:
         lines += [
@@ -205,6 +222,16 @@ def valuation_section(run: AutopsyRun) -> list[str]:
         )
     reverse = math["reverse_dcf"]
     implied = reverse["implied_revenue_growth"]
+    implied_return = (math.get("implied_return") or {})
+    if implied_return:
+        rate = implied_return.get("implied_annual_return")
+        lines += [
+            "",
+            f"Implied annual return: a buyer at today's price earns {pct(rate)} a year if the base case "
+            f"comes true (holding {implied_return['holding']})."
+            if rate is not None
+            else f"Implied annual return: {implied_return['reason']}.",
+        ]
     lines += [
         "",
         f"Reverse DCF: the price implies {pct(implied)} revenue growth a year for five years "

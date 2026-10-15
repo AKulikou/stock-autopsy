@@ -128,15 +128,22 @@ VALUATION = Perspective(
     focus=(
         "What the current price already assumes: separate 'good company' from 'good price'. Python "
         "computed the multiples (derived.valuation) and the DCF results given below; you interpret "
-        "them. Always think in ranges, never a single target price. Verdict: STRONG when the price "
-        "implies modest expectations, WEAK when it requires exceptional execution."
+        "them. Always think in ranges, never a single target price. Judge the expectations the price "
+        "implies, not the gap between a DCF value and the price: a value below the price at the "
+        "discount rate your team chose is not by itself a weak verdict. The implied annual return "
+        "(valuation_math.implied_return) is what a buyer at today's price earns a year if the base "
+        "case comes true; compare it with the return you would require of this company, stated as an "
+        "ASSUMPTION. Verdict: STRONG when the price implies modest expectations (the base case pays "
+        "clearly more than that return), ADEQUATE when it pays about that return, WEAK when only "
+        "results better than the company's own history would pay it."
     ),
     questions=(
         "Relative valuation: what the TTM multiples in derived.valuation say, and whether growth, "
         "margins or durability in the pack justify them. The pack has no peer multiples: do not quote "
         "peer or market multiples from memory except as UNVERIFIED.",
-        "Reverse DCF: what revenue growth the current price implies (the Python result below), and "
-        "whether this company's history makes it achievable.",
+        "What the price assumes: the revenue growth and the annual return the current price implies "
+        "(the Python results below, and the sentence in valuation_math.price_assumes), and whether "
+        "this company's history makes the base case achievable.",
         "Which single assumption moves the value the most (the Python sensitivities below)?",
         "What could expand or contract the multiple in the next 12 months?",
     ),

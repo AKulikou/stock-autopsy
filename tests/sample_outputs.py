@@ -183,6 +183,9 @@ def synthesis(verdict: str = "CONDITIONAL_CASE", confidence: str = "HIGH") -> Sy
         ],
         next_research_steps=["Step 1", "Step 2", "Step 3"],
         beginner_explanation=long,
+        headline="A conditional case: a durable business whose price already assumes steady growth.",
+        reasons_for=["Margins held for ten years.", "Cash flow covers the dividend.", "Debt is modest."],
+        reasons_against=["The price assumes growth.", "Revenue growth is slow.", "Recasts need checking."],
     )
 
 

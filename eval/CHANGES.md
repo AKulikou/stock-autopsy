@@ -8,6 +8,20 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — P2: what the price assumes + plain-language committee fields (prompt, schema and valuation math change; NOT measured yet)
+
+- **Changed (one bundle, to save budget):** the reverse DCF also solves the implied annual
+  return (`valuation_math.implied_return`) and Python writes `valuation_math.price_assumes`;
+  the Valuation focus judges what the price assumes, not the DCF-vs-price gap at one chosen
+  rate; the committee principles say the same; committee schema gains `headline`,
+  `reasons_for`, `reasons_against` (D6/H1; evaluator cards use `key_finding`, H2).
+- **Measurement plan:** `v2_before` = HEAD before this change (67404ad prompts), 5 golden
+  cases x 1 rep, --batch, started 2026-10-15 late evening (~1.4 USD); then `v2_after` with
+  this bundle, same setup (~1.4 USD). Compare verdicts on CMCSA (weak case is wrong) and PLUG
+  (red-flagged only), and grounding on all.
+- **Expected:** fewer "weak case" verdicts where the price assumes little (CMCSA); KO and SNOW
+  unchanged or conditional; no change to grounding.
+
 ## 2026-10-15 — grounding checks (grading and reporting only; measured on stored traces, free)
 
 - **Why:** a mutation test (real annual values of the golden packs quoted with deliberate

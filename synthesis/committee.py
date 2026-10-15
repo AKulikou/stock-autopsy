@@ -53,12 +53,19 @@ allowed.
    WEAK_CASE - the evidence does not support the investment thesis
    RED_FLAGGED - unresolved severe red flags dominate everything else
    Confidence LOW, MEDIUM or HIGH, with one sentence why.
+   Judge the valuation by what the price assumes (the implied revenue growth and the implied
+   annual return in the valuation math), not by the gap between a DCF value and the price at
+   one chosen discount rate.
 5. Monitoring plan. Three to five metrics or events to watch, with thresholds, taken from the
    analysts' invalidation criteria and findings.
 6. Next research steps. Exactly three specific things to verify next, ordered by how much they
    could change the verdict.
 7. Beginner explanation. Plain language: what the company does, why it may or may not be
    interesting, and what the reader does not yet know.
+8. In plain words, for a reader who is not an analyst: a one-sentence headline with the
+   verdict and its main reason, three reasons for and three reasons against, one sentence each.
+   No jargon (say "the price" and "cash the business produces", not multiples or DCF), and no
+   number that is not in the reports, the valuation math or the pack summary.
 
 A failed analyst report is missing evidence: name the missing perspective and lower your
 confidence; never fill it in. Never recommend buying, selling or holding. Brutally honest,
@@ -105,6 +112,9 @@ class SynthesisResult(BaseModel):
     monitoring_plan: list[MonitoringItem]
     next_research_steps: list[str]
     beginner_explanation: str
+    headline: str = Field(description="One plain sentence: the verdict in words and its main reason.")
+    reasons_for: list[str] = Field(description="Three plain one-sentence reasons for further interest.")
+    reasons_against: list[str] = Field(description="Three plain one-sentence reasons against.")
 
 
 def evaluator_view(result: dict) -> dict:
@@ -153,6 +163,11 @@ def synthesis_validator(results: list[dict]):
         problems += text_problems("confidence_reason", result.confidence_reason, 10, 500)
         problems += count_problems("monitoring_plan", result.monitoring_plan, 3, 5)
         problems += count_problems("next_research_steps", result.next_research_steps, 3, 3)
+        problems += text_problems("headline", result.headline, 20, 300)
+        for name in ("reasons_for", "reasons_against"):
+            problems += count_problems(name, getattr(result, name), 2, 4)
+            for n, reason in enumerate(getattr(result, name), start=1):
+                problems += text_problems(f"{name} {n}", reason, 10, 300)
         if result.verdict == "CONDITIONAL_CASE" and not result.conditions:
             problems.append("CONDITIONAL_CASE needs at least one condition")
         if result.verdict == "RED_FLAGGED" and not severe:
