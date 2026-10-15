@@ -93,6 +93,7 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `analysis/runner.py` — `run_autopsy()`: pack → valuation step A (warms the cache) → DCF → the other evaluators and step B in parallel → committee → number check
 - `reporting/number_check.py` — every number in a DATA claim must match the pack value at its basis (precision-aware)
 - `reporting/markdown.py`, `reporting/json_export.py` — `report.md` (committee first, Python valuation math, evaluator appendix, data quality, number check, cost) and `report.json`
+- `reporting/wording.py` — plain words for report.md: verdicts, confidence, analysts, fields, pack paths, company name for the ticker; `humanize()` is the last pass over the whole report, model text included
 - `main.py` — CLI for a full run; writes the report, the exact pack and its provenance
 - `eval/run_eval.py` — the behaviour eval on `eval/cases.json` (golden fixtures only; a private ticker is refused): runs, grades, writes `.claude/hillclimb/stock/<variant>/` (git-ignored), resumes interrupted runs, `--batch`
 - `eval/grading.py` — pure grading: verdict against labels, ERROR_COST (Startup Autopsy's matrix mapped to these verdicts), forbidden Forensic verdicts, invented numbers (in no pack value at all), baselines, stability
@@ -140,6 +141,10 @@ Checked against the SEC documentation on 2026-10-15; check again before relying 
 - Realistic estimates for timelines and costs in docs and prompts.
 - Never state an API limit, price or endpoint from memory: check the documentation
   and write down the date it was checked.
+- What a person reads (report.md, CLI output, summaries for the owner) carries no codes:
+  no verdict enums, tickers, field names, pack paths or claim tags, only their meaning in
+  words (`reporting/wording.py`; `tests/test_wording.py` scans the report). report.json
+  and eval data keep the codes for programs.
 - Think like a tester: golden tickers, fixtures, and checks that catch a number the
   model did not get from the pack.
 

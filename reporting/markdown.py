@@ -7,18 +7,28 @@ from the results.
 
 from analysis.runner import AutopsyRun
 from core.token_summary import format_cost
+from reporting.wording import (
+    CLAIM_TAGS,
+    COMMITTEE_VERDICTS,
+    CONFIDENCE,
+    CONFLICT_NATURE,
+    EVALUATOR_VERDICTS,
+    EVALUATORS,
+    FETCH_STATUS,
+    MISSING_REASONS,
+    NUMBER_STATUS,
+    SOURCES,
+    STRONGER_SIDE,
+    company_display,
+    field,
+    humanize,
+)
 
 DISCLAIMER = (
     "Not investment advice. Stock Autopsy is a research-structuring and learning tool: it "
     "describes the strength of the evidence, never whether to buy, sell or hold."
 )
-VERDICT_WORDS = {
-    "STRONG_CASE": "Strong case",
-    "CONDITIONAL_CASE": "Conditional case",
-    "INSUFFICIENT_DATA": "Insufficient data",
-    "WEAK_CASE": "Weak case",
-    "RED_FLAGGED": "Red-flagged",
-}
+PRICE_SOURCE = "Yahoo Finance, close of the last trading day before the data date"
 
 
 def money(value) -> str:
@@ -53,12 +63,16 @@ def amount(field: str, value) -> str:
     return f"{value:,}" if field == "shares_diluted" else money(value)
 
 
+def evaluator_name(key: str) -> str:
+    return EVALUATORS.get(key, field(key))
+
+
 def header(run: AutopsyRun) -> list[str]:
     pack = run.pack
     price = pack["price"]
     price_text = f"{price['value']:,.2f} {price['currency']} (close {price['date']})" if price else "unknown"
     return [
-        f"# Stock Autopsy: {pack['ticker']} — {pack['company_name']}",
+        f"# Stock Autopsy: {company_display(pack['company_name'])}",
         "",
         f"> {DISCLAIMER}",
         "",
@@ -66,8 +80,8 @@ def header(run: AutopsyRun) -> list[str]:
         "|---|---|",
         f"| Data as of | {pack['as_of']} |",
         f"| Price | {price_text} |",
-        f"| Financial statements | {pack['sources']['financial_statements']} |",
-        f"| Price source | {pack['sources']['price'] or 'not available'} |",
+        f"| Financial statements | SEC EDGAR financial data (XBRL) from filings made by {pack['as_of']} |",
+        f"| Price source | {PRICE_SOURCE if price else 'not available'} |",
         f"| User context | horizon {pack['user_context']['horizon']}, "
         f"risk tolerance {pack['user_context']['risk_tolerance']} |",
         f"| Data pack SHA-256 | `{run.pack_hash}` |",
@@ -81,14 +95,16 @@ def synthesis_section(run: AutopsyRun) -> list[str]:
     if s.get("status") != "success":
         return ["## Investment Committee", "", f"**No conclusion:** {s.get('error')}", ""]
     lines = [
-        f"## Verdict: {VERDICT_WORDS[s['verdict']]} — confidence {s['confidence']}",
+        f"## Verdict: {COMMITTEE_VERDICTS[s['verdict']]}",
+        "",
+        f"Confidence: {CONFIDENCE[s['confidence']]}.",
         "",
         s["confidence_reason"],
     ]
     if s["confidence_adjustments"]:
         lines += [
             "",
-            f"Confidence lowered from {s['model_confidence']} by code: "
+            f"Confidence lowered from {CONFIDENCE[s['model_confidence']]} by a fixed rule: "
             + "; ".join(s["confidence_adjustments"])
             + ".",
         ]
@@ -100,7 +116,7 @@ def synthesis_section(run: AutopsyRun) -> list[str]:
         "",
         s["judge_summary"],
         "",
-        f"Stronger side: **{s['stronger_side'].lower()}**.",
+        f"Stronger evidence: **{STRONGER_SIDE[s['stronger_side']]}**.",
         "",
         "**Genuinely uncertain:**",
         *bullets(s["genuinely_uncertain"]),
@@ -124,14 +140,21 @@ def synthesis_section(run: AutopsyRun) -> list[str]:
     if s["conflicts"]:
         lines += ["| Between | Conflict | Nature | Explanation |", "|---|---|---|---|"]
         lines += [
-            f"| {' vs '.join(c['between'])} | {c['description']} | {c['nature'].replace('_', ' ').lower()} "
-            f"| {c['explanation']} |"
+            table_row(
+                " vs ".join(evaluator_name(k) for k in c["between"]),
+                c["description"],
+                CONFLICT_NATURE[c["nature"]],
+                c["explanation"],
+            )
             for c in s["conflicts"]
         ]
     else:
         lines.append("No conflicts between the perspectives.")
     lines += ["", "### Monitoring plan", "", "| Watch | Threshold | From |", "|---|---|---|"]
-    lines += [f"| {m['item']} | {m['threshold']} | {m['from_evaluator']} |" for m in s["monitoring_plan"]]
+    lines += [
+        table_row(m["item"], m["threshold"], evaluator_name(m["from_evaluator"]))
+        for m in s["monitoring_plan"]
+    ]
     lines += ["", "### Next research steps", ""]
     lines += [f"{n}. {step}" for n, step in enumerate(s["next_research_steps"], start=1)]
     lines += ["", "### In plain language", "", s["beginner_explanation"], ""]
@@ -193,7 +216,10 @@ def valuation_section(run: AutopsyRun) -> list[str]:
     ]
     lines += [
         table_row(
-            row["assumption"], f"±{row['step']:.1%}", number(row["value_down"]), number(row["value_up"])
+            field(row["assumption"]),
+            f"±{row['step']:.1%}",
+            number(row["value_down"]),
+            number(row["value_up"]),
         )
         for row in math["sensitivities"]
     ]
@@ -224,7 +250,8 @@ def evaluator_section(result: dict) -> list[str]:
     lines = [title, ""]
     if "verdict" in result:
         lines += [
-            f"**{result['verdict']}**, confidence {result['confidence']} — {result['confidence_reason']}",
+            f"**Verdict: {EVALUATOR_VERDICTS[result['verdict']]}**, confidence "
+            f"{CONFIDENCE[result['confidence']]}: {result['confidence_reason']}",
             "",
             f"**Key finding.** {result['key_finding']}",
             "",
@@ -273,7 +300,7 @@ def evaluator_section(result: dict) -> list[str]:
         lines.append("")
     if result.get("claims"):
         lines += ["<details><summary>Claims</summary>", ""]
-        lines += [f"- [{c['tag']}] {c['statement']} — *{c['basis']}*" for c in result["claims"]]
+        lines += [f"- ({CLAIM_TAGS[c['tag']]}) {c['statement']} — *{c['basis']}*" for c in result["claims"]]
         lines += ["", "</details>", ""]
     return lines
 
@@ -283,7 +310,11 @@ def data_quality_section(run: AutopsyRun) -> list[str]:
     lines = [
         "## Data quality",
         "",
-        "Fetch status: " + ", ".join(f"{k} {v}" for k, v in q["fetch_status"].items()),
+        "Sources: "
+        + ", ".join(
+            f"{SOURCES.get(k, field(k))} {FETCH_STATUS.get(v, v)}" for k, v in q["fetch_status"].items()
+        )
+        + ".",
         "",
     ]
     if q["restated"]:
@@ -293,7 +324,7 @@ def data_quality_section(run: AutopsyRun) -> list[str]:
         ]
         lines += [
             table_row(
-                r["field"],
+                field(r["field"]),
                 r["period"],
                 amount(r["field"], r["original"]),
                 amount(r["field"], r["restated"]),
@@ -305,15 +336,24 @@ def data_quality_section(run: AutopsyRun) -> list[str]:
         lines.append("")
     lines += [
         "**Missing (unknown, not zero):**",
-        *bullets(f"{m['field']}: {', '.join(m['periods'])} ({m['reason']})" for m in q["missing"]),
+        *bullets(
+            f"{field(m['field'])}: {', '.join(m['periods'])} "
+            f"({MISSING_REASONS.get(m['reason'], m['reason'])})"
+            for m in q["missing"]
+        ),
         "",
     ]
     if q["partial"]:
-        lines += ["**Partial:**", *bullets(f"{p['field']}: {p['covers']}" for p in q["partial"]), ""]
+        lines += ["**Partial:**", *bullets(f"{field(p['field'])}: {p['covers']}" for p in q["partial"]), ""]
     if q["source_conflicts"]:
         lines += [
             "**Source conflicts:**",
-            *bullets(f"{c['field']}: {c['values']} (used {c['used']})" for c in q["source_conflicts"]),
+            *bullets(
+                f"{field(c['field'])}: SEC {c['values']['edgar']:,}, "
+                f"Yahoo Finance {c['values']['yfinance']:,}; "
+                "the SEC figure is used"
+                for c in q["source_conflicts"]
+            ),
             "",
         ]
     if q["period_notes"]:
@@ -323,22 +363,24 @@ def data_quality_section(run: AutopsyRun) -> list[str]:
 
 def number_check_section(run: AutopsyRun) -> list[str]:
     check = run.number_check
-    counts = ", ".join(f"{k} {v}" for k, v in sorted(check["counts"].items())) or "none"
+    counts = (
+        "; ".join(f"{v}: {NUMBER_STATUS.get(k, k)}" for k, v in sorted(check["counts"].items())) or "none"
+    )
     lines = [
         "## Number check",
         "",
-        f"{check['data_claims']} DATA claims checked against the pack: {counts}.",
+        f"{check['data_claims']} claims that quote the data were checked against it by code. {counts}.",
         "",
     ]
     if check["problems"]:
         lines += ["| Evaluator | Statement | Basis | Problem |", "|---|---|---|---|"]
         for p in check["problems"]:
-            detail = p["status"]
+            detail = NUMBER_STATUS.get(p["status"], p["status"])
             if p.get("unmatched"):
-                detail += ": not in the cited values: " + ", ".join(f"{n:,g}" for n in p["unmatched"])
+                detail += ": " + ", ".join(f"{n:,g}" for n in p["unmatched"])
             if p.get("bad_paths"):
-                detail += "; unknown paths: " + ", ".join(p["bad_paths"])
-            lines.append(table_row(p["evaluator"], p["statement"], p["basis"], detail))
+                detail += "; missing data cited: " + ", ".join(p["bad_paths"])
+            lines.append(table_row(evaluator_name(p["evaluator"]), p["statement"], p["basis"], detail))
         lines.append("")
     return lines
 
@@ -366,4 +408,5 @@ def build_report(run: AutopsyRun) -> str:
         lines += evaluator_section(result)
     lines += data_quality_section(run) + number_check_section(run) + cost_section(run)
     lines += ["---", "", DISCLAIMER, ""]
-    return "\n".join(lines)
+    pack = run.pack
+    return humanize("\n".join(lines), pack["ticker"], company_display(pack["company_name"]))

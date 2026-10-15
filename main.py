@@ -54,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     from datalayer.sec import SecClient
     from reporting.json_export import build_json
     from reporting.markdown import build_report
+    from reporting.wording import COMMITTEE_VERDICTS, CONFIDENCE, company_display
 
     parser = argparse.ArgumentParser(description="Stock Autopsy: analyze one US public company (paid).")
     parser.add_argument("ticker")
@@ -75,9 +76,20 @@ def main(argv: list[str] | None = None) -> int:
     write_json(out / "provenance.json", run.provenance)
     log_token_summary(run.calls)
     synthesis = run.synthesis
-    verdict = synthesis.get("verdict", f"no verdict ({synthesis.get('error')})")
-    print(f"\n{raw.ticker}: {verdict}, confidence {synthesis.get('confidence', '-')}")
-    print(f"Number check: {run.number_check['counts']}")
+    company = company_display(raw.company_name)
+    if synthesis.get("status") == "success":
+        print(
+            f"\n{company}: {COMMITTEE_VERDICTS[synthesis['verdict']]}. "
+            f"Confidence {CONFIDENCE[synthesis['confidence']]}."
+        )
+    else:
+        print(f"\n{company}: no conclusion ({synthesis.get('error')})")
+    counts = run.number_check["counts"]
+    to_check = sum(v for k, v in counts.items() if k in ("partial", "mismatch", "bad_path"))
+    print(
+        f"Number check: {counts.get('match', 0)} of {run.number_check['data_claims']} claims "
+        f"quoting the data match it; {to_check} need a look."
+    )
     print(f"{format_cost(run.total_cost)}; report {out / 'report.md'}; log {log_path}")
     return 0 if synthesis.get("status") == "success" else 1
 

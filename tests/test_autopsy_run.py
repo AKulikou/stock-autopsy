@@ -87,7 +87,7 @@ def test_report_states_data_date_sources_hash_and_disclaimer(fake_claude, raw_ko
     report = build_report(run)
     assert DISCLAIMER in report
     assert run.pack_hash in report and ko_pack["as_of"] in report
-    assert "SEC EDGAR company facts" in report
+    assert "SEC EDGAR financial data" in report and "Yahoo Finance" in report
     assert "Verdict: Conditional case" in report
     data = build_json(run)
     assert data["meta"]["pack_sha256"] == run.pack_hash
@@ -110,7 +110,7 @@ def test_number_check_catches_an_invented_number(fake_claude, raw_ko, ko_pack):
     run, _ = run_with(fake_claude, raw_ko, ko_pack, {ForensicResult: wrong})
     problems = run.number_check["problems"]
     assert [(p["evaluator"], p["status"]) for p in problems] == [("forensic", "mismatch")]
-    assert "mismatch" in build_report(run)
+    assert "the numbers are not in the cited data" in build_report(run)
 
 
 def test_one_failed_perspective_lowers_the_committee_confidence(fake_claude, raw_ko, ko_pack):

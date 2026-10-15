@@ -8,6 +8,17 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — report.md in plain words (display only)
+
+- **Changed:** report.md and the CLI summary show meanings instead of codes: verdict and
+  confidence words, analyst names, field names in words, pack paths as "annual figures ›
+  FY2025 › revenue", the company name instead of its ticker. A last pass
+  (`reporting/wording.py`) also rewrites codes inside the model's own text. report.json
+  and the eval keep the codes.
+- **Not changed during M5:** the prompts still let the model write codes; asking it for
+  plain words is a prompt change, queued for after the M5 baseline.
+- **Effect on the eval:** none; the judge reads the raw model text.
+
 ## 2026-10-15 — path hint for derived values (prompt change)
 
 - **Changed:** `PATH_HELP` (in the shared rules) now says where Python's values live:
