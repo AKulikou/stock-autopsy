@@ -1,0 +1,17 @@
+[
+  {
+    "id": "KO",
+    "fixture": "tests/fixtures/golden/KO",
+    "label_status": "unlabelled: labels proposed in M5 step 2, waiting for the owner's OK"
+  },
+  {
+    "id": "SNOW",
+    "fixture": "tests/fixtures/golden/SNOW",
+    "label_status": "unlabelled: labels proposed in M5 step 2, waiting for the owner's OK"
+  },
+  {
+    "id": "KHC",
+    "fixture": "tests/fixtures/golden/KHC",
+    "label_status": "unlabelled: labels proposed in M5 step 2, waiting for the owner's OK"
+  }
+]

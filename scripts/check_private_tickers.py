@@ -14,6 +14,7 @@ private file (as in CI). tests/test_private_tickers.py runs the same checks.
 """
 
 import gzip
+import json
 import re
 import subprocess
 import sys
@@ -22,6 +23,7 @@ from pathlib import Path
 PRIVATE_LIST = Path("private/companies.md")
 TEST_COMPANIES = Path("docs/test_companies.md")
 GOLDEN = Path("tests/fixtures/golden")
+EVAL_CASES = Path("eval/cases.json")
 TICKER_CELL = re.compile(r"^\|\s*([A-Z][A-Z0-9.\-]{0,9})\s*\|")
 
 
@@ -44,7 +46,12 @@ def test_company_tickers() -> set[str]:
         tickers_in_table(TEST_COMPANIES.read_text(encoding="utf-8")) if TEST_COMPANIES.exists() else set()
     )
     golden = {p.name for p in GOLDEN.iterdir() if p.is_dir()} if GOLDEN.exists() else set()
-    return listed | golden
+    eval_cases = (
+        {c["id"] for c in json.loads(EVAL_CASES.read_text(encoding="utf-8"))}
+        if EVAL_CASES.exists()
+        else set()
+    )
+    return listed | golden | eval_cases
 
 
 def pattern(ticker: str) -> re.Pattern:

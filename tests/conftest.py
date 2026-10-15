@@ -14,6 +14,7 @@ import pytest
 
 from analysis import runner as runner_module
 from core import claude_client as claude_client_module
+from eval import judge as judge_module
 from perspectives import perspective as perspective_module
 
 
@@ -78,6 +79,7 @@ def fake_claude(monkeypatch):
         fake = FakeClaude(handler, simulate_cache)
         monkeypatch.setattr(perspective_module, "get_client", lambda: fake)
         monkeypatch.setattr(runner_module, "get_client", lambda: fake)
+        monkeypatch.setattr(judge_module, "get_client", lambda: fake)
         return fake
     return install
 

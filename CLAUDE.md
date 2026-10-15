@@ -55,6 +55,9 @@ python -m datalayer.fetch KO                   # fetch SEC + price data for one 
 python -m datalayer.pack KO                    # build the DATA PACK (+ provenance) into data_cache/ (free, no LLM)
 python -m scripts.freeze_golden 2026-10-15 KO SNOW KHC  # refreeze golden fixtures from data_cache/; review the diff
 python main.py KO                              # full run: 6 Claude calls, results/<ticker>_<date>_<time>/ (paid)
+python -m eval.run_eval --cases KHC --reps 1   # eval on frozen golden packs (paid, ~0.6 USD per attempt)
+python -m eval.run_eval --reps 2 --batch       # all cases through Message Batches (half price, slower)
+python -m eval.run_eval --variant baseline --summary-only  # recompute a summary, free
 python -m examples.minimal_run                 # smallest real run, a few cents (paid)
 ```
 
@@ -91,6 +94,9 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `reporting/number_check.py` — every number in a DATA claim must match the pack value at its basis (precision-aware)
 - `reporting/markdown.py`, `reporting/json_export.py` — `report.md` (committee first, Python valuation math, evaluator appendix, data quality, number check, cost) and `report.json`
 - `main.py` — CLI for a full run; writes the report, the exact pack and its provenance
+- `eval/run_eval.py` — the behaviour eval on `eval/cases.json` (golden fixtures only; a private ticker is refused): runs, grades, writes `.claude/hillclimb/stock/<variant>/` (git-ignored), resumes interrupted runs, `--batch`
+- `eval/grading.py` — pure grading: verdict against labels, ERROR_COST (Startup Autopsy's matrix mapped to these verdicts), forbidden Forensic verdicts, invented numbers (in no pack value at all), baselines, stability
+- `eval/judge.py` — Haiku 5.5 at effort low checks must_find / must_not on the committee and Forensic text; code rejects evidence that is not a verbatim quote
 - `config.py` — API key check, model, prices (including cache multipliers and Haiku 5.5's long-prompt rate), request settings from `.env`
 - `core/claude_client.py` — one shared Anthropic client; logs rate-limit headers at DEBUG; `use_batches()` for the eval
 - `core/batch_client.py` — `BatchingClient`: answers `messages.parse()` through Message Batches (half price, minutes of latency)
@@ -184,7 +190,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
-| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict | next: needs the owner's labels and budget |
+| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during M5) | step 1 done: harness offline; step 2 next: labels proposed, waiting for the owner's OK before any paid run |
 
 Decisions:
 
