@@ -1,0 +1,871 @@
+{
+ "annual_report_timing": [
+  {
+   "days_after_period_end": 55,
+   "filed": "2017-02-24",
+   "period_end": "2016-12-31"
+  },
+  {
+   "days_after_period_end": 54,
+   "filed": "2018-02-23",
+   "period_end": "2017-12-31"
+  },
+  {
+   "days_after_period_end": 52,
+   "filed": "2019-02-21",
+   "period_end": "2018-12-31"
+  },
+  {
+   "days_after_period_end": 55,
+   "filed": "2020-02-24",
+   "period_end": "2019-12-31"
+  },
+  {
+   "days_after_period_end": 56,
+   "filed": "2021-02-25",
+   "period_end": "2020-12-31"
+  },
+  {
+   "days_after_period_end": 53,
+   "filed": "2022-02-22",
+   "period_end": "2021-12-31"
+  },
+  {
+   "days_after_period_end": 52,
+   "filed": "2023-02-21",
+   "period_end": "2022-12-31"
+  },
+  {
+   "days_after_period_end": 51,
+   "filed": "2024-02-20",
+   "period_end": "2023-12-31"
+  },
+  {
+   "days_after_period_end": 51,
+   "filed": "2025-02-20",
+   "period_end": "2024-12-31"
+  },
+  {
+   "days_after_period_end": 51,
+   "filed": "2026-02-20",
+   "period_end": "2025-12-31"
+  }
+ ],
+ "as_of": "2026-10-15",
+ "balance_sheet_latest": {
+  "accounts_receivable": 3675000000,
+  "cash": 10574000000,
+  "period_end": "2026-04-03",
+  "short_term_investments": 509000000,
+  "total_assets": 104217000000,
+  "total_debt": 43808000000,
+  "total_equity": 33633000000
+ },
+ "cik": 21344,
+ "company_name": "COCA COLA CO",
+ "data_quality": {
+  "fetch_status": {
+   "edgar_companyfacts": "ok",
+   "edgar_submissions": "ok",
+   "form4": "not_fetched",
+   "transcript": "absent",
+   "yfinance": "ok"
+  },
+  "missing": [
+   {
+    "field": "insider_transactions_12m",
+    "periods": [
+     "all"
+    ],
+    "reason": "not_fetched"
+   },
+   {
+    "field": "peers",
+    "periods": [
+     "all"
+    ],
+    "reason": "not_fetched"
+   },
+   {
+    "field": "peer_multiples",
+    "periods": [
+     "all"
+    ],
+    "reason": "not_fetched"
+   },
+   {
+    "field": "news_items",
+    "periods": [
+     "all"
+    ],
+    "reason": "not_fetched"
+   },
+   {
+    "field": "earnings_transcript",
+    "periods": [
+     "all"
+    ],
+    "reason": "not_fetched"
+   }
+  ],
+  "partial": [
+   {
+    "covers": "periods up to 2026-04-03 only",
+    "field": "ttm"
+   },
+   {
+    "covers": "periods up to 2026-04-03 only",
+    "field": "balance_sheet_latest"
+   }
+  ],
+  "period_notes": [
+   "2 smaller differences (under 0.5%) between filings for the same period (rounding, minor reclassifications) are not listed in restated",
+   "The 10-Q for the period ending 2026-07-03 (filed 2026-07-29) is not yet in SEC company facts: TTM, quarters and the latest balance sheet end 2026-04-03"
+  ],
+  "restated": [
+   {
+    "concept_change": "SalesRevenueGoodsNet -> Revenues",
+    "field": "revenue",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 35410000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 36212000000
+   },
+   {
+    "field": "gross_profit",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 22154000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 22491000000
+   },
+   {
+    "field": "operating_income",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 7501000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 7755000000
+   },
+   {
+    "field": "operating_cash_flow",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 6995000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 7041000000
+   },
+   {
+    "field": "capex",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 1675000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 1750000000
+   },
+   {
+    "field": "interest_expense",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 841000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 853000000
+   },
+   {
+    "field": "cash",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 6006000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 6102000000
+   },
+   {
+    "field": "accounts_receivable",
+    "filed": "2019-09-20",
+    "form": "8-K",
+    "original": 3667000000,
+    "original_filed": "2018-02-23",
+    "period": "FY2017",
+    "restated": 3966000000
+   },
+   {
+    "field": "revenue",
+    "filed": "2021-02-25",
+    "form": "10-K",
+    "original": 31856000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 34300000000
+   },
+   {
+    "field": "gross_profit",
+    "filed": "2021-02-25",
+    "form": "10-K",
+    "original": 20086000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 21233000000
+   },
+   {
+    "field": "operating_income",
+    "filed": "2021-02-25",
+    "form": "10-K",
+    "original": 8700000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 9152000000
+   },
+   {
+    "field": "operating_cash_flow",
+    "filed": "2021-02-25",
+    "form": "10-K",
+    "original": 7320000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 7627000000
+   },
+   {
+    "field": "capex",
+    "filed": "2021-02-25",
+    "form": "10-K",
+    "original": 1347000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 1548000000
+   },
+   {
+    "field": "interest_expense",
+    "filed": "2021-02-25",
+    "form": "10-K",
+    "original": 919000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 950000000
+   },
+   {
+    "field": "cash",
+    "filed": "2021-02-25",
+    "form": "10-K",
+    "original": 8926000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 9077000000
+   },
+   {
+    "field": "accounts_receivable",
+    "filed": "2020-02-24",
+    "form": "10-K",
+    "original": 3396000000,
+    "original_filed": "2019-02-21",
+    "period": "FY2018",
+    "restated": 3685000000
+   }
+  ],
+  "source_conflicts": []
+ },
+ "derived": {
+  "annual": [
+   {
+    "cash_conversion": 1.347,
+    "fcf_margin": 0.156,
+    "fiscal_year": 2016,
+    "free_cash_flow": 6530000000,
+    "gross_margin": 0.6067,
+    "net_margin": 0.1559,
+    "operating_margin": 0.2068,
+    "receivables_growth": null,
+    "revenue_growth": null,
+    "sbc_to_revenue": 0.0062,
+    "shares_diluted_change": null
+   },
+   {
+    "cash_conversion": 5.6418,
+    "fcf_margin": 0.1461,
+    "fiscal_year": 2017,
+    "free_cash_flow": 5291000000,
+    "gross_margin": 0.6211,
+    "net_margin": 0.0345,
+    "operating_margin": 0.2142,
+    "receivables_growth": 0.0285,
+    "revenue_growth": -0.135,
+    "sbc_to_revenue": 0.006,
+    "shares_diluted_change": -0.0098
+   },
+   {
+    "cash_conversion": 1.1854,
+    "fcf_margin": 0.1772,
+    "fiscal_year": 2018,
+    "free_cash_flow": 6079000000,
+    "gross_margin": 0.619,
+    "net_margin": 0.1876,
+    "operating_margin": 0.2668,
+    "receivables_growth": -0.0709,
+    "revenue_growth": -0.0528,
+    "sbc_to_revenue": 0.0066,
+    "shares_diluted_change": -0.0058
+   },
+   {
+    "cash_conversion": 1.1739,
+    "fcf_margin": 0.2259,
+    "fiscal_year": 2019,
+    "free_cash_flow": 8417000000,
+    "gross_margin": 0.6077,
+    "net_margin": 0.2394,
+    "operating_margin": 0.2706,
+    "receivables_growth": 0.0776,
+    "revenue_growth": 0.0865,
+    "sbc_to_revenue": 0.0054,
+    "shares_diluted_change": 0.0035
+   },
+   {
+    "cash_conversion": 1.2707,
+    "fcf_margin": 0.2625,
+    "fiscal_year": 2020,
+    "free_cash_flow": 8667000000,
+    "gross_margin": 0.5931,
+    "net_margin": 0.2347,
+    "operating_margin": 0.2725,
+    "receivables_growth": -0.2083,
+    "revenue_growth": -0.1141,
+    "sbc_to_revenue": 0.0038,
+    "shares_diluted_change": 0.0021
+   },
+   {
+    "cash_conversion": 1.2921,
+    "fcf_margin": 0.2912,
+    "fiscal_year": 2021,
+    "free_cash_flow": 11258000000,
+    "gross_margin": 0.6027,
+    "net_margin": 0.2528,
+    "operating_margin": 0.2667,
+    "receivables_growth": 0.117,
+    "revenue_growth": 0.1709,
+    "sbc_to_revenue": 0.0087,
+    "shares_diluted_change": 0.0039
+   },
+   {
+    "cash_conversion": 1.1547,
+    "fcf_margin": 0.2217,
+    "fiscal_year": 2022,
+    "free_cash_flow": 9534000000,
+    "gross_margin": 0.5814,
+    "net_margin": 0.2219,
+    "operating_margin": 0.2537,
+    "receivables_growth": -0.0071,
+    "revenue_growth": 0.1125,
+    "sbc_to_revenue": 0.0083,
+    "shares_diluted_change": 0.0023
+   },
+   {
+    "cash_conversion": 1.0826,
+    "fcf_margin": 0.213,
+    "fiscal_year": 2023,
+    "free_cash_flow": 9747000000,
+    "gross_margin": 0.5952,
+    "net_margin": 0.2342,
+    "operating_margin": 0.2472,
+    "receivables_growth": -0.0221,
+    "revenue_growth": 0.0639,
+    "sbc_to_revenue": 0.0056,
+    "shares_diluted_change": -0.0025
+   },
+   {
+    "cash_conversion": 0.6401,
+    "fcf_margin": 0.1007,
+    "fiscal_year": 2024,
+    "free_cash_flow": 4741000000,
+    "gross_margin": 0.6106,
+    "net_margin": 0.2259,
+    "operating_margin": 0.2123,
+    "receivables_growth": 0.0466,
+    "revenue_growth": 0.0286,
+    "sbc_to_revenue": 0.0061,
+    "shares_diluted_change": -0.0044
+   },
+   {
+    "cash_conversion": 0.5652,
+    "fcf_margin": 0.1105,
+    "fiscal_year": 2025,
+    "free_cash_flow": 5296000000,
+    "gross_margin": 0.6163,
+    "net_margin": 0.2734,
+    "operating_margin": 0.2871,
+    "receivables_growth": -0.1488,
+    "revenue_growth": 0.0187,
+    "sbc_to_revenue": 0.0058,
+    "shares_diluted_change": -0.0016
+   }
+  ],
+  "formulas": {
+   "cash_conversion": "operating_cash_flow / net_income (only when net_income > 0)",
+   "enterprise_value": "market_cap + total_debt - cash - short_term_investments (latest balance sheet)",
+   "ev_ebit": "enterprise_value / TTM operating_income",
+   "ev_ebitda": "enterprise_value / (TTM operating_income + TTM depreciation_amortization)",
+   "ev_revenue": "enterprise_value / TTM revenue",
+   "fcf_margin": "free_cash_flow / revenue",
+   "fcf_yield": "TTM free_cash_flow / market_cap",
+   "free_cash_flow": "operating_cash_flow - capex",
+   "gross_margin": "gross_profit / revenue",
+   "market_cap": "price * shares_outstanding (EDGAR cover page)",
+   "net_margin": "net_income / revenue",
+   "operating_margin": "operating_income / revenue",
+   "p_fcf": "market_cap / TTM free_cash_flow",
+   "pe": "market_cap / TTM net_income",
+   "receivables_growth": "accounts_receivable / previous fiscal year accounts_receivable - 1",
+   "revenue_cagr": "(revenue now / revenue N years earlier) ^ (1 / N) - 1",
+   "revenue_growth": "revenue / previous fiscal year revenue - 1",
+   "sbc_to_revenue": "stock_based_compensation / revenue",
+   "shares_diluted_change": "shares_diluted / previous fiscal year shares_diluted - 1"
+  },
+  "revenue_cagr_3y": 0.0369,
+  "revenue_cagr_5y": 0.0775,
+  "ttm": {
+   "cash_conversion": 1.0679,
+   "fcf_margin": 0.2549,
+   "free_cash_flow": 12562000000,
+   "gross_margin": 0.6174,
+   "net_margin": 0.278,
+   "operating_margin": 0.2934,
+   "sbc_to_revenue": 0.0055
+  },
+  "valuation": {
+   "basis": "TTM: FY2025 + Q1-Q1 of the current year - the same quarters a year earlier",
+   "enterprise_value": 427606836324,
+   "ev_ebit": 29.57,
+   "ev_ebitda": 27.57,
+   "ev_revenue": 8.68,
+   "fcf_yield": 0.0318,
+   "market_cap": 394881836324,
+   "notes": [],
+   "p_fcf": 31.43,
+   "pe": 28.82,
+   "price_date": "2026-10-14",
+   "ttm_period_end": "2026-04-03"
+  }
+ },
+ "earnings_transcript": null,
+ "filing_events": [
+  {
+   "event": "amended quarterly report",
+   "filed": "2024-05-30",
+   "form": "10-Q/A",
+   "report_date": "2024-03-29"
+  }
+ ],
+ "financials_annual": [
+  {
+   "accounts_receivable": 3856000000,
+   "capex": 2262000000,
+   "cash": 8555000000,
+   "depreciation_amortization": 1787000000,
+   "dividends_paid": 6043000000,
+   "fiscal_year": 2016,
+   "gross_profit": 25398000000,
+   "interest_expense": 733000000,
+   "net_income": 6527000000,
+   "operating_cash_flow": 8792000000,
+   "operating_income": 8657000000,
+   "period_end": "2016-12-31",
+   "period_start": "2016-01-01",
+   "revenue": 41863000000,
+   "share_repurchases": 3681000000,
+   "shares_diluted": 4367000000,
+   "short_term_investments": 9595000000,
+   "stock_based_compensation": 258000000,
+   "total_assets": 87270000000,
+   "total_debt": 45541000000,
+   "total_equity": 23062000000
+  },
+  {
+   "accounts_receivable": 3966000000,
+   "capex": 1750000000,
+   "cash": 6102000000,
+   "depreciation_amortization": 1260000000,
+   "dividends_paid": 6320000000,
+   "fiscal_year": 2017,
+   "gross_profit": 22491000000,
+   "interest_expense": 853000000,
+   "net_income": 1248000000,
+   "operating_cash_flow": 7041000000,
+   "operating_income": 7755000000,
+   "period_end": "2017-12-31",
+   "period_start": "2017-01-01",
+   "revenue": 36212000000,
+   "share_repurchases": 3682000000,
+   "shares_diluted": 4324000000,
+   "short_term_investments": 9352000000,
+   "stock_based_compensation": 219000000,
+   "total_assets": 87896000000,
+   "total_debt": 47437000000,
+   "total_equity": 17072000000
+  },
+  {
+   "accounts_receivable": 3685000000,
+   "capex": 1548000000,
+   "cash": 9077000000,
+   "depreciation_amortization": 1086000000,
+   "dividends_paid": 6644000000,
+   "fiscal_year": 2018,
+   "gross_profit": 21233000000,
+   "interest_expense": 950000000,
+   "net_income": 6434000000,
+   "operating_cash_flow": 7627000000,
+   "operating_income": 9152000000,
+   "period_end": "2018-12-31",
+   "period_start": "2018-01-01",
+   "revenue": 34300000000,
+   "share_repurchases": 1912000000,
+   "shares_diluted": 4299000000,
+   "short_term_investments": 2025000000,
+   "stock_based_compensation": 225000000,
+   "total_assets": 83216000000,
+   "total_debt": 43442000000,
+   "total_equity": 16981000000
+  },
+  {
+   "accounts_receivable": 3971000000,
+   "capex": 2054000000,
+   "cash": 6480000000,
+   "depreciation_amortization": 1365000000,
+   "dividends_paid": 6845000000,
+   "fiscal_year": 2019,
+   "gross_profit": 22647000000,
+   "interest_expense": 946000000,
+   "net_income": 8920000000,
+   "operating_cash_flow": 10471000000,
+   "operating_income": 10086000000,
+   "period_end": "2019-12-31",
+   "period_start": "2019-01-01",
+   "revenue": 37266000000,
+   "share_repurchases": 1103000000,
+   "shares_diluted": 4314000000,
+   "short_term_investments": 1467000000,
+   "stock_based_compensation": 201000000,
+   "total_assets": 86381000000,
+   "total_debt": 42763000000,
+   "total_equity": 18981000000
+  },
+  {
+   "accounts_receivable": 3144000000,
+   "capex": 1177000000,
+   "cash": 6795000000,
+   "depreciation_amortization": 1536000000,
+   "dividends_paid": 7047000000,
+   "fiscal_year": 2020,
+   "gross_profit": 19581000000,
+   "interest_expense": 1437000000,
+   "net_income": 7747000000,
+   "operating_cash_flow": 9844000000,
+   "operating_income": 8997000000,
+   "period_end": "2020-12-31",
+   "period_start": "2020-01-01",
+   "revenue": 33014000000,
+   "share_repurchases": 118000000,
+   "shares_diluted": 4323000000,
+   "short_term_investments": 1771000000,
+   "stock_based_compensation": 126000000,
+   "total_assets": 87296000000,
+   "total_debt": 42793000000,
+   "total_equity": 19299000000
+  },
+  {
+   "accounts_receivable": 3512000000,
+   "capex": 1367000000,
+   "cash": 9684000000,
+   "depreciation_amortization": 1452000000,
+   "dividends_paid": 7252000000,
+   "fiscal_year": 2021,
+   "gross_profit": 23298000000,
+   "interest_expense": 1597000000,
+   "net_income": 9771000000,
+   "operating_cash_flow": 12625000000,
+   "operating_income": 10308000000,
+   "period_end": "2021-12-31",
+   "period_start": "2021-01-01",
+   "revenue": 38655000000,
+   "share_repurchases": 111000000,
+   "shares_diluted": 4340000000,
+   "short_term_investments": 1242000000,
+   "stock_based_compensation": 337000000,
+   "total_assets": 94354000000,
+   "total_debt": 42761000000,
+   "total_equity": 22999000000
+  },
+  {
+   "accounts_receivable": 3487000000,
+   "capex": 1484000000,
+   "cash": 9519000000,
+   "depreciation_amortization": 1260000000,
+   "dividends_paid": 7616000000,
+   "fiscal_year": 2022,
+   "gross_profit": 25004000000,
+   "interest_expense": 882000000,
+   "net_income": 9542000000,
+   "operating_cash_flow": 11018000000,
+   "operating_income": 10909000000,
+   "period_end": "2022-12-31",
+   "period_start": "2022-01-01",
+   "revenue": 43004000000,
+   "share_repurchases": 1418000000,
+   "shares_diluted": 4350000000,
+   "short_term_investments": 1043000000,
+   "stock_based_compensation": 356000000,
+   "total_assets": 92763000000,
+   "total_debt": 39149000000,
+   "total_equity": 24105000000
+  },
+  {
+   "accounts_receivable": 3410000000,
+   "capex": 1852000000,
+   "cash": 9366000000,
+   "depreciation_amortization": 1128000000,
+   "dividends_paid": 7952000000,
+   "fiscal_year": 2023,
+   "gross_profit": 27234000000,
+   "interest_expense": 1527000000,
+   "net_income": 10714000000,
+   "operating_cash_flow": 11599000000,
+   "operating_income": 11311000000,
+   "period_end": "2023-12-31",
+   "period_start": "2023-01-01",
+   "revenue": 45754000000,
+   "share_repurchases": 2289000000,
+   "shares_diluted": 4339000000,
+   "short_term_investments": 2997000000,
+   "stock_based_compensation": 254000000,
+   "total_assets": 97703000000,
+   "total_debt": 42064000000,
+   "total_equity": 25941000000
+  },
+  {
+   "accounts_receivable": 3569000000,
+   "capex": 2064000000,
+   "cash": 10828000000,
+   "depreciation_amortization": 1075000000,
+   "dividends_paid": 8359000000,
+   "fiscal_year": 2024,
+   "gross_profit": 28737000000,
+   "interest_expense": 1656000000,
+   "net_income": 10631000000,
+   "operating_cash_flow": 6805000000,
+   "operating_income": 9992000000,
+   "period_end": "2024-12-31",
+   "period_start": "2024-01-01",
+   "revenue": 47061000000,
+   "share_repurchases": 1795000000,
+   "shares_diluted": 4320000000,
+   "short_term_investments": 2020000000,
+   "stock_based_compensation": 286000000,
+   "total_assets": 100549000000,
+   "total_debt": 44522000000,
+   "total_equity": 24856000000
+  },
+  {
+   "accounts_receivable": 3038000000,
+   "capex": 2112000000,
+   "cash": 10270000000,
+   "depreciation_amortization": 1050000000,
+   "dividends_paid": 8779000000,
+   "fiscal_year": 2025,
+   "gross_profit": 29544000000,
+   "interest_expense": 1654000000,
+   "net_income": 13107000000,
+   "operating_cash_flow": 7408000000,
+   "operating_income": 13762000000,
+   "period_end": "2025-12-31",
+   "period_start": "2025-01-01",
+   "revenue": 47941000000,
+   "share_repurchases": 746000000,
+   "shares_diluted": 4313000000,
+   "short_term_investments": 3602000000,
+   "stock_based_compensation": 279000000,
+   "total_assets": 104816000000,
+   "total_debt": 45492000000,
+   "total_equity": 32169000000
+  }
+ ],
+ "financials_quarterly": [
+  {
+   "capex": 422000000,
+   "computed_from_year_to_date": [
+    "operating_cash_flow",
+    "capex"
+   ],
+   "fiscal_quarter": 2,
+   "fiscal_year": 2024,
+   "gross_profit": 7551000000,
+   "net_income": 2411000000,
+   "operating_cash_flow": 3585000000,
+   "operating_income": 2632000000,
+   "period_end": "2024-06-28",
+   "period_start": "2024-03-30",
+   "revenue": 12363000000
+  },
+  {
+   "capex": 469000000,
+   "computed_from_year_to_date": [
+    "operating_cash_flow",
+    "capex"
+   ],
+   "fiscal_quarter": 3,
+   "fiscal_year": 2024,
+   "gross_profit": 7190000000,
+   "net_income": 2848000000,
+   "operating_cash_flow": -1259000000,
+   "operating_income": 2510000000,
+   "period_end": "2024-09-27",
+   "period_start": "2024-06-29",
+   "revenue": 11854000000
+  },
+  {
+   "capex": 803000000,
+   "computed_from_year_to_date": [
+    "revenue",
+    "gross_profit",
+    "operating_income",
+    "net_income",
+    "operating_cash_flow",
+    "capex"
+   ],
+   "fiscal_quarter": 4,
+   "fiscal_year": 2024,
+   "gross_profit": 6931000000,
+   "net_income": 2195000000,
+   "operating_cash_flow": 3951000000,
+   "operating_income": 2709000000,
+   "period_end": "2024-12-31",
+   "period_start": "2024-09-28",
+   "revenue": 11544000000
+  },
+  {
+   "capex": 309000000,
+   "fiscal_quarter": 1,
+   "fiscal_year": 2025,
+   "gross_profit": 6966000000,
+   "net_income": 3330000000,
+   "operating_cash_flow": -5202000000,
+   "operating_income": 3659000000,
+   "period_end": "2025-03-28",
+   "period_start": "2025-01-01",
+   "revenue": 11129000000
+  },
+  {
+   "capex": 442000000,
+   "computed_from_year_to_date": [
+    "operating_cash_flow",
+    "capex"
+   ],
+   "fiscal_quarter": 2,
+   "fiscal_year": 2025,
+   "gross_profit": 7821000000,
+   "net_income": 3810000000,
+   "operating_cash_flow": 3811000000,
+   "operating_income": 4280000000,
+   "period_end": "2025-06-27",
+   "period_start": "2025-03-29",
+   "revenue": 12535000000
+  },
+  {
+   "capex": 479000000,
+   "computed_from_year_to_date": [
+    "operating_cash_flow",
+    "capex"
+   ],
+   "fiscal_quarter": 3,
+   "fiscal_year": 2025,
+   "gross_profit": 7658000000,
+   "net_income": 3696000000,
+   "operating_cash_flow": 5043000000,
+   "operating_income": 3982000000,
+   "period_end": "2025-09-26",
+   "period_start": "2025-06-28",
+   "revenue": 12455000000
+  },
+  {
+   "capex": 882000000,
+   "computed_from_year_to_date": [
+    "revenue",
+    "gross_profit",
+    "operating_income",
+    "net_income",
+    "operating_cash_flow",
+    "capex"
+   ],
+   "fiscal_quarter": 4,
+   "fiscal_year": 2025,
+   "gross_profit": 7099000000,
+   "net_income": 2271000000,
+   "operating_cash_flow": 3756000000,
+   "operating_income": 1841000000,
+   "period_end": "2025-12-31",
+   "period_start": "2025-09-27",
+   "revenue": 11822000000
+  },
+  {
+   "capex": 266000000,
+   "fiscal_quarter": 1,
+   "fiscal_year": 2026,
+   "gross_profit": 7852000000,
+   "net_income": 3924000000,
+   "operating_cash_flow": 2021000000,
+   "operating_income": 4359000000,
+   "period_end": "2026-04-03",
+   "period_start": "2026-01-01",
+   "revenue": 12472000000
+  }
+ ],
+ "fiscal_year_end": "12-31",
+ "insider_transactions_12m": null,
+ "news_items": null,
+ "peer_multiples": null,
+ "peers": null,
+ "price": {
+  "currency": "USD",
+  "date": "2026-10-14",
+  "source": "Yahoo Finance via yfinance 1.7.0, close of the last trading day before as_of",
+  "value": 91.78
+ },
+ "schema_version": 1,
+ "shares_outstanding": {
+  "date": "2026-04-28",
+  "source": "SEC cover page (dei:EntityCommonStockSharesOutstanding), 10-Q filed 2026-04-30",
+  "value": 4302482418
+ },
+ "sic": "2080",
+ "sic_description": "Beverages",
+ "sources": {
+  "filing_history": "SEC EDGAR submissions",
+  "financial_statements": "SEC EDGAR company facts (XBRL), filings filed on or before as_of",
+  "price": "Yahoo Finance via yfinance 1.7.0, close of the last trading day before as_of"
+ },
+ "ticker": "KO",
+ "ttm": {
+  "basis": "TTM: FY2025 + Q1-Q1 of the current year - the same quarters a year earlier",
+  "capex": 2069000000,
+  "depreciation_amortization": 1047000000,
+  "dividends_paid": 10971000000,
+  "gross_profit": 30430000000,
+  "interest_expense": 1642000000,
+  "net_income": 13701000000,
+  "operating_cash_flow": 14631000000,
+  "operating_income": 14462000000,
+  "period_end": "2026-04-03",
+  "revenue": 49284000000,
+  "share_repurchases": 853000000,
+  "shares_diluted": 4314000000,
+  "stock_based_compensation": 272000000
+ },
+ "units": "Money in USD as absolute values (not thousands); share counts as numbers of shares; ratios as decimals (0.25 = 25%).",
+ "user_context": {
+  "horizon": "5y",
+  "risk_tolerance": "medium"
+ }
+}
