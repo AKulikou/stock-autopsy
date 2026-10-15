@@ -261,7 +261,7 @@ def test_cases_with_a_private_ticker_are_refused(tmp_path, monkeypatch):
 
 
 def test_the_case_file_lists_the_golden_tickers():
-    assert [c["id"] for c in run_eval.load_cases()] == ["KO", "SNOW", "KHC"]
+    assert [c["id"] for c in run_eval.load_cases()] == ["KO", "SNOW", "KHC", "CMCSA", "PLUG"]
 
 
 def test_rejudge_updates_judge_grades_without_rerunning_the_pipeline(fake_claude, ko_handler, tmp_path):

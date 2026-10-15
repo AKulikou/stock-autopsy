@@ -28,7 +28,7 @@ def codes_in(text: str, ticker: str) -> dict[str, list[str]]:
     return {name: hits for name, hits in found.items() if hits}
 
 
-@pytest.mark.parametrize("ticker", ["KO", "SNOW", "KHC"])
+@pytest.mark.parametrize("ticker", ["KO", "SNOW", "KHC", "CMCSA", "PLUG"])
 def test_the_report_holds_no_codes(fake_claude, ticker):
     raw = raw_from_fixture(FIXTURES / ticker)
     pack = build_pack(raw)[0]

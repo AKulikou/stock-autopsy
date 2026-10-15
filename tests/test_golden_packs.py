@@ -1,6 +1,7 @@
 """
 Golden tickers (decision D2): KO (boring quality), SNOW (fast-growing, loss-making),
-KHC (accounting scandal: 2019 restatement). The packs are rebuilt from trimmed
+KHC (accounting scandal: 2019 restatement); added with P2: CMCSA (cheap, steady cash
+generator) and PLUG (non-reliance, restatements, heavy losses). The packs are rebuilt from trimmed
 SEC and price inputs frozen on 2026-10-15 and must match the frozen packs exactly;
 after a deliberate change, refreeze with scripts/freeze_golden.py and review the diff.
 """
@@ -13,7 +14,7 @@ import pytest
 from datalayer.pack import build_pack
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
 
-GOLDEN = ("KO", "SNOW", "KHC")
+GOLDEN = ("KO", "SNOW", "KHC", "CMCSA", "PLUG")
 
 
 @pytest.fixture(scope="module")
