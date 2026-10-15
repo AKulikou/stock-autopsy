@@ -5,12 +5,12 @@ import re
 
 import pytest
 from conftest import response
-from sample_outputs import claims, forensic, handler_for, synthesis
+from sample_outputs import forensic, handler_for, synthesis
 
 from analysis.runner import run_autopsy
 from core.shared_context import context_block
 from datalayer.pack import build_pack
-from evaluators.schemas import ForensicResult, PreMortemResult, ValuationAssumptions
+from evaluators.schemas import Claim, ForensicResult, PreMortemResult, ValuationAssumptions
 from reporting.json_export import build_json
 from reporting.markdown import DISCLAIMER, build_report
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
@@ -153,16 +153,78 @@ def test_invalid_answer_is_retried_once(fake_claude, raw_ko, ko_pack):
     assert run.result("forensic")["status"] == "success"
 
 
-def test_data_claim_with_an_invented_path_is_rejected(fake_claude, raw_ko, ko_pack):
-    def bad_path(pack):
+def data_claims(pack: dict, bases: list[str]) -> list[Claim]:
+    """DATA claims quoting last year's revenue, with the given bases."""
+    year = pack["financials_annual"][-1]["fiscal_year"]
+    revenue = pack["financials_annual"][-1]["revenue"]
+    return [
+        Claim(statement=f"Revenue was ${revenue / 1e9:.1f} billion in FY{year}.", tag="DATA", basis=basis)
+        for basis in bases
+    ]
+
+
+def test_mostly_invented_paths_reject_the_answer_and_keep_it(fake_claude, raw_ko, ko_pack):
+    requests = []
+
+    def bad_paths(pack):
         result = forensic(pack)
-        result.claims = claims(pack)
-        result.claims[0].basis = "financials_annual.FY2031.revenue"
+        result.claims = data_claims(pack, ["financials_annual.FY2031.revenue"] * 4)
         return result
 
-    run, _ = run_with(fake_claude, raw_ko, ko_pack, {ForensicResult: bad_path})
-    assert run.result("forensic")["status"] == "error"
-    assert "not a pack path" in run.result("forensic")["error"]
+    def record(request):
+        requests.append(request)
+        return handler_for(ko_pack, {ForensicResult: bad_paths})(request)
+
+    fake_claude(record)
+    run = run_autopsy(raw_ko)
+    error = run.result("forensic")
+    assert error["status"] == "error" and "name no existing pack path" in error["error"]
+    assert error["rejected_output"]["verdict"] == "ADEQUATE"  # the paid answer is kept
+    retry = [r for r in requests if r["output_format"] is ForensicResult][1]
+    assert "previous answer was rejected" in retry["messages"][0]["content"]
+
+
+def test_one_bad_path_among_many_is_reported_not_rejected(fake_claude, raw_ko, ko_pack):
+    year = ko_pack["financials_annual"][-1]["fiscal_year"]
+    good = f"financials_annual.FY{year}.revenue"
+
+    def one_bad(pack):
+        result = forensic(pack)
+        result.claims = data_claims(pack, [good, good, good, "financials_annual.FY2031.revenue"])
+        return result
+
+    run, _ = run_with(fake_claude, raw_ko, ko_pack, {ForensicResult: one_bad})
+    assert run.result("forensic")["status"] == "success"
+    bad = [p for p in run.number_check["problems"] if p["status"] == "bad_path"]
+    assert len(bad) == 1 and bad[0]["bad_paths"] == ["financials_annual.FY2031.revenue"]
+
+
+def test_several_paths_and_notes_in_a_basis_are_understood(fake_claude, raw_ko, ko_pack):
+    year = ko_pack["financials_annual"][-1]["fiscal_year"]
+    basis = f"financials_annual.FY{year - 1}.revenue (prior year); financials_annual.FY{year}.revenue"
+
+    def multi(pack):
+        result = forensic(pack)
+        result.claims = data_claims(pack, [basis] * 3)
+        return result
+
+    run, _ = run_with(fake_claude, raw_ko, ko_pack, {ForensicResult: multi})
+    forensic_checks = [c for c in run.number_check["checked"] if c["evaluator"] == "forensic"]
+    assert {c["status"] for c in forensic_checks} == {"match"}
+
+
+def test_a_number_missing_from_the_cited_values_is_partial(fake_claude, raw_ko, ko_pack):
+    year = ko_pack["financials_annual"][-1]["fiscal_year"]
+
+    def extra_number(pack):
+        result = forensic(pack)
+        result.claims = data_claims(pack, [f"financials_annual.FY{year}.revenue"] * 3)
+        result.claims[0].statement += " It grew 9.9% from the year before."
+        return result
+
+    run, _ = run_with(fake_claude, raw_ko, ko_pack, {ForensicResult: extra_number})
+    partial = [p for p in run.number_check["problems"] if p["status"] == "partial"]
+    assert len(partial) == 1 and partial[0]["unmatched"] == [0.099]
 
 
 def test_red_flagged_needs_a_severe_forensic_flag(fake_claude, raw_ko, ko_pack):

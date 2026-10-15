@@ -29,6 +29,7 @@ MAX_ATTEMPTS = 2
 # A server-side tool loop (web search) can pause a long turn; resume it this many times.
 MAX_CONTINUATIONS = 3
 EPHEMERAL = {"type": "ephemeral"}
+RETRY_NOTE = "Your previous answer was rejected for these reasons. Answer again and fix them:"
 
 ResultT = TypeVar("ResultT", bound=BaseModel)
 
@@ -36,10 +37,12 @@ ResultT = TypeVar("ResultT", bound=BaseModel)
 class InvalidResultError(RuntimeError):
     """Raised when the model keeps returning structurally valid but unusable output."""
 
-    def __init__(self, message: str, usage: "Usage"):
+    def __init__(self, message: str, usage: "Usage", rejected_output: BaseModel | None = None):
         super().__init__(message)
-        # The rejected attempts are billed, so callers still report their tokens.
+        # The rejected attempts are billed, so callers still report their tokens,
+        # and keep the last rejected answer: a paid answer is never thrown away unseen.
         self.usage = usage
+        self.rejected_output = rejected_output
 
 
 @dataclass
@@ -81,9 +84,14 @@ def length_problems(field: str, text: str, min_chars: int, max_chars: int) -> li
 
 
 def billed_usage(error: Exception) -> dict:
-    """Token fields for an error result: rejected attempts are billed, other failures are not known."""
+    """
+    Token fields for an error result (rejected attempts are billed, other failures
+    are not known), and the last rejected answer when there is one.
+    """
     if isinstance(error, InvalidResultError):
-        return error.usage.as_dict()
+        rejected = error.rejected_output
+        extra = {"rejected_output": rejected.model_dump(mode="json")} if rejected is not None else {}
+        return {**error.usage.as_dict(), **extra}
     return {}
 
 
@@ -147,13 +155,16 @@ def request_structured(
         extra["output_config"] = {"effort": effort}
     system_param = build_system(system, cached_prefix)
     problems: list[str] = []
+    rejected = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
+        # A retry says what was wrong; sent unchanged, it tends to repeat the same mistakes.
+        prompt = user if not problems else f"{user}\n\n{RETRY_NOTE}\n" + "\n".join(f"- {p}" for p in problems)
         logger.debug(
             f"{label}: request model={model} max_tokens={max_tokens} thinking={thinking} effort={effort} "
             f"tools={[t['name'] for t in tools or []]} cached_prefix_chars={len(cached_prefix or '')} "
-            f"system_chars={len(system)} user_chars={len(user)}"
+            f"system_chars={len(system)} user_chars={len(prompt)}"
         )
-        messages = [{"role": "user", "content": user}]
+        messages = [{"role": "user", "content": prompt}]
         paused_content = []
         for continuation in range(MAX_CONTINUATIONS + 1):
             response = client.messages.parse(
@@ -175,12 +186,10 @@ def request_structured(
             if response.stop_reason != "pause_turn":
                 break
             if continuation == MAX_CONTINUATIONS:
-                raise RuntimeError(
-                    f"Server tool turn still paused after {MAX_CONTINUATIONS} continuations"
-                )
+                raise RuntimeError(f"Server tool turn still paused after {MAX_CONTINUATIONS} continuations")
             # The API resumes from the trailing server_tool_use block; no extra user message.
             paused_content += response.content
-            messages = [{"role": "user", "content": user}, {"role": "assistant", "content": paused_content}]
+            messages = [{"role": "user", "content": prompt}, {"role": "assistant", "content": paused_content}]
 
         if response.stop_reason == "max_tokens":
             raise RuntimeError(
@@ -189,7 +198,8 @@ def request_structured(
         if response.stop_reason == "refusal":
             raise RuntimeError("Model refused the request")
 
-        problems = validate(response.parsed_output)
+        rejected = response.parsed_output
+        problems = validate(rejected)
         if not problems:
             if cached_prefix is not None and not (
                 usage.cache_creation_input_tokens or usage.cache_read_input_tokens
@@ -207,4 +217,5 @@ def request_structured(
     raise InvalidResultError(
         f"{MAX_ATTEMPTS} attempts returned malformed output: {'; '.join(problems)}",
         usage,
+        rejected,
     )

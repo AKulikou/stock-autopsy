@@ -12,7 +12,7 @@ item numbers and dates are not quantities and are skipped.
 
 import re
 
-from evaluators.paths import PathError, resolve
+from evaluators.paths import resolve_basis
 
 RELATIVE_TOLERANCE = 0.01
 SCALES = {
@@ -68,20 +68,47 @@ def matches(target: float, candidates: list[float], half_unit: float) -> bool:
     return any(abs(abs(c) - goal) <= tolerance for c in candidates)
 
 
+def numbers_in(value, limit: int = 5000) -> list[float]:
+    """Every number inside a value (a scalar, or a group of the pack), up to a limit."""
+    found: list[float] = []
+    stack = [value]
+    while stack and len(found) < limit:
+        item = stack.pop()
+        if isinstance(item, bool) or item is None:
+            continue
+        if isinstance(item, int | float):
+            found.append(item)
+        elif isinstance(item, dict):
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
+    return found
+
+
 def check_claim(claim: dict, pack: dict) -> dict:
+    """
+    match: every number in the statement is one of the cited values; partial: some
+    are; mismatch: none are; no_number: nothing to check; bad_path: no cited path exists.
+    """
     outcome = {"statement": claim["statement"], "basis": claim["basis"]}
-    try:
-        value = resolve(pack, claim["basis"])
-    except PathError as e:
-        return {**outcome, "status": "bad_path", "detail": str(e)}
+    values, bad = resolve_basis(pack, claim["basis"])
+    if bad:
+        outcome["bad_paths"] = bad
+    if not values:
+        return {**outcome, "status": "bad_path"}
+    cited = numbers_in(values)
     found = quantities(claim["statement"])
     if not found:
-        return {**outcome, "status": "no_number", "value": value}
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        return {**outcome, "status": "not_numeric", "value": value}
-    if any(matches(value, candidates, half_unit) for candidates, half_unit in found):
-        return {**outcome, "status": "match", "value": value}
-    return {**outcome, "status": "mismatch", "value": value}
+        return {**outcome, "status": "no_number"}
+    unmatched = [
+        candidates[0]
+        for candidates, half_unit in found
+        if not any(matches(value, candidates, half_unit) for value in cited)
+    ]
+    if not unmatched:
+        return {**outcome, "status": "match"}
+    status = "mismatch" if len(unmatched) == len(found) else "partial"
+    return {**outcome, "status": status, "unmatched": unmatched}
 
 
 def check_results(results: list[dict], pack: dict) -> dict:
@@ -96,5 +123,5 @@ def check_results(results: list[dict], pack: dict) -> dict:
     counts: dict[str, int] = {}
     for item in checked:
         counts[item["status"]] = counts.get(item["status"], 0) + 1
-    problems = [item for item in checked if item["status"] in ("mismatch", "bad_path")]
+    problems = [item for item in checked if item["status"] in ("mismatch", "partial", "bad_path")]
     return {"data_claims": len(checked), "counts": counts, "problems": problems, "checked": checked}

@@ -4,12 +4,13 @@ problems; request_structured retries once with any problem, then reports the
 call as failed instead of letting the answer reach a report.
 
 The claim check is the first line against invented numbers: a DATA claim must
-name a pack path that exists and holds a single value.
+name pack paths that exist. A few bad paths do not reject an answer (the number
+check reports them); many mean the evaluator ignored the rules, and it retries.
 """
 
 from collections.abc import Callable
 
-from evaluators.paths import PathError, resolve
+from evaluators.paths import resolve_basis
 from evaluators.schemas import (
     BusinessModelResult,
     Claim,
@@ -21,7 +22,10 @@ from evaluators.schemas import (
     VerdictBlock,
 )
 
-MIN_CLAIMS, MAX_CLAIMS = 3, 20
+MIN_CLAIMS, MAX_CLAIMS = 3, 40
+# Share of DATA claims with a basis that names no existing pack path, above which
+# the answer is rejected.
+MAX_BAD_BASIS_SHARE = 0.25
 
 
 def text_problems(name: str, text: str, min_chars: int, max_chars: int) -> list[str]:
@@ -50,18 +54,23 @@ def verdict_problems(result: VerdictBlock) -> list[str]:
 
 def claim_problems(claims: list[Claim], pack: dict) -> list[str]:
     problems = count_problems("claims", claims, MIN_CLAIMS, MAX_CLAIMS)
+    data_claims = 0
+    bad: list[str] = []
     for n, claim in enumerate(claims, start=1):
         problems += text_problems(f"claim {n} statement", claim.statement, 10, 600)
         if not claim.basis.strip():
             problems.append(f"claim {n} has no basis")
         elif claim.tag == "DATA":
-            try:
-                value = resolve(pack, claim.basis)
-            except PathError as e:
-                problems.append(f"claim {n} is tagged DATA but its basis is not a pack path ({e})")
-                continue
-            if isinstance(value, dict | list):
-                problems.append(f"claim {n} basis {claim.basis!r} names a group, not a single value")
+            data_claims += 1
+            _, unknown = resolve_basis(pack, claim.basis)
+            if unknown:
+                bad.append(f"claim {n} ({', '.join(unknown)})")
+    if data_claims and len(bad) / data_claims > MAX_BAD_BASIS_SHARE:
+        problems.append(
+            f"{len(bad)} of {data_claims} DATA claims name no existing pack path: {'; '.join(bad)}. "
+            "A DATA basis lists only pack paths separated by '; ', e.g. "
+            "'financials_annual.FY2025.revenue; derived.annual.FY2025.gross_margin'"
+        )
     return problems
 
 

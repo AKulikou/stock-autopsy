@@ -76,7 +76,7 @@ class AutopsyRun:
 def valuation_material(valuation_math: dict) -> str:
     return (
         "Valuation math computed by Python from your team's step-A assumptions and the pack "
-        "(cite it as DERIVED; its basis is 'valuation_math' and the field):\n"
+        "(cite its values as DATA with paths such as 'valuation_math.value_per_share.base'):\n"
         "<valuation_math>\n" + json.dumps(valuation_math, indent=1) + "\n</valuation_math>"
     )
 
@@ -151,6 +151,8 @@ def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> Autops
             "reasons": [f"valuation assumptions failed: {assumptions['error']}"],
         }
 
+    # Step B may cite the Python valuation math it received, as valuation_math.<field>.
+    with_math = {**pack, "valuation_math": valuation_math}
     tasks = [
         (
             d.BUSINESS_MODEL.name,
@@ -163,7 +165,7 @@ def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> Autops
                 d.VALUATION,
                 prefix,
                 ValuationResult,
-                v.valuation_validator(pack),
+                v.valuation_validator(with_math),
                 material=valuation_material(valuation_math),
             ),
         ),
@@ -189,7 +191,7 @@ def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> Autops
         results=results,
         valuation_math=valuation_math,
         synthesis=synthesis,
-        number_check=check_results(results, pack),
+        number_check=check_results(results, with_math),
         duration_s=time.monotonic() - started,
         calls=[*results, synthesis],
     )

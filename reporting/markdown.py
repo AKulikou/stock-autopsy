@@ -331,12 +331,14 @@ def number_check_section(run: AutopsyRun) -> list[str]:
         "",
     ]
     if check["problems"]:
-        lines += ["| Evaluator | Statement | Basis | Pack value | Problem |", "|---|---|---|---|---|"]
-        lines += [
-            f"| {p['evaluator']} | {p['statement']} | {p['basis']} | {p.get('value', p.get('detail'))} "
-            f"| {p['status']} |"
-            for p in check["problems"]
-        ]
+        lines += ["| Evaluator | Statement | Basis | Problem |", "|---|---|---|---|"]
+        for p in check["problems"]:
+            detail = p["status"]
+            if p.get("unmatched"):
+                detail += ": not in the cited values: " + ", ".join(f"{n:,g}" for n in p["unmatched"])
+            if p.get("bad_paths"):
+                detail += "; unknown paths: " + ", ".join(p["bad_paths"])
+            lines.append(table_row(p["evaluator"], p["statement"], p["basis"], detail))
         lines.append("")
     return lines
 

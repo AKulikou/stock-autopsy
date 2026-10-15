@@ -52,6 +52,37 @@ def _step(node: Any, part: str, path: str) -> Any:
     raise PathError(f"{path}: {part!r} goes past a value")
 
 
+_PATH = re.compile(r"[A-Za-z_]\w*(?:\.\w+)*")
+
+
+def basis_paths(basis: str) -> list[str]:
+    """
+    The pack paths in a DATA claim's basis. Several paths are separated by ';' or
+    ','; text after a path (a parenthetical note, 'is null', '= not_fetched') is
+    ignored. A part that does not start with a path yields nothing.
+    """
+    paths = []
+    for part in re.split(r"[;,]", basis):
+        match = _PATH.match(part.strip().strip("`").strip())
+        if match:
+            paths.append(match.group(0).rstrip("."))
+    return paths
+
+
+def resolve_basis(pack: dict, basis: str) -> tuple[list[Any], list[str]]:
+    """(values of the paths that resolve, the paths that do not)."""
+    values, bad = [], []
+    paths = basis_paths(basis)
+    for path in paths:
+        try:
+            values.append(resolve(pack, path))
+        except PathError:
+            bad.append(path)
+    if not paths:
+        bad.append(basis.strip() or "(empty)")
+    return values, bad
+
+
 def resolve(pack: dict, path: str) -> Any:
     """The value at `path`.
 

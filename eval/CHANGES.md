@@ -8,6 +8,26 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — claim contract after the first real run
+
+- **First run (KHC, Sonnet 5.5, 0.91 USD, 116,824 input / 74,978 output tokens):** every
+  evaluator rejected twice, no verdict. The analyses were substantive (the logs show
+  Forensic citing the FY2016 restatement, both 8-K 4.02 notices and the 160-day 10-K), but
+  DATA claims listed several paths in one basis ("a; b", "x (note)") and ran to 21-31
+  claims; the validator demanded one path and at most 20, the prompt never said so, and the
+  identical retry repeated the mistakes. Rejected answers were not kept.
+- **Changed:** a basis may list several paths separated by ';' (notes after a path are
+  ignored); the prompt asks for 8-15 claims and spells out the DATA basis format; up to 40
+  claims pass; an answer is rejected only when more than 25% of its DATA claims name no
+  existing path (fewer are reported by the number check as bad_path); the number check
+  matches against every value under the cited paths and reports partial matches; a retry
+  tells the model what was rejected; the last rejected answer is kept in the error
+  result (report.json).
+- **Expected:** a complete run; number-check counts become the measure of grounding.
+- **Risk to watch:** groups as a basis (data_quality.restated) let a number match any
+  value in the group: watch for matches that are coincidences.
+- **Lesson:** check a new output contract with one call before a full run.
+
 ## 2026-10-15 — first prompts: Phase 1 evaluators and the Investment Committee
 
 - **Changed:** `SHARED_RULES`, Business Model, Forensic, Valuation (step A assumptions,
