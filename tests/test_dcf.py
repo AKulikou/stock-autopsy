@@ -2,6 +2,7 @@ import pytest
 
 from evaluators.paths import PathError, resolve
 from evaluators.schemas import ScenarioAssumptions
+from reporting.number_check import quantities
 from valuation.dcf import DcfInputs, inputs_from_pack, project, reverse_dcf, run_valuation, sensitivities
 
 INPUTS = DcfInputs(revenue=100.0, shares=10.0, total_debt=20.0, cash_and_investments=5.0, price=50.0)
@@ -109,3 +110,17 @@ def test_unknown_pack_paths_raise(path):
 def test_a_year_path_does_not_pick_a_quarter_row():
     with pytest.raises(PathError):
         resolve(PACK, "financials_quarterly.FY2026.revenue")
+
+
+@pytest.mark.parametrize(
+    "statement, expected",
+    [
+        ("TTM revenue is $24.9 billion, the starting point for year 1.", [24.9e9]),
+        ("Revenue CAGR is -1.98% over 3 years and -0.97% over 5 years.", [0.0198, 0.0097]),
+        ("It filed two Item 4.02 non-reliance 8-Ks and a late 10-K.", []),
+        ("Growth in years 1-5 averages 2% over 2 quarters.", [0.02]),
+        ("The 10-K was filed 160 days after the period end.", [160.0]),
+    ],
+)
+def test_durations_ordinals_and_form_names_are_not_quantities(statement, expected):
+    assert [round(candidates[0], 6) for candidates, _ in quantities(statement)] == expected

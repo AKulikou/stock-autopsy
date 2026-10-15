@@ -8,6 +8,26 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — second real run (KHC) and number-check parser fix
+
+- **Run:** `results/KHC_2026-10-15_141321` (git-ignored). Sonnet 5.5, default effort, all six
+  calls succeeded on the first attempt; 87,606 input / 43,726 output tokens, 0.61 USD,
+  175 s. Committee: WEAK_CASE, confidence LOW (stronger side: bear). Forensic: WEAK,
+  red flag score 6/10, flags of severity 4 for the 2017-2019 non-reliance / late-filing
+  history and for repeated multi-billion operating losses; not RED_FLAG.
+- **Number check:** 48 DATA claims, 40 match, 5 no number, 3 problems; all 3 cite a wrong
+  path (`ttm.free_cash_flow` for `derived.ttm.free_cash_flow`, `valuation.*` for
+  `derived.valuation.*`) while the numbers themselves are in the pack. No invented number.
+  Before the parser fix it reported 37 matches: "year 1", "over 3 years" and "8-Ks" were
+  read as quantities; now they are skipped (tests added).
+- **Prompt caching does not carry across evaluators:** each output schema
+  (`output_config.format`) invalidates the cache (structured outputs docs, checked
+  2026-10-15), so three of four parallel calls wrote their own 11k-token entry (13% of input
+  read from cache). One shared schema for all evaluators would save about 0.08 USD a run
+  (13%); output tokens are 70% of the cost. Not changed: later-list.
+- **Cost per run:** about 0.6 USD for KHC at the default effort (output ~5-11k tokens per
+  evaluator, thinking included). The pre-run estimate of 0.30-0.55 was low.
+
 ## 2026-10-15 — claim contract after the first real run
 
 - **First run (KHC, Sonnet 5.5, 0.91 USD, 116,824 input / 74,978 output tokens):** every

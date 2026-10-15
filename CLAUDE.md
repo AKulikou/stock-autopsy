@@ -153,6 +153,10 @@ Checked against the SEC documentation on 2026-10-15; check again before relying 
   effort or thinking setting between calls break the shared cache.
 - Calls sent at the same moment all miss the cache; `run_parallel` runs the first
   call alone (warm-up), then the rest. Valuation step A is that first call.
+- A different structured-output schema (`output_config.format`) also invalidates the
+  cache (structured outputs docs, checked 2026-10-15). Each evaluator has its own schema,
+  so today each writes its own cache entry; only reruns of the same evaluator within
+  5 minutes read it. A shared schema would fix it (later-list, about 13% of a run).
 - A prefix below the model's minimum is silently not cached (512 tokens for
   Sonnet 5.5); `structured_call` warns when caching was asked and nothing was cached.
 - `usage.input_tokens` excludes cached tokens. Total input =
@@ -176,8 +180,8 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M1 | Data layer for one ticker: EDGAR + yfinance, live fetch plus daily cache; no LLM calls | done |
 | M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
-| M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | next |
-| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict | |
+| M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
+| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict | next: needs the owner's labels and budget |
 
 Decisions:
 
@@ -186,7 +190,7 @@ Decisions:
 | D1 | Default model | `claude-sonnet-5-5` (2026-10-15) |
 | D2 | Golden tickers | KO (boring quality), SNOW (fast-growing, loss-making), KHC (2019 restatement) (2026-10-15) |
 | D3 | Evaluator VERDICT block | Structured-output schema fields; confidence as LOW / MEDIUM / HIGH with a one-sentence reason instead of 0-100 (2026-10-15) |
-| D4 | Phase 1 valuation scope | Python multiples on TTM + base DCF for bear/base/bull from step A; reverse DCF by Python where FCF is positive; no peer multiples; sensitivity grid in Phase 2 (2026-10-15) |
+| D4 | Phase 1 valuation scope | Python multiples on TTM + base DCF for bear/base/bull from step A; reverse DCF by Python (implied revenue growth at base-case margins, with a reason when it cannot be solved); no peer multiples; sensitivity grid in Phase 2 (2026-10-15) |
 
 DATA PACK extensions over the source-of-truth schema (Phase 1 evaluators need them):
 `shares_outstanding`, `ttm`, `balance_sheet_latest`, `derived` (Python math with formulas),
@@ -198,7 +202,10 @@ are not fetched in Phase 1).
 
 - `THINKING=off` sends no thinking parameter. On Sonnet 5.5 (the default), Opus 5.5
   and Haiku 5.5 the model still thinks adaptively; `ANALYSIS_EFFORT` is the real
-  control there. Output tokens at the default effort (`high`) are not measured yet.
+  control there. At the default effort (`high`) an evaluator writes about 5-12k output
+  tokens, mostly thinking; a full run costs about 0.6 USD (KHC, 2026-10-15).
+- Evaluators sometimes cite a wrong pack path for a correct number (`ttm.free_cash_flow`
+  instead of `derived.ttm.free_cash_flow`); the number check reports these as bad_path.
 - Form 4 (insider transactions), peers, news and transcripts are not fetched in Phase 1:
   null with reason `not_fetched`, never an empty list.
 - Total debt is assembled from reported concepts (long-term incl. current, convertible,
