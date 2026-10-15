@@ -58,6 +58,7 @@ python main.py KO                              # full run: 6 Claude calls, resul
 python -m eval.run_eval --cases KHC --reps 1   # eval on frozen golden packs (paid, ~0.6 USD per attempt)
 python -m eval.run_eval --reps 2 --batch       # all cases through Message Batches (half price, slower)
 python -m eval.run_eval --variant baseline --summary-only  # recompute a summary, free
+python -m eval.run_eval --variant baseline --rejudge        # rerun only the judge on stored traces (~0.001 USD each)
 python -m examples.minimal_run                 # smallest real run, a few cents (paid)
 ```
 
@@ -195,7 +196,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
-| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during M5) | step 1 done: harness offline; step 2 next: labels proposed, waiting for the owner's OK before any paid run |
+| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during M5) | steps 1-2 done (harness, owner-approved labels); step 3: probe on Kraft Heinz 0.66 USD (all checks ran; judge false negative traced to an over-specific must_find wording), baseline 3 x 2 via batch running; spent 0.66 of 4 USD |
 
 Decisions:
 

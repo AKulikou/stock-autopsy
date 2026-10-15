@@ -242,3 +242,15 @@ def test_cases_with_a_private_ticker_are_refused(tmp_path, monkeypatch):
 
 def test_the_case_file_lists_the_golden_tickers():
     assert [c["id"] for c in run_eval.load_cases()] == ["KO", "SNOW", "KHC"]
+
+
+def test_rejudge_updates_judge_grades_without_rerunning_the_pipeline(fake_claude, ko_handler, tmp_path):
+    fake = fake_claude(ko_handler)
+    run_eval.run([LABELLED], 1, tmp_path, batch=False, concurrency=1)
+    pipeline_calls = len(fake.requests)
+    reworded = {**LABELLED, "must_find": [], "must_not": ["a thing it does not do", "another thing"]}
+    assert run_eval.rejudge(tmp_path, [reworded]) == 1
+    row = run_eval.read_jsonl(tmp_path / "results.jsonl")[0]
+    assert "flaw_found" not in row["grade"] and row["grade"]["must_not_ok"] == 1
+    assert len(row["meta"]["judge"]["checks"]) == 2
+    assert len(fake.requests) == pipeline_calls + 1  # one judge call, no pipeline call

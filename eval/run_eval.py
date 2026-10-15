@@ -318,6 +318,42 @@ def run(cases: list[dict], reps: int, out: Path, batch: bool, concurrency: int) 
     print(f"wall time {time.monotonic() - started:.0f}s")
 
 
+def rejudge(out: Path, cases: list[dict]) -> int:
+    """
+    Run the judge again on the stored traces with the current case statements, and
+    update flaw_found / must_not_ok and the judge part of each row. No pipeline call:
+    a statement reworded after a run is checked again for a fraction of a cent.
+    Returns the number of rows rejudged.
+    """
+    by_id = {c["id"]: c for c in cases}
+    rows = read_jsonl(out / "results.jsonl")
+    updated = 0
+    for row in rows:
+        case = by_id.get(row["case_id"])
+        trace_path = out / "traces" / f"{row['case_id']}_rep{row['rep']}.json"
+        if case is None or not trace_path.exists():
+            continue
+        trace = json.loads(trace_path.read_text(encoding="utf-8"))
+        forensic = next((r for r in trace["results"] if r["key"] == "forensic"), None)
+        judged = judge_report(case, trace["synthesis"], forensic)
+        for metric in ("flaw_found", "must_not_ok"):
+            row["grade"].pop(metric, None)
+            if metric in judged:
+                row["grade"][metric] = judged[metric]
+        row["meta"]["judge"] = {k: judged[k] for k in ("status", "checks", "error") if k in judged}
+        row["meta"]["judge_cost_usd"] = round(
+            row["meta"].get("judge_cost_usd", 0.0) + judged.get("cost_usd", 0.0), 6
+        )
+        row["cost_usd"] = round(row["meta"]["run_cost_usd"] + row["meta"]["judge_cost_usd"], 4)
+        trace["judge"] = judged
+        trace_path.write_text(json.dumps(trace, ensure_ascii=False, indent=1), encoding="utf-8")
+        updated += 1
+    (out / "results.jsonl").write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8"
+    )
+    return updated
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -330,10 +366,17 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--summary-only", action="store_true", help="summarize an existing variant, run nothing"
     )
+    parser.add_argument(
+        "--rejudge",
+        action="store_true",
+        help="rerun only the judge on the stored traces (current statements)",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="  %(name)s: %(message)s")
     out = OUTPUT / args.variant
-    if not args.summary_only:
+    if args.rejudge:
+        print(f"rejudged {rejudge(out, load_cases())} attempts of {out.name}")
+    elif not args.summary_only:
         cases = load_cases(set(args.cases.split(",")) if args.cases else None)
         run(cases, args.reps, out, args.batch, args.concurrency)
     summarize(out)
