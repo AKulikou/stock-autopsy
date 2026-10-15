@@ -1,0 +1,40 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Logs and run outputs
+logs/
+*.log
+results/
+
+# Cached data (re-fetched or rebuilt; golden fixtures live in tests/fixtures/)
+data_cache/
+
+# Environment variables
+*.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Eval outputs (results, traces, reports)
+.claude/hillclimb/
