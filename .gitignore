@@ -38,3 +38,6 @@ Thumbs.db
 
 # Eval outputs (results, traces, reports)
 .claude/hillclimb/
+
+# Crash dumps from Git Bash tools
+*.stackdump
