@@ -93,11 +93,14 @@ class SecClient:
             self._next_allowed = now + MIN_INTERVAL_S
 
     def get_json(self, url: str) -> Any:
+        return json.loads(self.get_bytes(url))
+
+    def get_bytes(self, url: str) -> bytes:
+        """A throttled GET, retried once on a transient error."""
         for attempt in (1, 2):
             self._throttle()
             try:
-                body = self._http_get(url, self._headers)
-                return json.loads(body)
+                return self._http_get(url, self._headers)
             except HttpError as e:
                 if e.status == 403:
                     raise SecAccessError(

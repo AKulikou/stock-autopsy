@@ -15,11 +15,13 @@ import json
 import logging
 import os
 import sys
+from dataclasses import replace
 from datetime import date
 
 from core.shared_context import canonical_json, sha256_of
 from datalayer import derived
 from datalayer.cache import DailyCache
+from datalayer.extensions import EXTENSION_MATCHERS, EXTENSION_TAXONOMY, matching_concepts
 from datalayer.fetch import OK, RawCompanyData, fetch_company
 from datalayer.filings import annual_report_timing, coverage_start, filing_events, filing_rows
 from datalayer.financials import Financials, Split
@@ -75,6 +77,79 @@ def compare_sources(field_name: str, edgar, yahoo, quality: DataQuality, dates: 
         )
 
 
+def use_extensions(raw: RawCompanyData, facts: dict, quality: DataQuality) -> dict[str, tuple[str, ...]]:
+    """
+    Add the company extension concept chosen for each line item to `facts` (keyed
+    'ext:<concept>') and return them per line item. Two candidates for one line
+    item are ambiguous: neither is used, and a note says so.
+    """
+    if "edgar_extensions" in raw.fetch_status:
+        quality.fetch_status["edgar_extensions"] = raw.fetch_status["edgar_extensions"]
+    if not raw.extension_facts:
+        return {}
+    chosen: dict[str, tuple[str, ...]] = {}
+    for key in EXTENSION_MATCHERS:
+        groups = matching_concepts(raw.extension_facts, key)
+        if len(groups) > 1:
+            names = ", ".join(group[0] for group in groups)
+            quality.note(f"{key}: several company-specific concepts could hold it ({names}); none used")
+            continue
+        if not groups:
+            continue
+        loaded, _ = load_facts(raw.extension_facts, raw.as_of, set(groups[0]), taxonomy=EXTENSION_TAXONOMY)
+        for name, items in loaded.items():
+            facts[f"ext:{name}"] = [replace(f, concept=f"ext:{name}") for f in items]
+        chosen[key] = tuple(f"ext:{name}" for name in groups[0])
+    return chosen
+
+
+def note_extension_periods(fin: Financials, quality: DataQuality) -> None:
+    """Say which values came from a company extension concept: its definition can differ."""
+    used: dict[tuple[str, str], list[str]] = {}
+    spelling: dict[tuple[str, str], str] = {}  # one note per concept, whatever its spelling
+    for key, source in fin.provenance.items():
+        concept = source.get("concept", "")
+        if concept.startswith("ext:"):
+            period, field_name = key.split(".", 1)
+            used.setdefault((field_name, concept.lower()), []).append(
+                "the latest balance sheet" if period == "balance" else period
+            )
+            spelling[(field_name, concept.lower())] = concept
+    for (field_name, lowered), periods in used.items():
+        concept = spelling[(field_name, lowered)]
+        quality.note(
+            f"{field_name} for {', '.join(periods)} comes from the company's own XBRL concept "
+            f"{concept.removeprefix('ext:')}, not a us-gaap concept: its definition can differ from the "
+            "us-gaap concept of other periods (it may include more, such as contract assets); do not trend "
+            "the line item across the switch"
+        )
+
+
+# Growth metrics and the line item each compares year over year.
+GROWTH_OF = {"receivables_growth": "accounts_receivable"}
+
+
+def no_growth_across_switch(metrics: list[dict], provenance: dict, quality: DataQuality) -> list[dict]:
+    """
+    A growth rate between a year read from a us-gaap concept and a year read from
+    a company extension concept compares two definitions: it is set to None and noted.
+    """
+    def source(year: int, field_name: str) -> str:
+        concept = provenance.get(f"FY{year}.{field_name}", {}).get("concept", "")
+        return "ext" if concept.startswith("ext:") else "us-gaap"
+
+    for row in metrics:
+        year = row["fiscal_year"]
+        for growth, field_name in GROWTH_OF.items():
+            if row.get(growth) is not None and source(year, field_name) != source(year - 1, field_name):
+                row[growth] = None
+                quality.note(
+                    f"{growth} FY{year}: not computed, {field_name} changes definition between FY{year - 1} "
+                    f"and FY{year} (us-gaap concept to the company's own concept or back)"
+                )
+    return metrics
+
+
 def check_freshness(rows: list[dict], facts: dict, as_of: date, quality: DataQuality) -> None:
     """
     Company facts can lag the filings: a 10-Q in the filing history whose period
@@ -88,7 +163,10 @@ def check_freshness(rows: list[dict], facts: dict, as_of: date, quality: DataQua
     if not periodic:
         return
     newest = max(periodic, key=lambda r: r["report_date"])
-    latest_fact_end = max((f.end for items in facts.values() for f in items), default=None)
+    latest_fact_end = max(
+        (f.end for concept, items in facts.items() if not concept.startswith("ext:") for f in items),
+        default=None,
+    )
     if latest_fact_end is None or date.fromisoformat(newest["report_date"]) <= latest_fact_end:
         return
     covers = f"periods up to {latest_fact_end.isoformat()} only"
@@ -152,12 +230,14 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
             f"{dropped + dropped_dei} facts with a period end or filing date after as_of were dropped"
         )
         logger.info(f"{raw.ticker}: dropped {dropped + dropped_dei} facts dated after {as_of}")
-    fin = Financials(facts, as_of, quality, splits)
+    extension_concepts = use_extensions(raw, facts, quality)
+    fin = Financials(facts, as_of, quality, splits, extension_concepts=extension_concepts)
     periods = fin.fiscal_years()
     annual = fin.annual_rows(periods)
     quarterly = fin.quarterly_rows(periods)
     ttm = fin.ttm(periods)
     balance = fin.latest_balance()
+    note_extension_periods(fin, quality)
     shares = fin.shares_outstanding(dei.get(SHARES_OUTSTANDING_CONCEPT, []))
 
     # Cross-checks against Yahoo (rule 7).
@@ -226,7 +306,7 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
         "ttm": ttm,
         "balance_sheet_latest": balance,
         "derived": {
-            "annual": derived.annual_metrics(annual),
+            "annual": no_growth_across_switch(derived.annual_metrics(annual), fin.provenance, quality),
             "ttm": derived.margins(ttm) if ttm else None,
             "revenue_cagr_3y": derived.revenue_cagr(annual, 3),
             "revenue_cagr_5y": derived.revenue_cagr(annual, 5),

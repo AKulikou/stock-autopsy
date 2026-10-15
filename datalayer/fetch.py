@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from datalayer.cache import DailyCache
+from datalayer.extensions import extension_gap, fetch_extension_facts
+from datalayer.filings import filing_rows
 from datalayer.prices import fetch_price_snapshot
 from datalayer.sec import SecClient, find_cik, format_cik, normalize_ticker
 
@@ -48,6 +50,9 @@ class RawCompanyData:
     # Older submissions files ("filings.files"), fetched when the 'recent' block
     # does not reach back HISTORY_YEARS; each has the same columns as 'recent'.
     older_submissions: list[dict] = field(default_factory=list)
+    # Company extension facts from filing XBRL instances (datalayer/extensions.py),
+    # fetched only when a us-gaap line item stops before the latest annual report.
+    extension_facts: dict | None = None
     fetch_status: dict[str, str] = field(default_factory=dict)
     fetch_errors: dict[str, str] = field(default_factory=dict)
     from_cache: dict[str, bool] = field(default_factory=dict)
@@ -108,6 +113,21 @@ def fetch_company(
                 logger.warning(f"{symbol}: older filing history {name} not fetched: {e}")
                 errors["edgar_submissions_older"] = f"{name}: {e}"
 
+    extension_facts = None
+    if submissions:
+        rows = filing_rows(submissions, older)
+        window = date(as_of.year - HISTORY_YEARS, as_of.month, min(as_of.day, 28))
+        gap = extension_gap(facts, rows, window)
+        if gap is None:
+            status["edgar_extensions"] = "not_needed"
+        else:
+            try:
+                extension_facts = fetch_extension_facts(sec, cache, symbol, cik, rows, gap, as_of)
+                status["edgar_extensions"] = OK
+            except Exception as e:
+                logger.warning(f"{symbol}: company extension facts not fetched: {e}")
+                status["edgar_extensions"], errors["edgar_extensions"] = FAILED, f"{type(e).__name__}: {e}"
+
     try:
         price, hits["yfinance"] = cache.load_or_fetch(
             symbol, "price", fetch=lambda: price_provider(symbol, as_of)
@@ -126,6 +146,7 @@ def fetch_company(
         submissions=submissions,
         price=price,
         older_submissions=older,
+        extension_facts=extension_facts,
         fetch_status=status,
         fetch_errors=errors,
         from_cache=hits,

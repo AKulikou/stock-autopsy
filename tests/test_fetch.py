@@ -47,7 +47,12 @@ def test_fetch_collects_all_sources(tmp_path):
     sec, _ = sec_with()
     raw = fetch_company("ko", AS_OF, sec, DailyCache(AS_OF, tmp_path), price_provider=lambda t, d: PRICE)
     assert (raw.ticker, raw.cik, raw.company_name) == ("KO", 21344, "COCA COLA CO")
-    assert raw.fetch_status == {"edgar_companyfacts": OK, "edgar_submissions": OK, "yfinance": OK}
+    assert raw.fetch_status == {
+        "edgar_companyfacts": OK,
+        "edgar_submissions": OK,
+        "edgar_extensions": "not_needed",
+        "yfinance": OK,
+    }
     assert raw.price == PRICE and raw.submissions == SUBMISSIONS
 
 

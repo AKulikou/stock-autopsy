@@ -72,6 +72,7 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `datalayer/fetch.py` — `fetch_company()`: all sources through the cache, `fetch_status` per source (company facts required; filings and price may fail and are recorded); CLI
 - `datalayer/http.py` — stdlib GET with gzip; the getter is a parameter so tests never reach the network
 - `datalayer/xbrl.py` — `Fact`, statement forms (proxy statements ignored), period lengths, value preference, materiality of a change
+- `datalayer/extensions.py` — company extension concepts from filing XBRL instances (company facts lack them): when to fetch, which filings, parsing, a strict receivables matcher (case variants are one concept; two candidates = ambiguous, none used)
 - `datalayer/line_items.py` — pack line items and the us-gaap concepts each is read from; debt alternatives
 - `datalayer/financials.py` — `Financials`: annual rows (10 fiscal years), discrete quarters, TTM, latest balance sheet, restatements, split adjustment, total debt
 - `datalayer/filings.py` — filing events (amended reports, late notices, 8-K 4.01/4.02) and annual report timing
@@ -209,8 +210,10 @@ are not fetched in Phase 1).
   instead of `derived.ttm.free_cash_flow`); the number check reports these as bad_path.
 - Form 4 (insider transactions), peers, news and transcripts are not fetched in Phase 1:
   null with reason `not_fetched`, never an empty list.
-- Only standard `us-gaap` concepts are read. A company that reports a line item under its
-  own extension concept (seen for receivables and interest expense) gets it as unknown
-  with `not_reported` or `tag_not_found`, never as zero; extensions are not mapped yet.
+- SEC company facts hold standard taxonomies only. Company extension concepts are read
+  from filing XBRL instances for receivables only (`datalayer/extensions.py`), and only
+  when us-gaap receivables stop before the latest annual report. Any other line item a
+  company reports under its own concept (interest expense, for example) stays unknown
+  (`not_reported` / `tag_not_found`), never zero.
 - Total debt is assembled from reported concepts (long-term incl. current, convertible,
   short-term borrowings); shapes not in `line_items.py` show up as `partial` or missing.

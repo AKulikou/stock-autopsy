@@ -34,6 +34,7 @@ def filing_rows(submissions: dict, older: list[dict]) -> list[dict]:
                     "filed": block["filingDate"][i],
                     "report_date": (block.get("reportDate") or [""] * len(forms))[i] or None,
                     "items": (block.get("items") or [""] * len(forms))[i] or "",
+                    "accession": (block.get("accessionNumber") or [""] * len(forms))[i] or None,
                 }
             )
     return rows

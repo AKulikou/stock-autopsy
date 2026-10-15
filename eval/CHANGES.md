@@ -8,6 +8,19 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — receivables from company extension concepts (data pack change)
+
+- **Changed:** when us-gaap receivables stop before the latest annual report, the data
+  layer reads the company's own receivables concept from the filing XBRL instances;
+  values from it are noted as a possible definition change, and receivables growth
+  across the switch is None. A zero that another filing contradicts for the same period
+  is treated as a tagging error. Golden packs (KO, SNOW, KHC) are unchanged: none of
+  them needs extensions.
+- **Expected:** Forensic can compare receivables with revenue for companies that moved
+  to their own concept, without reading the switch year as a jump.
+- **Risk to watch:** a matcher that picks the wrong concept (it refuses when two
+  candidates remain); extension values that include contract assets.
+
 ## 2026-10-15 — second real run (KHC) and number-check parser fix
 
 - **Run:** `results/KHC_2026-10-15_141321` (git-ignored). Sonnet 5.5, default effort, all six

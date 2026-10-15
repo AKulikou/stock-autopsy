@@ -71,13 +71,19 @@ class Financials:
     splits: list[Split] | None  # None: split history unknown (price source failed)
     provenance: dict[str, dict] = field(default_factory=dict)
     minor_changes: int = 0
+    # Company extension concepts per line item key, used after the us-gaap concepts
+    # (datalayer/extensions.py); their facts are keyed 'ext:<concept>'.
+    extension_concepts: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     # ---- facts and values -------------------------------------------------
+
+    def concepts_of(self, item: li.LineItem) -> tuple[str, ...]:
+        return item.concepts + self.extension_concepts.get(item.key, ())
 
     def _facts(self, item: li.LineItem, match: Match, concepts: tuple[str, ...] | None = None) -> list[Fact]:
         return [
             f
-            for concept in (concepts or item.concepts)
+            for concept in (concepts or self.concepts_of(item))
             for f in self.facts.get(concept, [])
             if f.unit == item.unit and match(f)
         ]
@@ -100,10 +106,11 @@ class Financials:
         facts = self._facts(item, match)
         if not facts:
             return Picked(None)
+        facts = self._without_contradicted_zeros(item, facts, label, check_restatement)
         if not item.concept_migrates:
-            first = min(item.concepts.index(f.concept) for f in facts)
-            facts = [f for f in facts if item.concepts.index(f.concept) == first]
-        chosen = max(facts, key=lambda f: preference(f, item.concepts))
+            first = min(self.concepts_of(item).index(f.concept) for f in facts)
+            facts = [f for f in facts if self.concepts_of(item).index(f.concept) == first]
+        chosen = max(facts, key=lambda f: preference(f, self.concepts_of(item)))
         if check_restatement:
             self._check_restatement(item, label, facts, chosen)
         source = {
@@ -114,9 +121,32 @@ class Financials:
         }
         return Picked(self._value(item, chosen), source)
 
+    def _without_contradicted_zeros(
+        self, item: li.LineItem, facts: list[Fact], label: str, report: bool
+    ) -> list[Fact]:
+        """
+        A zero for a period that other filings report as non-zero is a tagging
+        artifact (a 10-K that moved receivables to the company's own concept left
+        the prior year at 0 in us-gaap), not a restatement to zero: drop it.
+        A zero that nothing contradicts is a reported zero and stays.
+        """
+        nonzero = [f for f in facts if f.value != 0]
+        if not nonzero or len(nonzero) == len(facts):
+            return facts
+        if report:
+            zero = max((f for f in facts if f.value == 0), key=lambda f: f.filed)
+            same = [f for f in nonzero if f.concept == zero.concept] or nonzero
+            other = max(same, key=lambda f: f.filed)
+            self.quality.note(
+                f"{item.key} {label}: {zero.form} filed {zero.filed} reports 0 where {other.form} filed "
+                f"{other.filed} reports {other.value:,}; the zero is treated as a tagging error and not used"
+            )
+        return nonzero
+
     def _check_restatement(self, item: li.LineItem, label: str, facts: list[Fact], chosen: Fact) -> None:
         original = min(
-            facts, key=lambda f: (f.filed, f.concept != chosen.concept, item.concepts.index(f.concept))
+            facts,
+            key=lambda f: (f.filed, f.concept != chosen.concept, self.concepts_of(item).index(f.concept)),
         )
         if original is chosen:
             return
