@@ -8,6 +8,16 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — path hint for derived values (prompt change)
+
+- **Changed:** `PATH_HELP` (in the shared rules) now says where Python's values live:
+  `derived.valuation.*` for multiples, `derived.annual` / `derived.ttm` for margins and
+  free cash flow. The number check also skips "year-1".
+- **Why:** in two real runs evaluators cited `valuation.pe` and `ttm.free_cash_flow`
+  (paths that do not exist) for correct numbers: 1-3 bad_path or partial per run.
+- **Expected:** fewer bad_path results; no effect on the analysis.
+- **Checked so far:** offline tests only.
+
 ## 2026-10-15 — receivables from company extension concepts (data pack change)
 
 - **Changed:** when us-gaap receivables stop before the latest annual report, the data

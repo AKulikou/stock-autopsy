@@ -17,7 +17,9 @@ from typing import Any
 PATH_HELP = (
     "Pack paths are dotted keys. Address rows of financials_annual and derived.annual by fiscal year "
     "(financials_annual.FY2025.revenue), quarters by fiscal year and quarter "
-    "(financials_quarterly.FY2026Q2.revenue), and other list items by position (filing_events.0.event)."
+    "(financials_quarterly.FY2026Q2.revenue), and other list items by position (filing_events.0.event). "
+    "Values Python computed are under derived: multiples in derived.valuation (derived.valuation.pe), "
+    "margins and free cash flow in derived.annual and derived.ttm (derived.ttm.free_cash_flow)."
 )
 
 _YEAR = re.compile(r"^FY(\d{4})$")
