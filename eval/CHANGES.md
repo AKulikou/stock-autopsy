@@ -32,7 +32,35 @@ was checked so far, and the eval result once there is one.
 - **Expected:** fewer output tokens (thinking) and a lower cost per run; the question is
   whether verdicts, Forensic findings and grounding hold.
 - **Risk to watch:** shallower Forensic work (missed restatement trail), more bad paths.
-- **Result:** below, once the run finishes.
+- **Ran:** all six attempts started at 18:06 (trace time minus latency), before 67404ad
+  (18:08), so they used the same prompts as the baseline: a clean comparison.
+- **Cost:** 1.03 USD for 6 attempts (0.14-0.21 each) against 1.67 (0.26-0.30): **-38%**.
+  Output tokens per attempt 18.0k on average against 39.4k. M5 total: probe 0.66 +
+  baseline 1.67 + this variant 1.03 = 3.36 of 4 USD (plus about 0.02 of judge regrades).
+
+| Ticker | Rep | Committee | Confidence | Forensic | Score | Max severity | Numbers matched | Cost |
+|--------|-----|-----------|------------|----------|-------|--------------|-----------------|------|
+| KO | 0 | WEAK_CASE | MEDIUM | WEAK | 4 | 4 | 45/46 | 0.21 |
+| KO | 1 | WEAK_CASE | MEDIUM | WEAK | 4 | 4 | 43/47 | 0.18 |
+| SNOW | 0 | WEAK_CASE | MEDIUM | WEAK | 5 | 4 | 45/49 | 0.17 |
+| SNOW | 1 | WEAK_CASE | MEDIUM | WEAK | 4 | 4 | 44/48 | 0.14 |
+| KHC | 0 | CONDITIONAL_CASE | LOW | RED_FLAG | 7 | 5 | 43/48 | 0.18 |
+| KHC | 1 | WEAK_CASE | MEDIUM | RED_FLAG | 6 | 5 | 41/46 | 0.16 |
+
+- **Verdicts:** acceptable 6/6, primary 3/6 (baseline 4/6), error cost 0.67 (0.33): KHC
+  rep0 said CONDITIONAL_CASE (acceptable, error cost 2), so the committee verdict changed
+  within KHC. Forensic was harsher: RED_FLAG on both KHC attempts (baseline WEAK at
+  severity 4), WEAK on both KO attempts (baseline ADEQUATE); KO is still not red-flagged.
+- **must_find 6/6; must_not violated once (SNOW rep1, 3/3 votes):** Forensic's
+  `innocent_explanation` says "The company had no debt then and pays no dividends", while
+  the pack has `total_debt` null with reason `not_reported` for FY2019-FY2023. "Absent is
+  not zero" broken in a free-text field, which no check reads today.
+- **Numbers:** 284 DATA claims, 261 match, 5 partial, 0 mismatch, 0 bad_path, 18 without
+  a number, 0 invented.
+- **Reading:** medium effort is much cheaper and found the restatement trail every time,
+  but produced the one grounding failure of M5 and moved KHC's committee verdict. Two reps
+  per ticker cannot separate that from noise.
+- **Decision:** pending the owner (suggested: keep the default effort).
 
 ## 2026-10-15 — eval instrument: judge by majority of 3, substance-only must_find (no system change)
 
