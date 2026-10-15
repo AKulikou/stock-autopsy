@@ -51,6 +51,7 @@ python -m venv venv && venv\Scripts\activate   # Windows
 pip install -r requirements-dev.txt            # app + pytest + ruff
 pytest                                         # unit tests, fake Claude client, no API calls, no network
 ruff check .                                   # lint (config in pyproject.toml, target Python 3.10)
+python -m datalayer.fetch KO                   # fetch SEC + price data for one ticker into data_cache/ (free, no LLM)
 python -m examples.minimal_run                 # smallest real run, a few cents (paid)
 ```
 
@@ -61,6 +62,11 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 ## Layout
 
 - `docs/stock_autopsy_prompts.md` — source of truth (see above)
+- `datalayer/sec.py` — `SecClient`: throttled SEC GETs (User-Agent check, one retry on transient errors), ticker → CIK
+- `datalayer/prices.py` — last close before `as_of`, Yahoo's share count and market cap (cross-checks only), splits; via yfinance
+- `datalayer/cache.py` — `DailyCache`: `data_cache/<as_of>/...json`, atomic writes
+- `datalayer/fetch.py` — `fetch_company()`: all sources through the cache, `fetch_status` per source (company facts required; filings and price may fail and are recorded); CLI
+- `datalayer/http.py` — stdlib GET with gzip; the getter is a parameter so tests never reach the network
 - `config.py` — API key check, model, prices (including cache multipliers and Haiku 5.5's long-prompt rate), request settings from `.env`
 - `core/claude_client.py` — one shared Anthropic client; logs rate-limit headers at DEBUG; `use_batches()` for the eval
 - `core/batch_client.py` — `BatchingClient`: answers `messages.parse()` through Message Batches (half price, minutes of latency)
@@ -146,8 +152,8 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | Milestone | Scope | Status |
 |-----------|-------|--------|
 | M0 | Repository, docs, prices, default model | done |
-| M1 | Data layer for one ticker: EDGAR + yfinance, live fetch plus daily cache; no LLM calls | next |
-| M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` | |
+| M1 | Data layer for one ticker: EDGAR + yfinance, live fetch plus daily cache; no LLM calls | done |
+| M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` | next |
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | |
 | M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict | |
