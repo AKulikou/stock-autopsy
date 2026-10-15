@@ -13,7 +13,8 @@ from collections import Counter
 from itertools import combinations
 
 from evaluators.paths import resolve_basis
-from reporting.number_check import matches, numbers_in, quantities
+from reporting.grounding import computed_from
+from reporting.number_check import found_in, numbers_in, quantities
 
 VERDICTS = ("RED_FLAGGED", "WEAK_CASE", "INSUFFICIENT_DATA", "CONDITIONAL_CASE", "STRONG_CASE")
 VERDICT_ORDER = {v: i for i, v in enumerate(VERDICTS)}
@@ -105,60 +106,63 @@ def grade_forensic(forensic: dict | None, case: dict) -> dict:
 # --- numbers -------------------------------------------------------------------------
 
 
-MAX_CITED_FOR_PAIRS = 40  # pairs of cited values tried for a number computed in the sentence
-
-
-def computed_from(values: list[float]) -> list[float]:
-    """
-    What a sentence may compute from two cited values: a difference, a ratio, a change
-    (a / b - 1), and a difference of two ratios in percentage points.
-    """
-    results = []
-    for a in values[:MAX_CITED_FOR_PAIRS]:
-        for b in values[:MAX_CITED_FOR_PAIRS]:
-            if a is b:
-                continue
-            results += [a - b, (a - b) * 100]
-            if b:
-                results += [a / b, a / b - 1]
-    return results
-
-
-def invented_numbers(number_check: dict, roots: dict) -> list[dict]:
+def not_found_anywhere(number_check: dict, roots: dict) -> list[dict]:
     """
     Numbers in DATA claims found nowhere: not in the pack or the valuation math, and
     not computed in the sentence from the values the claim cites (a change of 38%
     between two cited figures is arithmetic, wrongly tagged DATA, not an invention).
-    A correct number under a wrong path is a bad_path, not an invention.
+    A correct number under a wrong path is a bad_path, not this.
+
+    Weak evidence on its own: a wrong number is almost always "found somewhere" among
+    thousands of pack values. The headline grounding metric is wrong_exact.
     """
     everywhere = numbers_in(roots)
-    invented = []
+    missing = []
     for item in number_check.get("checked", []):
         if item["status"] not in ("mismatch", "partial", "bad_path"):
             continue
         cited_values, _ = resolve_basis(roots, item["basis"])
         derivable = computed_from(numbers_in(cited_values))
-        for candidates, half_unit in quantities(item["statement"]):
-            if any(matches(value, candidates, half_unit) for value in everywhere):
+        for quantity in quantities(item["statement"]):
+            unsigned = quantity._replace(sign=None)
+            if found_in(unsigned, everywhere) or found_in(unsigned, derivable):
                 continue
-            if any(matches(value, candidates, half_unit) for value in derivable):
-                continue
-            invented.append(
-                {"evaluator": item["evaluator"], "statement": item["statement"], "number": candidates[0]}
-            )
-    return invented
+            missing.append({
+                "evaluator": item["evaluator"],
+                "statement": item["statement"],
+                "number": quantity.candidates[0],
+            })
+    return missing
 
 
-def number_summary(number_check: dict, invented: list[dict]) -> dict:
+def number_summary(number_check: dict, not_found: list[dict]) -> dict:
+    """
+    Counts for one attempt. wrong_exact (mismatch + partial on claims that cite exact
+    values, not a table) is the headline: the number check is reliable there.
+    """
     counts = number_check.get("counts", {})
+    checked = number_check.get("checked", [])
+    derived = number_check.get("derived", {})
+    derived_counts = derived.get("counts", {})
+    prose = number_check.get("prose", {})
     return {
         "data_claims": number_check.get("data_claims", 0),
         "matched": counts.get("match", 0),
+        "group_match": counts.get("group_match", 0),
         "partial": counts.get("partial", 0),
         "mismatch": counts.get("mismatch", 0),
         "bad_path": counts.get("bad_path", 0),
         "no_number": counts.get("no_number", 0),
-        "invented": len(invented),
+        "wrong_exact": sum(
+            1 for c in checked if c["status"] in ("mismatch", "partial") and not c.get("cites_group")
+        ),
+        "not_found": len(not_found),
+        "derived_claims": derived.get("claims", 0),
+        "derived_reproduced": derived_counts.get("reproduced", 0),
+        "derived_not_reproduced": derived_counts.get("not_reproduced", 0) + derived_counts.get("partial", 0),
+        "prose_numbers": prose.get("numbers", 0),
+        "prose_unsourced": len(prose.get("unsourced", [])),
+        "absent_as_zero": len(number_check.get("absent_as_zero", [])),
     }
 
 

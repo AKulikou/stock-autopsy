@@ -42,7 +42,7 @@ weak case, red-flagged.
 | Data layer | SEC company facts, filing history and 8-K items, extension concepts from filing XBRL where needed, prices via yfinance; daily cache; ten fiscal years, discrete quarters, trailing twelve months; restatements and late filings detected; every missing value carries a reason |
 | Evaluators | Business Model, Forensic (accounting warning signs, restatements), Valuation (the model proposes DCF assumptions, Python computes bear / base / bull, reverse DCF and sensitivities, the model interprets), Pre-Mortem |
 | Committee | One call that reads the evaluators, names the conflicts and decides the verdict; code lowers its confidence when too much rests on unverified claims or a perspective is missing |
-| Number check | Every number in a data claim is compared with the pack value at the path the claim cites |
+| Number check | Every number in a data claim is compared with the pack value at the path the claim cites (with its sign where the wording states one); calculated claims, numbers in prose and unknowns stated as zero are checked too |
 | Reports | `report.md` in plain words (no codes, tickers or field names), `report.json` with the codes, the exact pack and its provenance |
 | Eval | Three golden companies with owner-approved labels, a judge for "must find" / "must not say" statements (majority of three votes, verbatim evidence), constant-answer baselines, stability between reps |
 
@@ -82,9 +82,14 @@ What the eval showed (two reps per company):
   companies its verdict scores exactly like a constant answer. More golden companies,
   including one where "weak case" is wrong, are needed before the verdict metric means
   anything.
-- The number check is strong where a claim cites one exact value; a claim that cites a
-  whole table can match a wrong number by coincidence, and prose outside data claims is
-  not checked. These gaps are listed in the later list of [CLAUDE.md](CLAUDE.md).
+- Grounding is checked by code, not trusted: a mutation test quotes the golden packs'
+  real values with deliberate errors (+10%, x10, a flipped "loss"/"profit") and requires
+  the number check to catch at least 90% of them. Calculated claims are reproduced from
+  the formula they cite, numbers in prose without a source are listed, and a sentence
+  that turns an unknown value into zero ("no debt" where the filings report none) is
+  flagged. In the M5 runs: 8 and 5 wrong numbers (all partial) in about 270 data claims
+  per variant, one calculation off by about 5%, and the one "no debt" sentence the judge
+  also found.
 - The valuation side tends to call mature and growth companies expensive: with the
   model's discount rates, the price sits above even the bull DCF for Coca-Cola and
   Snowflake. That is a hypothesis to test, not a finding.

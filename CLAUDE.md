@@ -59,6 +59,7 @@ python -m eval.run_eval --cases KHC --reps 1   # eval on frozen golden packs (pa
 python -m eval.run_eval --reps 2 --batch       # all cases through Message Batches (half price, slower)
 python -m eval.run_eval --variant baseline --summary-only  # recompute a summary, free
 python -m eval.run_eval --variant baseline --rejudge        # rerun only the judge on stored traces (~0.001 USD each)
+python -m eval.run_eval --variant baseline --regrade        # recompute the grounding grades on stored traces, free
 python -m examples.minimal_run                 # smallest real run, a few cents (paid)
 ```
 
@@ -92,12 +93,13 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `valuation/dcf.py` — DCF for bear/base/bull, reverse DCF (implied growth), one-at-a-time sensitivities; a missing input stops it with a reason
 - `synthesis/committee.py` — Investment Committee schema, principles, validator; code lowers confidence for a high UNVERIFIED share or a missing perspective
 - `analysis/runner.py` — `run_autopsy()`: pack → valuation step A (warms the cache) → DCF → the other evaluators and step B in parallel → committee → number check
-- `reporting/number_check.py` — every number in a DATA claim must match the pack value at its basis (precision-aware)
+- `reporting/number_check.py` — every number in a DATA claim must match the pack value at its basis (precision-aware, sign-aware where the wording states a direction; a match only inside a cited table is the weaker `group_match`)
+- `reporting/grounding.py` — `check_run()`: the DATA check plus calculated (DERIVED) claims reproduced from their basis formula, numbers in prose without a source, unknowns stated as zero; `tests/test_grounding.py` holds the mutation test with thresholds
 - `reporting/markdown.py`, `reporting/json_export.py` — `report.md` (committee first, Python valuation math, evaluator appendix, data quality, number check, cost) and `report.json`
 - `reporting/wording.py` — plain words for report.md: verdicts, confidence, analysts, fields, pack paths, company name for the ticker; `humanize()` is the last pass over the whole report, model text included
 - `main.py` — CLI for a full run; writes the report, the exact pack and its provenance
 - `eval/run_eval.py` — the behaviour eval on `eval/cases.json` (golden fixtures only; a private ticker is refused): runs, grades, writes `.claude/hillclimb/stock/<variant>/` (git-ignored), resumes interrupted runs, `--batch`
-- `eval/grading.py` — pure grading: verdict against labels, ERROR_COST (Startup Autopsy's matrix mapped to these verdicts), forbidden Forensic verdicts, invented numbers (in no pack value at all), baselines, stability
+- `eval/grading.py` — pure grading: verdict against labels, ERROR_COST (Startup Autopsy's matrix mapped to these verdicts), forbidden Forensic verdicts, grounding counts (headline: wrong numbers on exact paths; numbers found nowhere is weak evidence), baselines, stability
 - `eval/judge.py` — Haiku 5.5 at effort low checks must_find / must_not on the committee and Forensic text; code rejects evidence that is not a verbatim quote
 - `config.py` — API key check, model, prices (including cache multipliers and Haiku 5.5's long-prompt rate), request settings from `.env`
 - `core/claude_client.py` — one shared Anthropic client; logs rate-limit headers at DEBUG; `use_batches()` for the eval

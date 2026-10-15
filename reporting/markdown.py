@@ -7,6 +7,7 @@ from the results.
 
 from analysis.runner import AutopsyRun
 from core.token_summary import format_cost
+from reporting.number_check import number_words
 from reporting.wording import (
     CLAIM_TAGS,
     COMMITTEE_VERDICTS,
@@ -377,11 +378,75 @@ def number_check_section(run: AutopsyRun) -> list[str]:
         for p in check["problems"]:
             detail = NUMBER_STATUS.get(p["status"], p["status"])
             if p.get("unmatched"):
-                detail += ": " + ", ".join(f"{n:,g}" for n in p["unmatched"])
+                detail += ": " + ", ".join(number_words(n) for n in p["unmatched"])
             if p.get("bad_paths"):
                 detail += "; missing data cited: " + ", ".join(p["bad_paths"])
             lines.append(table_row(evaluator_name(p["evaluator"]), p["statement"], p["basis"], detail))
         lines.append("")
+    return lines + grounding_lines(check)
+
+
+PROSE_ROWS_SHOWN = 15
+
+
+def unknown_words(hit: dict) -> str:
+    """'FY2019, FY2020: not reported in the filings' for each reason the value is unknown."""
+    return "; ".join(
+        f"{', '.join(u['periods'])}: {MISSING_REASONS.get(u['reason'], u['reason'])}" for u in hit["unknown"]
+    )
+
+
+def grounding_lines(check: dict) -> list[str]:
+    """Calculated claims, numbers in the text, and unknowns stated as zero (reporting/grounding.py)."""
+    lines = []
+    derived = check.get("derived")
+    if derived and derived["claims"]:
+        reproduced = derived["counts"].get("reproduced", 0)
+        lines += [
+            f"**Calculated claims:** {reproduced} of {derived['claims']} could be reproduced by code "
+            "from the data they cite.",
+            "",
+        ]
+        if derived["problems"]:
+            lines += ["| Evaluator | Statement | Not reproduced |", "|---|---|---|"]
+            for p in derived["problems"]:
+                numbers = ", ".join(number_words(n) for n in p.get("unexplained", []))
+                lines.append(table_row(evaluator_name(p["evaluator"]), p["statement"], numbers))
+            lines += ["", "Not reproduced does not mean wrong: the calculation may take several steps.", ""]
+    absent = check.get("absent_as_zero", [])
+    if absent:
+        lines += [
+            "**Unknown values stated as zero or none.** The data does not say these are zero; check them:",
+            "",
+            "| Source | Text | Unknown in the data |",
+            "|---|---|---|",
+            *(
+                table_row(
+                    evaluator_name(a["source"]),
+                    a["text"],
+                    f"{field(a['missing_field'])} ({unknown_words(a)})",
+                )
+                for a in absent
+            ),
+            "",
+        ]
+    prose = check.get("prose")
+    if prose and prose["unsourced"]:
+        shown = prose["unsourced"][:PROSE_ROWS_SHOWN]
+        lines += [
+            f"**Numbers in the text without a source:** {len(prose['unsourced'])} of {prose['numbers']} "
+            "numbers in the analysts' and the committee's text appear neither in the data, the valuation "
+            "math nor any tagged claim. Often they are the text's own arithmetic or assumptions; treat "
+            "them as unverified.",
+            "",
+            "| Source | Number | Text |",
+            "|---|---|---|",
+            *(table_row(evaluator_name(u["source"]), u.get("shown") or number_words(u["number"]), u["text"])
+              for u in shown),
+            "",
+        ]
+        if len(prose["unsourced"]) > len(shown):
+            lines += [f"{len(prose['unsourced']) - len(shown)} more are listed in report.json.", ""]
     return lines
 
 

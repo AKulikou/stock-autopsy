@@ -8,6 +8,50 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — grounding checks (grading and reporting only; measured on stored traces, free)
+
+- **Why:** a mutation test (real annual values of the golden packs quoted with deliberate
+  errors, now `tests/test_grounding.py`) showed that the number check is strong on exact
+  paths but lets a wrong number through when the basis names a whole table, ignores a
+  flipped sign, and that "0 invented numbers" is weak evidence (a wrong number is almost
+  always found somewhere in the pack). DERIVED claims, prose and free-text fields were not
+  checked at all; the SNOW "no debt" sentence of the effort variant went unnoticed by code.
+- **Changed (no prompt, schema or model change; model answers are the same):**
+  - Signs count where the wording states a direction ("a loss of", "fell 5%", a minus sign).
+  - A number that matches only inside a cited table or block is `group_match`, not `match`.
+  - DERIVED claims: each number must follow from the values the basis cites, by the
+    formula written in the basis (pure arithmetic, parsed with `ast`) or one step of
+    arithmetic; reported as reproduced / not reproduced (not reproduced is not "wrong").
+  - Numbers in prose (all free-text fields of the evaluators and the committee, except the
+    model's own thresholds and plans) must appear in the pack, the valuation math, the
+    model's structured numbers or a claim; the rest are listed as without a source.
+  - Unknowns read as zero: a sentence saying "no debt", "dividends of 0" and the like where
+    the pack has the value as not reported or not found (and, if the sentence names
+    periods, one of them is unknown).
+  - Eval: the headline is **wrong numbers on exact paths** (mismatch + partial); "invented"
+    is renamed "found nowhere"; new binary metrics "no wrong number", "all numbers found",
+    "no unknown as zero"; `--regrade` recomputes these on stored traces for free.
+- **Mutation test (golden packs, 208 annual values):** +10% errors caught on exact paths
+  at least 90% (the misses are small values written as "$0.3 billion", whose own precision
+  covers 17%), x2 and x10 always; a flipped sign stated in words now always caught (was
+  never); on a table basis a wrong number is never a full match any more.
+- **Regrade of M5 (no API call):**
+
+| | Baseline | effort=medium |
+|---|---|---|
+| Wrong numbers on exact paths (all partial) | 8 of 264 data claims | 5 of 284 |
+| Matched only inside a table | 0 | 0 |
+| Found nowhere | 0 | 0 |
+| Calculated claims reproduced | 80 of 89 | 31 of 39 |
+| Numbers in prose without a source | 48 of 1,716 | 29 of 1,408 |
+| Unknowns read as zero | 1 (SNOW rep1: "There is no dividend") | 3 (SNOW rep1 Forensic: "had no debt then and pays no dividends" = the must_not; SNOW rep0: no dividend support) |
+
+- **Reading:** no evaluator used a table as a basis in M5, so the group change moved
+  nothing yet; it closes a hole for later runs. One not-reproduced claim is a real error
+  (SNOW, effort variant: "roughly $75 billion" where the model's own formula gives about
+  79 billion). The "no dividend" hits are true of the company but not known from the pack;
+  the rule is the rule. The linter found the must_not the judge found, without a model call.
+
 ## 2026-10-15 — prompts: plain words in prose, DERIVED for in-sentence arithmetic (prompt change, NOT measured yet)
 
 - **Changed:** `SHARED_RULES` rule 12 (every text field is read by a person: verdicts,

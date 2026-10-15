@@ -36,7 +36,7 @@ from evaluators.schemas import (
     ValuationResult,
 )
 from perspectives.perspective import evaluate, shared_prefix
-from reporting.number_check import check_results
+from reporting.grounding import check_run
 from synthesis.committee import SYNTHESIS_PRINCIPLES, SynthesisResult, adjust_confidence, synthesis_user
 from synthesis.committee import synthesis_validator as committee_validator
 from valuation.dcf import SCENARIOS, run_valuation
@@ -191,7 +191,7 @@ def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> Autops
         results=results,
         valuation_math=valuation_math,
         synthesis=synthesis,
-        number_check=check_results(results, with_math),
+        number_check=check_run(results, synthesis, with_math),
         duration_s=time.monotonic() - started,
         calls=[*results, synthesis],
     )

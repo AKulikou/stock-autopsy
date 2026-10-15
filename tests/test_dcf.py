@@ -123,4 +123,4 @@ def test_a_year_path_does_not_pick_a_quarter_row():
     ],
 )
 def test_durations_ordinals_and_form_names_are_not_quantities(statement, expected):
-    assert [round(candidates[0], 6) for candidates, _ in quantities(statement)] == expected
+    assert [round(q.candidates[0], 6) for q in quantities(statement)] == expected

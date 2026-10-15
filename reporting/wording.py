@@ -65,6 +65,7 @@ MISSING_REASONS = {
 }
 NUMBER_STATUS = {
     "match": "every number matches the cited data",
+    "group_match": "the numbers appear only somewhere in a cited table (weak evidence)",
     "partial": "some numbers are not in the cited data",
     "mismatch": "the numbers are not in the cited data",
     "bad_path": "cites data that does not exist",

@@ -6,6 +6,7 @@ golden packs (tests/fixtures/golden), no network apart from the Claude API.
     python -m eval.run_eval --cases KHC --reps 1          # one case
     python -m eval.run_eval --reps 2 --batch              # Message Batches: half price, minutes per stage
     python -m eval.run_eval --variant baseline --summary-only
+    python -m eval.run_eval --variant baseline --regrade        # number grades again, free
 
 Output (git-ignored), one folder per variant:
 
@@ -18,9 +19,11 @@ already have a row, so an interrupted run can simply be restarted. With --batch 
 attempts start at once so their requests share batches.
 
 Graded by code: committee verdict against the labels (primary hit, acceptable range,
-error cost), Forensic verdict against forbidden ones, all answers valid, number check
-(matched, bad paths, invented numbers), cache read share, tokens and cost. Graded by
-the judge (eval/judge.py): must_find and must_not statements, with verbatim evidence.
+error cost), Forensic verdict against forbidden ones, all answers valid, grounding
+(reporting/grounding.py: wrong numbers on exact paths as the headline, group matches,
+numbers found nowhere, calculated claims reproduced, numbers in prose without a
+source, unknowns read as zero), cache read share, tokens and cost. Graded by the
+judge (eval/judge.py): must_find and must_not statements, with verbatim evidence.
 """
 
 import argparse
@@ -42,6 +45,7 @@ from core.token_summary import total_input  # noqa: E402
 from datalayer.pack import build_pack  # noqa: E402
 from eval import grading as g  # noqa: E402
 from eval.judge import JUDGE_EFFORT, JUDGE_MODEL, judge_report  # noqa: E402
+from reporting.grounding import check_run  # noqa: E402
 from scripts.check_private_tickers import private_tickers  # noqa: E402
 from scripts.freeze_golden import raw_from_fixture  # noqa: E402
 
@@ -54,7 +58,14 @@ BINARY_METRICS = (
     ("must_not_ok", "no must_not"),
     ("forensic_ok", "forensic ok"),
     ("all_valid", "all answers valid"),
-    ("no_invented", "no invented number"),
+    ("no_wrong_number", "no wrong number"),
+    ("all_found", "all numbers found"),
+    ("no_absent_as_zero", "no unknown as zero"),
+)
+NUMBER_TOTALS = (
+    "data_claims", "matched", "group_match", "partial", "mismatch", "bad_path", "no_number",
+    "wrong_exact", "not_found", "derived_claims", "derived_reproduced", "derived_not_reproduced",
+    "prose_numbers", "prose_unsourced", "absent_as_zero",
 )
 RUN_SETTINGS = {
     "model": MODEL,
@@ -101,18 +112,29 @@ def usage_totals(calls: list[dict]) -> dict:
     }
 
 
+def number_grades(number_check: dict, roots: dict) -> tuple[dict, dict, list[dict]]:
+    """(grades, number summary, numbers found nowhere) from a grounding check."""
+    not_found = g.not_found_anywhere(number_check, roots)
+    numbers = g.number_summary(number_check, not_found)
+    grades = {
+        "no_wrong_number": int(numbers["wrong_exact"] == 0),
+        "all_found": int(not not_found),
+        "no_absent_as_zero": int(numbers["absent_as_zero"] == 0),
+    }
+    return grades, numbers, not_found
+
+
 def grade_run(case: dict, run: AutopsyRun, judged: dict) -> tuple[dict, dict]:
     """(grade, meta) of one attempt; pure apart from reading the run."""
     synthesis = run.synthesis
     forensic = run.result("forensic")
     roots = {**run.pack, "valuation_math": run.valuation_math}
-    invented = g.invented_numbers(run.number_check, roots)
-    numbers = g.number_summary(run.number_check, invented)
+    number_grade, numbers, not_found = number_grades(run.number_check, roots)
     grade = {
         **g.grade_verdict(synthesis["verdict"], case),
         **g.grade_forensic(forensic, case),
         "all_valid": int(all(r["status"] == "success" for r in run.calls)),
-        "no_invented": int(not invented),
+        **number_grade,
     }
     for metric in ("flaw_found", "must_not_ok"):
         if metric in judged:
@@ -136,7 +158,8 @@ def grade_run(case: dict, run: AutopsyRun, judged: dict) -> tuple[dict, dict]:
             else None
         ),
         "numbers": numbers,
-        "invented": invented,
+        "not_found": not_found,
+        "absent_as_zero": run.number_check.get("absent_as_zero", []),
         "cache_read_share": round(usage["cache_read_tokens"] / usage["input_tokens"], 4)
         if usage["input_tokens"]
         else 0.0,
@@ -262,11 +285,20 @@ def summary_lines(rows: list[dict], errors: list[dict]) -> list[str]:
                 f"({', '.join(stab['changed_cases']) or '-'}), pair disagreement "
                 f"{stab['pairwise_disagreement']:.2f}, cross-side {stab.get('cross_side_cases') or '-'}"
             )
-    totals = {
-        k: sum(r["meta"]["numbers"][k] for r in rows)
-        for k in ("data_claims", "matched", "partial", "mismatch", "bad_path", "no_number", "invented")
-    }
-    lines.append("  number check: " + ", ".join(f"{k} {v}" for k, v in totals.items()))
+    totals = {k: sum(r["meta"]["numbers"].get(k, 0) for r in rows) for k in NUMBER_TOTALS}
+    lines.append(
+        f"  grounding: {totals['wrong_exact']} wrong numbers on exact paths (mismatch or partial) in "
+        f"{totals['data_claims']} data claims; {totals['group_match']} matched only inside a cited table; "
+        f"{totals['not_found']} found nowhere in the pack (weak evidence: a wrong number is usually "
+        "somewhere)"
+    )
+    lines.append("  data claims: " + ", ".join(f"{k} {totals[k]}" for k in NUMBER_TOTALS[1:7]))
+    lines.append(
+        f"  calculated claims: {totals['derived_reproduced']} of {totals['derived_claims']} reproduced "
+        f"from the values they cite, {totals['derived_not_reproduced']} not; numbers in prose: "
+        f"{totals['prose_unsourced']} of {totals['prose_numbers']} without a source; unknowns read as "
+        f"zero: {totals['absent_as_zero']}"
+    )
     if rows:
         share = sum(r["meta"]["cache_read_share"] for r in rows) / len(rows)
         tokens_in = sum(r["meta"]["usage"]["input_tokens"] for r in rows)
@@ -285,7 +317,8 @@ def summary_lines(rows: list[dict], errors: list[dict]) -> list[str]:
         lines.append(
             f"    {r['case_id']:<5} rep{r['rep']} {m['verdict']:<17} {m['confidence']:<6} forensic "
             f"{m['forensic_verdict']}/{m['forensic_score']} sev{m['forensic_max_severity']} numbers "
-            f"{m['numbers']['matched']}/{m['numbers']['data_claims']} invented {m['numbers']['invented']} "
+            f"{m['numbers']['matched']}/{m['numbers']['data_claims']} "
+            f"wrong {m['numbers'].get('wrong_exact', '-')} as-zero {m['numbers'].get('absent_as_zero', '-')} "
             f"cache {m['cache_read_share']:.0%} ${r['cost_usd']:.2f}"
         )
     return lines
@@ -319,6 +352,42 @@ def run(cases: list[dict], reps: int, out: Path, batch: bool, concurrency: int) 
     print(f"wall time {time.monotonic() - started:.0f}s")
 
 
+def regrade_numbers(row: dict, trace: dict, case: dict) -> None:
+    """Rerun the grounding checks on a stored trace and update the row (no API call)."""
+    pack, _ = build_pack(raw_from_fixture(ROOT / case["fixture"]), case.get("user_context"))
+    roots = {**pack, "valuation_math": trace["valuation_math"]}
+    number_check = check_run(trace["results"], trace["synthesis"], roots)
+    grades, numbers, not_found = number_grades(number_check, roots)
+    row["grade"].pop("no_invented", None)
+    row["meta"].pop("invented", None)
+    row["grade"].update(grades)
+    row["meta"].update(
+        {"numbers": numbers, "not_found": not_found, "absent_as_zero": number_check["absent_as_zero"]}
+    )
+
+
+def regrade(out: Path, cases: list[dict]) -> int:
+    """
+    Recompute the grounding grades of every stored attempt with the current checks:
+    free (the pack is rebuilt from the fixture, no API call), so a change to a check
+    is measured on runs already paid for. Returns the number of rows regraded.
+    """
+    by_id = {c["id"]: c for c in cases}
+    rows = read_jsonl(out / "results.jsonl")
+    updated = 0
+    for row in rows:
+        case = by_id.get(row["case_id"])
+        trace_path = out / "traces" / f"{row['case_id']}_rep{row['rep']}.json"
+        if case is None or not trace_path.exists():
+            continue
+        regrade_numbers(row, json.loads(trace_path.read_text(encoding="utf-8")), case)
+        updated += 1
+    (out / "results.jsonl").write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8"
+    )
+    return updated
+
+
 def rejudge(out: Path, cases: list[dict]) -> int:
     """
     Run the judge again on the stored traces with the current case statements, and
@@ -336,14 +405,7 @@ def rejudge(out: Path, cases: list[dict]) -> int:
             continue
         trace = json.loads(trace_path.read_text(encoding="utf-8"))
         forensic = next((r for r in trace["results"] if r["key"] == "forensic"), None)
-        # The number grades are recomputed too: the pack is rebuilt from the fixture.
-        pack, _ = build_pack(raw_from_fixture(ROOT / case["fixture"]), case.get("user_context"))
-        invented = g.invented_numbers(
-            trace["number_check"], {**pack, "valuation_math": trace["valuation_math"]}
-        )
-        row["meta"]["invented"] = invented
-        row["meta"]["numbers"] = g.number_summary(trace["number_check"], invented)
-        row["grade"]["no_invented"] = int(not invented)
+        regrade_numbers(row, trace, case)  # the number grades are recomputed too
         judged = judge_report(case, trace["synthesis"], forensic)
         for metric in ("flaw_found", "must_not_ok"):
             row["grade"].pop(metric, None)
@@ -376,6 +438,9 @@ def main(argv: list[str] | None = None) -> None:
         "--summary-only", action="store_true", help="summarize an existing variant, run nothing"
     )
     parser.add_argument(
+        "--regrade", action="store_true", help="recompute the grounding grades on stored traces (free)"
+    )
+    parser.add_argument(
         "--rejudge",
         action="store_true",
         help="rerun only the judge on the stored traces (current statements)",
@@ -383,7 +448,9 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="  %(name)s: %(message)s")
     out = OUTPUT / args.variant
-    if args.rejudge:
+    if args.regrade:
+        print(f"regraded {regrade(out, load_cases())} attempts of {out.name}")
+    elif args.rejudge:
         print(f"rejudged {rejudge(out, load_cases())} attempts of {out.name}")
     elif not args.summary_only:
         cases = load_cases(set(args.cases.split(",")) if args.cases else None)

@@ -83,7 +83,7 @@ def test_a_wrong_path_to_a_true_number_is_not_an_invention():
             },
         ]
     }
-    invented = g.invented_numbers(check, roots)
+    invented = g.not_found_anywhere(check, roots)
     assert [(i["evaluator"], i["number"]) for i in invented] == [("y", 31.7e9)]
 
 
@@ -184,11 +184,13 @@ def test_one_attempt_is_graded_and_written(fake_claude, ko_handler, tmp_path):
         "error_cost": 0,
         "forensic_ok": 1,
         "all_valid": 1,
-        "no_invented": 1,
+        "no_wrong_number": 1,
+        "all_found": 1,
+        "no_absent_as_zero": 1,
         "flaw_found": 1,
         "must_not_ok": 1,
     }
-    assert row["meta"]["numbers"]["invented"] == 0 and row["meta"]["numbers"]["matched"] == 5
+    assert row["meta"]["numbers"]["not_found"] == 0 and row["meta"]["numbers"]["matched"] == 5
     assert row["cost_usd"] > 0 and row["meta"]["judge_cost_usd"] > 0
     judge_requests = [r for r in fake.requests if r["output_format"] is JudgeResult]
     assert judge_requests[0]["model"] == "claude-haiku-5-5"
@@ -228,11 +230,14 @@ def test_summary_reports_metrics_baselines_and_numbers(fake_claude, ko_handler, 
     for expected in (
         "primary hit",
         "must_find found",
-        "no invented number",
+        "no wrong number",
+        "all numbers found",
         "error cost",
         "always WEAK_CASE",
         "stability of committee verdict",
-        "number check: data_claims 10",
+        "grounding: 0 wrong numbers on exact paths",
+        "in 10 data claims",
+        "calculated claims:",
         "KO    rep1",
     ):
         assert expected in text, expected
@@ -283,9 +288,9 @@ def test_a_number_computed_from_cited_values_is_not_an_invention():
     )
     basis = "financials_annual.FY2024.operating_income; financials_annual.FY2025.operating_income"
     check = {"checked": [{"evaluator": "x", "status": "partial", "statement": statement, "basis": basis}]}
-    assert g.invented_numbers(check, roots) == []
+    assert g.not_found_anywhere(check, roots) == []
     check["checked"][0]["statement"] = statement.replace("38%", "52%")
-    assert [i["number"] for i in g.invented_numbers(check, roots)] == [0.52]
+    assert [i["number"] for i in g.not_found_anywhere(check, roots)] == [0.52]
 
 
 def test_the_judge_decides_by_majority(fake_claude, tmp_path):
