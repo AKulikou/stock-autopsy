@@ -33,17 +33,27 @@ DEFAULT_MODEL = "claude-sonnet-4-6"
 MODEL = os.getenv("ANALYSIS_MODEL", "").strip() or DEFAULT_MODEL
 
 # USD per million tokens: (input, output). Used only for the cost estimate after
-# a run. Copied from Startup Autopsy (September 2026): check the current prices on
-# the Anthropic pricing page before relying on the estimates.
+# a run. Checked 2026-10-15 on the Anthropic pricing page; check again before
+# relying on the estimates.
 MODEL_PRICING_PER_MTOK: dict[str, tuple[float, float]] = {
     "claude-opus-5-5": (4.00, 20.00),
     "claude-sonnet-4-6": (3.00, 15.00),
     "claude-sonnet-5": (2.00, 10.00),
+    "claude-sonnet-5-5": (2.00, 10.00),
     "claude-haiku-4-5": (1.00, 5.00),
+    "claude-haiku-5-5": (0.10, 0.50),
+}
+
+# Models priced by prompt length: (threshold in tokens, input, output) for a request
+# whose prompt is longer than the threshold. The prompt length counts all input
+# tokens including cache reads and writes, and the whole request is then billed at
+# the higher prices, cache reads and writes included (pricing page, checked 2026-10-15).
+LONG_PROMPT_PRICING_PER_MTOK: dict[str, tuple[int, float, float]] = {
+    "claude-haiku-5-5": (100_000, 0.50, 2.50),
 }
 
 # Prompt caching prices, as multipliers of the model's input price (prompt caching
-# docs, checked 2026-10-14). A 5-minute cache write costs 1.25x; a read costs 0.1x,
+# docs, checked 2026-10-15). A 5-minute cache write costs 1.25x; a read costs 0.1x,
 # except on the models listed in CACHE_READ_MULTIPLIER_BY_MODEL.
 CACHE_WRITE_MULTIPLIER = 1.25
 CACHE_READ_MULTIPLIER = 0.10
@@ -52,7 +62,8 @@ CACHE_READ_MULTIPLIER_BY_MODEL: dict[str, float] = {
     "claude-sonnet-5-5": 0.05,
 }
 # A prefix shorter than the model's minimum is silently not cached (no error):
-# 1,024 tokens for Sonnet 4.6 and Sonnet 5, 512 for Opus 5.5, 4,096 for Haiku 4.5.
+# 512 tokens for Sonnet 5.5, Opus 5.5 and Haiku 5.5; 1,024 for Sonnet 4.6 and
+# Sonnet 5; 4,096 for Haiku 4.5 (prompt caching docs, checked 2026-10-15).
 # structured_call warns when a request asked for caching and nothing was cached.
 
 # Prompt caching of the shared prefix (rules + shared context). Pays off when two

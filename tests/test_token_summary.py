@@ -23,6 +23,23 @@ def test_cache_read_multiplier_is_model_specific():
     assert read == pytest.approx(4.0 * 0.05)
 
 
+def test_sonnet_5_5_reads_the_cache_at_005x():
+    read = estimate_cost(0, 0, "claude-sonnet-5-5", cache_read_input_tokens=1_000_000)
+    assert read == pytest.approx(2.0 * 0.05)
+
+
+def test_haiku_5_5_prompt_at_the_threshold_uses_the_standard_prices():
+    assert estimate_cost(100_000, 1_000_000, "claude-haiku-5-5") == pytest.approx(0.01 + 0.50)
+
+
+def test_haiku_5_5_prompt_over_the_threshold_bills_the_whole_request_higher():
+    # 1,000 uncached + 99,001 cache read = 100,001 prompt tokens: over 100,000,
+    # so input, cache reads and output all move to 0.50 / 2.50 per MTok.
+    cost = estimate_cost(1_000, 1_000_000, "claude-haiku-5-5", cache_read_input_tokens=99_001)
+    expected = (1_000 * 0.50 + 99_001 * 0.50 * 0.10 + 1_000_000 * 2.50) / 1_000_000
+    assert cost == pytest.approx(expected)
+
+
 def test_unknown_model_has_no_estimate():
     assert estimate_cost(100, 100, "claude-unknown") is None
 

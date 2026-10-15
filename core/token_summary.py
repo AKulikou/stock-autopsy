@@ -13,6 +13,7 @@ from config import (
     CACHE_READ_MULTIPLIER,
     CACHE_READ_MULTIPLIER_BY_MODEL,
     CACHE_WRITE_MULTIPLIER,
+    LONG_PROMPT_PRICING_PER_MTOK,
     MODEL,
     MODEL_PRICING_PER_MTOK,
     WEB_SEARCH_PRICE,
@@ -52,6 +53,11 @@ def estimate_cost(
     if pricing is None:
         return None
     input_price, output_price = pricing
+    long_prompt = LONG_PROMPT_PRICING_PER_MTOK.get(model)
+    if long_prompt is not None:
+        threshold, long_input_price, long_output_price = long_prompt
+        if input_tokens + cache_creation_input_tokens + cache_read_input_tokens > threshold:
+            input_price, output_price = long_input_price, long_output_price
     input_equivalent = (
         input_tokens
         + cache_creation_input_tokens * CACHE_WRITE_MULTIPLIER
