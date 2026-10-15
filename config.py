@@ -29,7 +29,10 @@ if not ANTHROPIC_API_KEY or not ANTHROPIC_API_KEY.startswith(API_KEY_PREFIX):
     )
 
 # Model for every analysis call. ANALYSIS_MODEL in .env overrides it.
-DEFAULT_MODEL = "claude-sonnet-4-6"
+# Sonnet 5.5: cheaper than Sonnet 4.6 (2 / 10 vs 3 / 15 USD per MTok), cache reads
+# at 0.05x, a 512-token cache minimum. Its default effort is high: measure output
+# tokens on the first real run.
+DEFAULT_MODEL = "claude-sonnet-5-5"
 MODEL = os.getenv("ANALYSIS_MODEL", "").strip() or DEFAULT_MODEL
 
 # USD per million tokens: (input, output). Used only for the cost estimate after
@@ -72,6 +75,9 @@ CACHE_READ_MULTIPLIER_BY_MODEL: dict[str, float] = {
 PROMPT_CACHING = os.getenv("PROMPT_CACHING", "on").strip().lower() not in ("0", "false", "no", "off")
 
 # Thinking before answering: "off" or "adaptive" (the model decides how much).
+# "off" sends no thinking parameter. Sonnet 4.6 then does not think, but Sonnet 5.5,
+# Opus 5.5 and Haiku 5.5 think adaptively anyway (their thinking cannot be disabled
+# that way; ANALYSIS_EFFORT is the control there).
 # Thinking tokens are billed as output and count against MAX_TOKENS.
 THINKING_MODES = ("off", "adaptive")
 THINKING = os.getenv("THINKING", "").strip().lower() or "off"
