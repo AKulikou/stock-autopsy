@@ -37,7 +37,7 @@
     "acceptable": ["CONDITIONAL_CASE"],
     "rationale": "Shrinking revenue, repeated multi-billion impairments (Q2 FY2025, Q2 FY2026), a TTM operating loss and the 2017-2019 restatement history; cheap on free cash flow (about 7x) if the charges are non-cash. Not RED_FLAGGED: the accounting failures are seven years old and filings have been timely since.",
     "must_find": [
-      "The 2019 restatement: the 10-K filed 2019-06-07 restated FY2016-FY2017 figures (for example operating cash flow or operating income).",
+      "Earlier reported FY2016-FY2017 figures (for example operating cash flow or operating income) were restated.",
       "The 8-K Item 4.02 non-reliance notices or the late annual report (the NT 10-K, the 10-K filed about 160 days after year end)."
     ],
     "must_not": [
