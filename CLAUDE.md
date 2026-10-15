@@ -196,7 +196,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
-| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during M5) | steps 1-2 done (harness, owner-approved labels); step 3: probe on Kraft Heinz 0.66 USD (all checks ran; judge false negative traced to an over-specific must_find wording), baseline 3 x 2 via batch running; spent 0.66 of 4 USD |
+| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during M5) | baseline done (eval/CHANGES.md): 6/6 acceptable, 0 invented numbers, committee stable but WEAK_CASE everywhere (no better than a constant on 3 tickers), judge not deterministic on borderline statements; 2.33 of 4 USD spent. Next, owner decides: reword SNOW losses must_find; ANALYSIS_EFFORT=medium as a separate stage; prompt points queued (plain words, DERIVED tagging) |
 
 Decisions:
 

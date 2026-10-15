@@ -8,6 +8,57 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-15 — M5 baseline: golden tickers, 2 reps each (no prompt, schema or model change)
+
+- **Setup:** Sonnet 5.5, default effort, `--batch`; variant `baseline` in
+  `.claude/hillclimb/stock/` (git-ignored). Labels in `eval/cases.json` (owner-approved;
+  KHC's restatement must_find reworded after the probe, before the regrade). Judge
+  Haiku 5.5 at effort low.
+- **Cost:** baseline 1.65 USD for 6 attempts (0.26-0.30 each at batch prices, 498k input /
+  236k output tokens); probe 0.66 USD (direct); regrades about 0.01 USD. M5 total about
+  2.33 of 4 USD. Wall time 29 minutes (each stage waits for its batch).
+
+| Ticker | Rep | Committee | Confidence | Forensic | Score | Max severity | Numbers matched | Invented | Cache read |
+|--------|-----|-----------|------------|----------|-------|--------------|-----------------|----------|------------|
+| KO | 0 | WEAK_CASE | MEDIUM | ADEQUATE | 3 | 3 | 34/37 | 0 | 26% |
+| KO | 1 | WEAK_CASE | MEDIUM | ADEQUATE | 4 | 4 | 41/45 | 0 | 26% |
+| SNOW | 0 | WEAK_CASE | MEDIUM | ADEQUATE | 4 | 4 | 40/42 | 0 | 0% |
+| SNOW | 1 | WEAK_CASE | MEDIUM | WEAK | 5 | 4 | 43/44 | 0 | 25% |
+| KHC | 0 | WEAK_CASE | LOW | WEAK | 6 | 4 | 44/49 | 0 | 13% |
+| KHC | 1 | WEAK_CASE | LOW | WEAK | 6 | 4 | 40/47 | 0 | 26% |
+
+- **Verdicts:** primary hit 4/6, acceptable 6/6, error cost 0.33. The committee said
+  WEAK_CASE for every attempt, so it scores exactly like the constant "always WEAK_CASE"
+  (primary 4/6, error cost 0.33): on three tickers the verdict metric cannot tell the system
+  from a constant. KO (labelled CONDITIONAL_CASE) got WEAK_CASE twice: either the label is
+  generous or the committee leans bearish; three tickers cannot say which.
+- **Stability:** committee verdict unchanged within every ticker (pair disagreement 0.00);
+  Forensic verdict changed for SNOW (ADEQUATE / WEAK), stable for KO and KHC.
+- **Forensic found:** KHC 2/2 found the FY2016 restatement (operating cash flow 5.24 ->
+  2.65 billion, "10-K filed 2019-06-07") and the 4.02 / NT 10-K trail, at severity 4, not
+  RED_FLAG; KO 2/2 not red-flagged, recasts not read as manipulation; SNOW 2/2 named
+  stock-based compensation (about 34% of revenue) as the gap between losses and cash flow.
+  SNOW rep0's Forensic found "no accounting-integrity warning signs", which fits.
+- **Forensic missed / got wrong:** the probe's Forensic wrote the KHC restatement in the
+  wrong direction ("restated from 2.648 billion to... original 5.238 billion"); the number
+  check cannot see it (both numbers exist). No must_not was triggered in any attempt.
+- **Numbers:** 264 DATA claims, 242 match, 8 partial, 14 without a number, 0 bad_path (the
+  path hint of 85e42b2 worked: 1-3 per run before), 0 invented. The first grading counted
+  3 "invented" numbers for KO; all three were correct arithmetic in the sentence (a 38%
+  rise between two cited figures, a 7.5-point margin change) tagged DATA instead of
+  DERIVED. The metric now accepts differences, ratios and changes of the cited values;
+  the tagging slip remains a prompt point for after M5.
+- **Judge, checked by hand on every attempt:** KHC and KO decisions correct, quotes
+  verbatim and decisive. SNOW "losses in every year": both reports state large GAAP losses
+  (net loss 1.33 billion FY2026, 1.09 billion TTM) but never "every year"; the judge said
+  present on the first pass and absent on the regrade of the same text. Verdict by hand:
+  the substance is there, the label is over-specific (the owner asked for "losses").
+  **The judge is not deterministic on borderline statements** (must_find 6/6 then 4/6 on
+  identical input): read must_find rates with that in mind, and word statements by their
+  substance.
+- **Cache:** 19% of input read from cache on average (batch caching is best effort, and
+  each output schema has its own cache; see the earlier entry).
+
 ## 2026-10-15 — report.md in plain words (display only)
 
 - **Changed:** report.md and the CLI summary show meanings instead of codes: verdict and

@@ -39,6 +39,7 @@ from analysis.runner import AutopsyRun, run_autopsy  # noqa: E402
 from config import ANALYSIS_EFFORT, MODEL, PROMPT_CACHING, THINKING  # noqa: E402
 from core.claude_client import use_batches  # noqa: E402
 from core.token_summary import total_input  # noqa: E402
+from datalayer.pack import build_pack  # noqa: E402
 from eval import grading as g  # noqa: E402
 from eval.judge import JUDGE_EFFORT, JUDGE_MODEL, judge_report  # noqa: E402
 from scripts.check_private_tickers import private_tickers  # noqa: E402
@@ -335,6 +336,14 @@ def rejudge(out: Path, cases: list[dict]) -> int:
             continue
         trace = json.loads(trace_path.read_text(encoding="utf-8"))
         forensic = next((r for r in trace["results"] if r["key"] == "forensic"), None)
+        # The number grades are recomputed too: the pack is rebuilt from the fixture.
+        pack, _ = build_pack(raw_from_fixture(ROOT / case["fixture"]), case.get("user_context"))
+        invented = g.invented_numbers(
+            trace["number_check"], {**pack, "valuation_math": trace["valuation_math"]}
+        )
+        row["meta"]["invented"] = invented
+        row["meta"]["numbers"] = g.number_summary(trace["number_check"], invented)
+        row["grade"]["no_invented"] = int(not invented)
         judged = judge_report(case, trace["synthesis"], forensic)
         for metric in ("flaw_found", "must_not_ok"):
             row["grade"].pop(metric, None)

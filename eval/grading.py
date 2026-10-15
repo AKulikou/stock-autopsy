@@ -12,6 +12,7 @@ import math
 from collections import Counter
 from itertools import combinations
 
+from evaluators.paths import resolve_basis
 from reporting.number_check import matches, numbers_in, quantities
 
 VERDICTS = ("RED_FLAGGED", "WEAK_CASE", "INSUFFICIENT_DATA", "CONDITIONAL_CASE", "STRONG_CASE")
@@ -104,21 +105,47 @@ def grade_forensic(forensic: dict | None, case: dict) -> dict:
 # --- numbers -------------------------------------------------------------------------
 
 
+MAX_CITED_FOR_PAIRS = 40  # pairs of cited values tried for a number computed in the sentence
+
+
+def computed_from(values: list[float]) -> list[float]:
+    """
+    What a sentence may compute from two cited values: a difference, a ratio, a change
+    (a / b - 1), and a difference of two ratios in percentage points.
+    """
+    results = []
+    for a in values[:MAX_CITED_FOR_PAIRS]:
+        for b in values[:MAX_CITED_FOR_PAIRS]:
+            if a is b:
+                continue
+            results += [a - b, (a - b) * 100]
+            if b:
+                results += [a / b, a / b - 1]
+    return results
+
+
 def invented_numbers(number_check: dict, roots: dict) -> list[dict]:
     """
-    Numbers in DATA claims that match no number anywhere in the pack or the valuation
-    math. A correct number under a wrong path is a bad_path, not an invention.
+    Numbers in DATA claims found nowhere: not in the pack or the valuation math, and
+    not computed in the sentence from the values the claim cites (a change of 38%
+    between two cited figures is arithmetic, wrongly tagged DATA, not an invention).
+    A correct number under a wrong path is a bad_path, not an invention.
     """
     everywhere = numbers_in(roots)
     invented = []
     for item in number_check.get("checked", []):
         if item["status"] not in ("mismatch", "partial", "bad_path"):
             continue
+        cited_values, _ = resolve_basis(roots, item["basis"])
+        derivable = computed_from(numbers_in(cited_values))
         for candidates, half_unit in quantities(item["statement"]):
-            if not any(matches(value, candidates, half_unit) for value in everywhere):
-                invented.append(
-                    {"evaluator": item["evaluator"], "statement": item["statement"], "number": candidates[0]}
-                )
+            if any(matches(value, candidates, half_unit) for value in everywhere):
+                continue
+            if any(matches(value, candidates, half_unit) for value in derivable):
+                continue
+            invented.append(
+                {"evaluator": item["evaluator"], "statement": item["statement"], "number": candidates[0]}
+            )
     return invented
 
 

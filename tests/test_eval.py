@@ -63,9 +63,24 @@ def test_a_wrong_path_to_a_true_number_is_not_an_invention():
     roots = {"ttm": {"revenue": 24_900_000_000}, "derived": {"ttm": {"free_cash_flow": 3_816_000_000}}}
     check = {
         "checked": [
-            {"evaluator": "x", "status": "bad_path", "statement": "TTM free cash flow is $3.816 billion."},
-            {"evaluator": "y", "status": "mismatch", "statement": "Revenue was $31.7 billion."},
-            {"evaluator": "z", "status": "match", "statement": "Revenue was $24.9 billion."},
+            {
+                "evaluator": "x",
+                "status": "bad_path",
+                "statement": "TTM free cash flow is $3.816 billion.",
+                "basis": "ttm.fcf",
+            },
+            {
+                "evaluator": "y",
+                "status": "mismatch",
+                "statement": "Revenue was $31.7 billion.",
+                "basis": "ttm.revenue",
+            },
+            {
+                "evaluator": "z",
+                "status": "match",
+                "statement": "Revenue was $24.9 billion.",
+                "basis": "ttm.revenue",
+            },
         ]
     }
     invented = g.invented_numbers(check, roots)
@@ -254,3 +269,20 @@ def test_rejudge_updates_judge_grades_without_rerunning_the_pipeline(fake_claude
     assert "flaw_found" not in row["grade"] and row["grade"]["must_not_ok"] == 1
     assert len(row["meta"]["judge"]["checks"]) == 2
     assert len(fake.requests) == pipeline_calls + 1  # one judge call, no pipeline call
+
+
+def test_a_number_computed_from_cited_values_is_not_an_invention():
+    roots = {
+        "financials_annual": [
+            {"fiscal_year": 2024, "operating_income": 9_990_000_000},
+            {"fiscal_year": 2025, "operating_income": 13_760_000_000},
+        ]
+    }
+    statement = (
+        "Operating income was $9.99 billion in FY2024 and $13.76 billion in FY2025, a rise of about 38%."
+    )
+    basis = "financials_annual.FY2024.operating_income; financials_annual.FY2025.operating_income"
+    check = {"checked": [{"evaluator": "x", "status": "partial", "statement": statement, "basis": basis}]}
+    assert g.invented_numbers(check, roots) == []
+    check["checked"][0]["statement"] = statement.replace("38%", "52%")
+    assert [i["number"] for i in g.invented_numbers(check, roots)] == [0.52]
