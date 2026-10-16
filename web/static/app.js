@@ -228,7 +228,7 @@ function banner(view) {
 function numberCounter(check) {
   const node = el("div", "counter");
   node.append(
-    el("span", "match", `${check.match} of ${check.data_claims} quoted numbers match the filings`),
+    el("span", "match", `${check.match} of ${check.data_claims} quoted numbers match the data pack`),
     el("span", "computed", `${check.computed} of ${check.computed_claims} calculations reproduced by code`),
     el("span", "weak", `${check.weak} found only somewhere in a table`),
     el("span", "wrong", `${check.wrong} not in the cited data`),

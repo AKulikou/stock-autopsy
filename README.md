@@ -80,18 +80,29 @@ loss-making), Kraft Heinz (the 2019 restatement), Comcast (cheap and flat, where
 "weak case" is a wrong answer) and Plug Power (red flags dominate). Every measurement
 is logged in [eval/CHANGES.md](eval/CHANGES.md).
 
-What the eval showed (two reps per company on the first three; one rep per company
-on all five after the valuation change):
+What the eval showed:
 
 - Forensic found Kraft Heinz's restatement trail (restated cash flow, non-reliance
   notices, the late annual report) in every attempt and never red-flagged Coca-Cola's
-  routine recasts.
-- The committee said "weak case" for all three original companies in the baseline,
-  scoring exactly like a constant answer, so two companies were added where "weak case"
-  is wrong. Comcast came out a conditional case and Plug Power red-flagged in the first
-  run; after the valuation change Plug Power fell to "weak case" once, because the
-  Forensic analyst did not raise its red flag that time. One rep per company is too few
-  to call that a trend.
+  routine recasts (two reps per company on the first three companies).
+- The committee said "weak case" for all three original companies, scoring exactly like
+  a constant answer, so two companies were added where "weak case" is wrong. Then the
+  valuation framing changed (below). Five companies, one rep each:
+
+  | Run | Primary verdict | Primary or acceptable | Error cost (0 = primary) |
+  |---|---|---|---|
+  | Before the valuation change | 4/5 | 5/5 | 0.20 |
+  | After the valuation change | 2/5 | 4/5 | 1.00 |
+
+  After the change Kraft Heinz moved from weak to conditional (acceptable) and Plug Power
+  from red-flagged to weak (wrong); the Plug Power change traces to the Forensic analyst,
+  whose prompt did not change, not raising its red flag that time. One rep per company
+  cannot separate the change from run-to-run noise.
+- Valuation is judged by what the price assumes rather than by a DCF value at one
+  chosen discount rate: Python solves the yearly return a buyer at today's price gets if
+  the base case comes true. At the eval's prices that was about 5% a year for Coca-Cola
+  (read as expensive). Comcast's figure is pending the next eval run: both runs above used
+  a Comcast data pack with a wrong share count, since corrected (see the next point).
 - Grounding is checked by code, not trusted: a mutation test quotes the golden packs'
   real values with deliberate errors (+10%, x10, a flipped "loss"/"profit") and requires
   the number check to catch at least 90% of them. Calculated claims are reproduced from
@@ -100,10 +111,15 @@ on all five after the valuation change):
   flagged. In the M5 runs: 8 and 5 wrong numbers (all partial) in about 270 data claims
   per variant, one calculation off by about 5%, and the one "no debt" sentence the judge
   also found.
-- Valuation is judged by what the price assumes rather than by a DCF value at one
-  chosen discount rate: Python solves the yearly return a buyer at today's price gets if
-  the base case comes true. At the eval's prices that was about 5% a year for Coca-Cola
-  (read as expensive) and about 12% for Comcast (a case under conditions).
+- **The number check proves faithfulness to the data pack, not that the pack is right.**
+  A quoted number "matches" when it equals the pack value it cites. Comcast's pack was
+  built on a 2009 share count and a spin-off read as a stock split, which put its market
+  value 21% too high; the model quoted it faithfully and every check passed. Invariant
+  tests now compare each golden pack with its frozen price snapshot, and the data layer
+  no longer uses stale share counts or treats corporate-action adjustments as splits.
+- Labels: Coca-Cola, Snowflake and Kraft Heinz were labelled by the owner; Comcast and
+  Plug Power were labelled by Claude Code from the data packs before any run, with the
+  owner's delegation, and await the owner's review.
 
 ## Roadmap
 

@@ -68,9 +68,14 @@ was checked so far, and the eval result once there is one.
   against RED_FLAG at severity 5 before, and the committee followed it. Grounding: 3 wrong
   numbers in 167 data claims, 110 of 123 calculations reproduced, prose without a source 8 of
   1,280 (25 before), 4 unknowns read as zero (SNOW "no dividend" x3, CMCSA once).
-- **Reading:** one rep per case cannot separate the bundle from noise. The valuation framing
-  behaves as intended where it can be seen (a 5% implied return reads as expensive, 12% as
-  a case under conditions); the one wrong verdict traces to an unchanged component.
+- **Reading:** the headline scores fell (primary 4/5 -> 2/5, acceptable 5/5 -> 4/5, error cost
+  0.20 -> 1.00): Kraft Heinz moved from weak to conditional (acceptable) and Plug Power from
+  red-flagged to weak (wrong, traced to the Forensic analyst, whose prompt did not change). One
+  rep per case cannot separate the bundle from noise. The valuation framing behaves as
+  intended where it can be seen (a 5% implied return on Coca-Cola reads as expensive).
+  **Correction (2026-10-16):** both variants used a Comcast pack with a wrong share count
+  (see the data pack entry above), so the comparison is like for like but the Comcast figures
+  (implied return about 12.2% a year) are not right; Comcast's numbers are pending the next run.
 - **Decision (2026-10-16, delegated):** keep the bundle (the web page needs the plain-language
   fields). Open: Forensic's red-flag call on PLUG is unstable (RED_FLAG 1 of 2 attempts); two
   more PLUG attempts (~0.6 USD) would show how often, before any Forensic prompt change.

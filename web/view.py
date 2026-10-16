@@ -31,7 +31,7 @@ DETAIL_FIELDS = (
 )
 # How a checked number is shown: (check code for colour, words).
 CHECKS = {
-    "match": ("match", "matches the filings"),
+    "match": ("match", "matches the data pack built from the filings"),
     "group_match": ("weak", "found only somewhere in a cited table"),
     "partial": ("wrong", "some numbers are not in the cited data"),
     "mismatch": ("wrong", "not in the cited data"),

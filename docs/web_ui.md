@@ -32,7 +32,7 @@ the evidence, never "buy" or "sell".
    headline, "what the price assumes" (written by Python), and "not advice to buy or
    sell". Then for (3), against (3), what we do not know, what to watch, the conditions.
    Then the number check counter, the analysts (each opens with its claims, each claim
-   coloured by what code found: matches the filings, reproduced by code, found only in a
+   coloured by what code found: matches the data pack, reproduced by code, found only in a
    table, not in the cited data), Python's valuation table, data quality in words, and
    downloads (report.md, report.json).
 
