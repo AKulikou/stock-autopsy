@@ -8,7 +8,7 @@ The FastAPI application: one page and a small JSON API (design: docs/web_ui.md).
     GET  /api/runs/active            the run in progress, if any (to reattach after a reload)
     GET  /api/runs/{id}/events       progress as server-sent events, from the first event
     GET  /api/runs/{id}/result       the finished result, in words
-    GET  /api/runs/{id}/files/{kind} downloads: report, json
+    GET  /api/runs/{id}/files/{kind} downloads: report (report.json is not offered)
 
 Meant for this machine only (python -m web binds to 127.0.0.1); the host and
 origin checks also stop another website open in the same browser from starting
@@ -42,7 +42,7 @@ ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 LOCAL_HOSTS = ("127.0.0.1", "localhost")
 EVENT_POLL_S = 0.3
-MEDIA_TYPES = {"report": "text/markdown; charset=utf-8", "json": "application/json"}
+MEDIA_TYPES = {"report": "text/markdown; charset=utf-8"}
 EXAMPLES = (
     ("Coca-Cola", "KO"),
     ("Comcast", "CMCSA"),

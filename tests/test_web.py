@@ -108,7 +108,9 @@ def test_a_full_run_streams_progress_and_ends_with_the_result_in_words(client, f
     assert view["number_check"]["data_claims"] > 0
     leaked = [t for t in shown_texts(view) if any(code in t for code in CODES) or "KO" in t.split()]
     assert leaked == []
-    assert [d["kind"] for d in view["downloads"]] == ["report", "json"]
+    assert [d["kind"] for d in view["downloads"]] == ["report"]
+    # report.json is still written for programs, but the page does not offer it.
+    assert client.get(f"/api/runs/{run_id}/files/json").status_code == 404
     assert "Stock Autopsy" in client.get(f"/api/runs/{run_id}/files/report").text
 
 

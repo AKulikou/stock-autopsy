@@ -39,7 +39,9 @@ CHECKS = {
     "reproduced": ("computed", "reproduced by code from the cited data"),
     "not_reproduced": ("weak", "could not be reproduced from the cited data"),
 }
-DOWNLOADS = {"report": "report.md", "json": "report.json"}
+# report.json is still written to the run folder for programs; the page does not offer it.
+DOWNLOADS = {"report": "report.md"}
+DOWNLOAD_LABELS = {"report": "Save report (report.md)"}
 
 
 def _words(value, ticker: str, company: str, key: str | None = None):
@@ -75,7 +77,7 @@ def run_view(run: Run) -> dict:
         "evaluators": [_evaluator(r, autopsy) for r in autopsy.results],
         "data_quality": _data_quality(pack),
         "number_check": _number_check(autopsy),
-        "downloads": [{"kind": k, "label": DOWNLOADS[k]} for k in download_paths(run)],
+        "downloads": [{"kind": k, "label": DOWNLOAD_LABELS[k]} for k in download_paths(run)],
         "cost_usd": round(run.cost_usd(), 4),
         "duration_s": round(autopsy.duration_s),
     }
