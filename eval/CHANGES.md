@@ -21,6 +21,18 @@ was checked so far, and the eval result once there is one.
   (red-flagged only), and grounding on all.
 - **Expected:** fewer "weak case" verdicts where the price assumes little (CMCSA); KO and SNOW
   unchanged or conditional; no change to grounding.
+- **`v2_before` result (old code, which includes 67404ad; 1.47 USD, 32 minutes):** primary hit
+  4/5, acceptable 5/5, error cost 0.20; CMCSA conditional case (right), PLUG red-flagged with
+  Forensic RED_FLAG at severity 5 (right), KO weak (acceptable, not primary), SNOW and KHC weak.
+  So the old prompts already separate the new cases; P2 has to keep that and is judged on KO.
+  must_find 5/5, no must_not 5/5. Grounding (after the date fix below): 4 wrong numbers in 170
+  data claims, 1 found nowhere, 120 of 130 calculated claims reproduced, 2 unknowns read as zero
+  ("no dividend" on PLUG and SNOW). Against M5 for 67404ad: far more DERIVED claims (130 in 5
+  attempts against 89 in 6) and no rise in wrong numbers: the plain-words / DERIVED change did
+  what it was meant to.
+- **Grading fix found on this run:** "June 30, 2026", "30 June 2026" and "SIC 3620" were read as
+  quantities (6 of PLUG's 7 "wrong numbers"); now skipped. Regraded baseline and effort_medium
+  are unchanged apart from prose counts.
 
 ## 2026-10-15 — grounding checks (grading and reporting only; measured on stored traces, free)
 

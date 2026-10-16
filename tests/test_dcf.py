@@ -150,6 +150,8 @@ def test_a_year_path_does_not_pick_a_quarter_row():
         ("It filed two Item 4.02 non-reliance 8-Ks and a late 10-K.", []),
         ("Growth in years 1-5 averages 2% over 2 quarters.", [0.02]),
         ("The 10-K was filed 160 days after the period end.", [160.0]),
+        ("Cash on June 30, 2026 was $161.9 million (30 June 2026).", [161.9e6]),
+        ("Classified as SIC 3620, electrical apparatus.", []),
     ],
 )
 def test_durations_ordinals_and_form_names_are_not_quantities(statement, expected):

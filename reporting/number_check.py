@@ -37,10 +37,14 @@ SCALES = {
     "thousand": 1e3,
     "k": 1e3,
 }
+_MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*"
 NOT_QUANTITIES = re.compile(
     r"\b(?:NT\s+)?(?:10-K|10-Q|8-K|10-KT|20-F|S-1|S-4|DEF\s*14A)(?:/A)?s?\b"  # form names, 8-Ks
     r"|\bItem\s+\d+(?:\.\d+)?"  # 8-K items
     r"|\b\d{4}-\d{2}-\d{2}\b"  # ISO dates
+    rf"|\b{_MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?\b"  # June 30
+    rf"|\b\d{{1,2}}(?:st|nd|rd|th)?\s+{_MONTH}\b"  # 30 June
+    r"|\bSIC\s+(?:code\s+)?\d{3,4}\b"  # industry codes
     r"|\b(?:FY|Q)\d{1,4}(?:Q\d)?\b"  # FY2025, Q2, FY2026Q2
     r"|\b(?:years?|quarters?)(?:\s+|-)\d{1,2}(?:\s*(?:-|to|through)\s*\d{1,2})?\b"  # year-1, years 1-5
     r"|\b\d{1,2}(?:-|\s+)(?:years?|quarters?|months?|weeks?)\b",  # over 3 years, 5-year, 2 quarters
