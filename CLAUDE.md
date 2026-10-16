@@ -53,7 +53,7 @@ pytest                                         # unit tests, fake Claude client,
 ruff check .                                   # lint (config in pyproject.toml, target Python 3.10)
 python -m datalayer.fetch KO                   # fetch SEC + price data for one ticker into data_cache/ (free, no LLM)
 python -m datalayer.pack KO                    # build the DATA PACK (+ provenance) into data_cache/ (free, no LLM)
-python -m scripts.freeze_golden 2026-10-15 KO SNOW KHC  # refreeze golden fixtures from data_cache/; review the diff
+python -m scripts.freeze_golden 2026-10-15 KO SNOW KHC CMCSA PLUG  # refreeze golden fixtures from data_cache/; review the diff
 python main.py KO                              # full run: 6 Claude calls, results/<ticker>_<date>_<time>/ (paid)
 python -m web                                  # local web UI at http://127.0.0.1:8001 (a run is paid as above)
 python -m eval.run_eval --cases KHC --reps 1   # eval on frozen golden packs (paid, ~0.6 USD per attempt)
@@ -200,7 +200,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M2 | DATA PACK with `data_quality`, the seven rules and period checks, tests on fixtures; golden packs frozen; size measured with `count_tokens` (KO 8,639, SNOW 6,763, KHC 8,752 tokens on Sonnet 5.5) | done |
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
-| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during the runs) | baseline done and regraded (eval/CHANGES.md): acceptable 6/6, must_find 6/6, no must_not 6/6, 0 invented numbers, committee verdict stable but WEAK_CASE everywhere (no better than a constant on 3 tickers); judge by majority of 3. Variant ANALYSIS_EFFORT=medium done (before the prompt change 67404ad): 38% cheaper, acceptable 6/6, but one must_not ("no debt" where the pack says not reported) and a KHC committee verdict change; decision pending the owner. M5 spent 3.36 of 4 USD |
+| M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during the runs) | baseline done and regraded (eval/CHANGES.md): acceptable 6/6, must_find 6/6, no must_not 6/6, 0 invented numbers, committee verdict stable but WEAK_CASE everywhere (no better than a constant on 3 tickers); judge by majority of 3. Variant ANALYSIS_EFFORT=medium done (before the prompt change 67404ad): 38% cheaper, acceptable 6/6, but one must_not ("no debt" where the pack says not reported) and a KHC committee verdict change; decision (D7): keep the default effort. M5 spent 3.36 of 4 USD |
 | P2 + web | Valuation framing (implied annual return, what the price assumes), plain-language committee fields, golden cases CMCSA and PLUG, local web UI (docs/web_ui.md) | done 2026-10-16: v2_before / v2_after measured (eval/CHANGES.md), live web check on Comcast 0.61 USD; open: Forensic red-flag call on PLUG unstable |
 
 Decisions:
@@ -208,7 +208,7 @@ Decisions:
 | # | Decision | Status |
 |---|----------|--------|
 | D1 | Default model | `claude-sonnet-5-5` (2026-10-15) |
-| D2 | Golden tickers | KO (boring quality), SNOW (fast-growing, loss-making), KHC (2019 restatement) (2026-10-15) |
+| D2 | Golden tickers | KO (boring quality), SNOW (fast-growing, loss-making), KHC (2019 restatement) (2026-10-15); CMCSA (cheap, flat: weak case is wrong) and PLUG (red flags dominate) added with P2 (2026-10-16) |
 | D3 | Evaluator VERDICT block | Structured-output schema fields; confidence as LOW / MEDIUM / HIGH with a one-sentence reason instead of 0-100 (2026-10-15) |
 | D4 | Phase 1 valuation scope | Python multiples on TTM + base DCF for bear/base/bull from step A; reverse DCF by Python (implied revenue growth at base-case margins, with a reason when it cannot be solved); no peer multiples; sensitivity grid in Phase 2 (2026-10-15) |
 | D5 | Company name or brand to ticker (web UI) | One Haiku 5.5 call proposes up to three US-listed companies; Python keeps only those in the SEC ticker map; the person confirms; the suggestion never enters the pack (2026-10-15) |
@@ -244,7 +244,7 @@ are not fetched in Phase 1).
 - Measure the plain-words / DERIVED prompt change (67404ad) with one eval pass.
 - After 67404ad is measured: a `PATH_HELP` line asking for one exact value per quoted number (no table as a basis).
   Not added on 2026-10-15: a second unmeasured prompt change, and no evaluator used a table basis in M5.
-- More golden tickers: three cannot tell the committee verdict from a constant answer.
+- More reps on the five golden tickers (one rep each after P2); the Forensic red-flag call on PLUG is unstable.
 - One shared output schema for all evaluators, so the prompt cache carries across them
   (about 13% of a run's cost; each schema invalidates the cache today).
 - Form 4 insider transactions, peers and peer multiples, news, transcripts (Phase 2/3).

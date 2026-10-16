@@ -9,8 +9,8 @@ averaging opinions.
 It never says buy, sell or hold; its verdicts describe how strong the evidence is.
 
 > Status: Phase 1 works end to end (data layer, four evaluators, committee, number
-> check, eval on three golden companies). Not published as a product; see the honest
-> limits below.
+> check, eval on five golden companies, a local web page). Not published as a product;
+> see the honest limits below.
 
 ## The idea: data first, model second
 
@@ -40,11 +40,11 @@ weak case, red-flagged.
 | Part | What it does |
 |------|--------------|
 | Data layer | SEC company facts, filing history and 8-K items, extension concepts from filing XBRL where needed, prices via yfinance; daily cache; ten fiscal years, discrete quarters, trailing twelve months; restatements and late filings detected; every missing value carries a reason |
-| Evaluators | Business Model, Forensic (accounting warning signs, restatements), Valuation (the model proposes DCF assumptions, Python computes bear / base / bull, reverse DCF and sensitivities, the model interprets), Pre-Mortem |
-| Committee | One call that reads the evaluators, names the conflicts and decides the verdict; code lowers its confidence when too much rests on unverified claims or a perspective is missing |
+| Evaluators | Business Model, Forensic (accounting warning signs, restatements), Valuation (the model proposes DCF assumptions, Python computes bear / base / bull, reverse DCF, the yearly return a buyer at today's price gets if the base case comes true, and sensitivities; the model interprets what the price assumes), Pre-Mortem |
+| Committee | One call that reads the evaluators, names the conflicts and decides the verdict, with a headline and three reasons for and against in plain words; code lowers its confidence when too much rests on unverified claims or a perspective is missing |
 | Number check | Every number in a data claim is compared with the pack value at the path the claim cites (with its sign where the wording states one); calculated claims, numbers in prose and unknowns stated as zero are checked too |
 | Reports | `report.md` in plain words (no codes, tickers or field names), `report.json` with the codes, the exact pack and its provenance |
-| Eval | Three golden companies with owner-approved labels, a judge for "must find" / "must not say" statements (majority of three votes, verbatim evidence), constant-answer baselines, stability between reps |
+| Eval | Five golden companies with labels written before any run, a judge for "must find" / "must not say" statements (majority of three votes, verbatim evidence), constant-answer baselines, stability between reps, and a free regrade of stored runs when a check changes |
 
 ## Quick start
 
@@ -75,19 +75,23 @@ about 0.26-0.30 USD and takes longer.
 
 Unit tests use a scripted fake Claude client and frozen fixtures, so they never
 touch the network. The behaviour eval runs the real pipeline on frozen packs of
-three golden companies: Coca-Cola (boring quality), Snowflake (fast-growing,
-loss-making) and Kraft Heinz (the 2019 restatement). Every measurement is logged in
-[eval/CHANGES.md](eval/CHANGES.md).
+five golden companies: Coca-Cola (boring quality), Snowflake (fast-growing,
+loss-making), Kraft Heinz (the 2019 restatement), Comcast (cheap and flat, where
+"weak case" is a wrong answer) and Plug Power (red flags dominate). Every measurement
+is logged in [eval/CHANGES.md](eval/CHANGES.md).
 
-What the eval showed (two reps per company):
+What the eval showed (two reps per company on the first three; one rep per company
+on all five after the valuation change):
 
 - Forensic found Kraft Heinz's restatement trail (restated cash flow, non-reliance
   notices, the late annual report) in every attempt and never red-flagged Coca-Cola's
   routine recasts.
-- The committee said "weak case" for all three companies in the baseline, so on three
-  companies its verdict scores exactly like a constant answer. More golden companies,
-  including one where "weak case" is wrong, are needed before the verdict metric means
-  anything.
+- The committee said "weak case" for all three original companies in the baseline,
+  scoring exactly like a constant answer, so two companies were added where "weak case"
+  is wrong. Comcast came out a conditional case and Plug Power red-flagged in the first
+  run; after the valuation change Plug Power fell to "weak case" once, because the
+  Forensic analyst did not raise its red flag that time. One rep per company is too few
+  to call that a trend.
 - Grounding is checked by code, not trusted: a mutation test quotes the golden packs'
   real values with deliberate errors (+10%, x10, a flipped "loss"/"profit") and requires
   the number check to catch at least 90% of them. Calculated claims are reproduced from
@@ -96,9 +100,10 @@ What the eval showed (two reps per company):
   flagged. In the M5 runs: 8 and 5 wrong numbers (all partial) in about 270 data claims
   per variant, one calculation off by about 5%, and the one "no debt" sentence the judge
   also found.
-- The valuation side tends to call mature and growth companies expensive: with the
-  model's discount rates, the price sits above even the bull DCF for Coca-Cola and
-  Snowflake. That is a hypothesis to test, not a finding.
+- Valuation is judged by what the price assumes rather than by a DCF value at one
+  chosen discount rate: Python solves the yearly return a buyer at today's price gets if
+  the base case comes true. At the eval's prices that was about 5% a year for Coca-Cola
+  (read as expensive) and about 12% for Comcast (a case under conditions).
 
 ## Roadmap
 
