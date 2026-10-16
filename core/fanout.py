@@ -29,7 +29,9 @@ def _run_one(label: str, task: Callable[[], dict]) -> dict:
 
 
 def run_parallel(
-    tasks: Sequence[tuple[str, Callable[[], dict]]], warm_up_first: bool = True
+    tasks: Sequence[tuple[str, Callable[[], dict]]],
+    warm_up_first: bool = True,
+    on_done: Callable[[int, dict], None] | None = None,
 ) -> list[dict]:
     """
     Run (label, task) pairs and return their results in the same order.
@@ -37,6 +39,8 @@ def run_parallel(
     Args:
         warm_up_first: run the first task alone before starting the others, so
             they can read the prompt cache it wrote.
+        on_done: called with (task index, result) as each task finishes, from the
+            calling thread (for live progress).
     """
     if not tasks:
         return []
@@ -47,6 +51,8 @@ def run_parallel(
         label, task = tasks[0]
         logger.info(f"[1/{len(tasks)}] {label} ... started (warm-up)")
         results[0] = _run_one(label, task)
+        if on_done:
+            on_done(0, results[0])
         first = 1
     rest = range(first, len(tasks))
     if rest:
@@ -58,6 +64,8 @@ def run_parallel(
                 futures[pool.submit(_run_one, label, task)] = index
             for future in as_completed(futures):
                 results[futures[future]] = future.result()
+                if on_done:
+                    on_done(futures[future], results[futures[future]])
     logger.info(f"{len(tasks)} calls finished in {time.monotonic() - started:.0f}s")
     missing = [tasks[i][0] for i, result in enumerate(results) if result is None]
     if missing:

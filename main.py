@@ -10,7 +10,6 @@ console (INFO) and logs/ (DEBUG).
 """
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -40,10 +39,6 @@ def setup_logging(stamp: str) -> Path:
     return path
 
 
-def write_json(path: Path, data) -> None:
-    path.write_text(json.dumps(data, indent=1, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8")
-
-
 def main(argv: list[str] | None = None) -> int:
     load_dotenv(override=True)
     from analysis.runner import run_autopsy
@@ -52,8 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     from datalayer.fetch import fetch_company
     from datalayer.pack import HORIZONS, RISK_TOLERANCES
     from datalayer.sec import SecClient
-    from reporting.json_export import build_json
-    from reporting.markdown import build_report
+    from reporting.save import save_run
     from reporting.wording import COMMITTEE_VERDICTS, CONFIDENCE, company_display
 
     parser = argparse.ArgumentParser(description="Stock Autopsy: analyze one US public company (paid).")
@@ -68,12 +62,7 @@ def main(argv: list[str] | None = None) -> int:
     raw = fetch_company(args.ticker, as_of, SecClient(os.getenv("SEC_USER_AGENT")), DailyCache(as_of))
     run = run_autopsy(raw, {"horizon": args.horizon, "risk_tolerance": args.risk})
 
-    out = RESULTS / f"{raw.ticker}_{as_of.isoformat()}_{stamp[-6:]}"
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "report.md").write_text(build_report(run), encoding="utf-8")
-    write_json(out / "report.json", build_json(run))
-    write_json(out / "pack.json", run.pack)
-    write_json(out / "provenance.json", run.provenance)
+    out = save_run(run, raw.ticker, as_of, RESULTS, datetime.strptime(stamp, "%Y%m%d_%H%M%S"))
     log_token_summary(run.calls)
     synthesis = run.synthesis
     company = company_display(raw.company_name)

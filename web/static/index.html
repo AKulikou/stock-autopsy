@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stock Autopsy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f4a8a'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/app.css">
+  <script type="module" src="/static/app.js"></script>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Stock Autopsy</h1>
+    <p class="tagline">An AI analysis you can check: the company's own SEC filings, four analysts
+      and a committee, and every number traced to a filing or to Python's arithmetic.</p>
+  </header>
+
+  <main>
+    <!-- 1. Input -->
+    <section id="input-view" aria-labelledby="input-heading">
+      <h2 id="input-heading" class="visually-hidden">Choose a company</h2>
+      <div class="examples">
+        <span class="examples-label">Try:</span>
+        <div id="examples" class="chips"></div>
+      </div>
+      <form id="search" class="search">
+        <label for="query" class="visually-hidden">Company, brand or ticker</label>
+        <input id="query" maxlength="100" autocomplete="off" placeholder="Company, brand or ticker (US-listed)">
+        <button id="find" class="primary" type="submit">Find</button>
+      </form>
+      <div id="input-message" class="notice" hidden></div>
+      <div id="candidates" class="candidates"></div>
+      <p class="muted">A full analysis takes about 3 minutes and about 0.60 USD of API calls.
+        Looking up a name or brand costs a fraction of a cent.</p>
+    </section>
+
+    <!-- 2 and 3. Data and live analysis -->
+    <section id="live-view" aria-labelledby="live-heading" hidden>
+      <div class="live-header">
+        <h2 id="live-heading">Analyzing</h2>
+        <span id="elapsed" class="muted"></span>
+      </div>
+      <ol class="stages" aria-live="polite">
+        <li id="stage-fetch" class="stage is-running">
+          <span class="stage-name">SEC filings</span>
+          <span class="stage-text">Fetching the company's filings and price…</span>
+        </li>
+        <li id="stage-pack" class="stage">
+          <span class="stage-name">Data pack</span>
+          <span class="stage-text">Waits for the filings.</span>
+        </li>
+        <li id="stage-dcf" class="stage">
+          <span class="stage-name">DCF by Python</span>
+          <span class="stage-text">Waits for the valuation assumptions.</span>
+        </li>
+      </ol>
+      <div id="cards" class="cards" aria-live="polite"></div>
+      <ol class="stages" aria-live="polite">
+        <li id="stage-committee" class="stage">
+          <span class="stage-name">Investment Committee</span>
+          <span class="stage-text">Waits for the analysts.</span>
+        </li>
+        <li id="stage-number_check" class="stage">
+          <span class="stage-name">Number check</span>
+          <span class="stage-text">Runs last, by code.</span>
+        </li>
+      </ol>
+      <div id="live-message" class="notice is-error" hidden></div>
+    </section>
+
+    <!-- 4. Result -->
+    <section id="result-view" aria-labelledby="result-heading" hidden>
+      <h2 id="result-heading" class="visually-hidden">Result</h2>
+      <div id="result"></div>
+      <div class="actions">
+        <button id="again" class="secondary" type="button">Analyze another company</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page-footer muted">
+    Not investment advice. Runs on this computer only. Numbers come from SEC filings and a price
+    feed; the analysts' reasoning comes from Claude models and is checked by code where it quotes numbers.
+  </footer>
+</body>
+</html>

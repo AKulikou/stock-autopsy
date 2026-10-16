@@ -55,7 +55,13 @@ copy .env.example .env                          # then set ANTHROPIC_API_KEY and
 pytest && ruff check .                          # no network, no API calls
 python -m datalayer.pack KO                     # build the data pack only (free, no model)
 python main.py KO                               # full analysis (paid, see below)
+python -m web                                   # the same in a local web page: http://127.0.0.1:8001
 ```
+
+The web page takes a company, a brand or a ticker (a name or brand is looked up with one
+cheap call and checked against the SEC list), shows the data being gathered and each
+analyst finishing, then the answer in plain words with what the price assumes, and every
+quoted number coloured by what the number check found. Design: [docs/web_ui.md](docs/web_ui.md).
 
 SEC EDGAR asks every client to declare a `User-Agent` with a contact email and to
 stay under 10 requests per second; set `SEC_USER_AGENT` in `.env`.

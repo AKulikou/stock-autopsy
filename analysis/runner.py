@@ -10,6 +10,9 @@ One run, in this order:
 5. The Investment Committee, if enough perspectives succeeded; code then applies
    the confidence rules.
 6. The number check over every DATA claim.
+
+An optional `on_event` callback receives a ProgressEvent at each step (the web UI);
+the CLI and the eval pass none.
 """
 
 import json
@@ -20,6 +23,7 @@ from dataclasses import dataclass, field
 from config import ANALYSIS_EFFORT, MAX_TOKENS, MODEL, THINKING
 from core.claude_client import get_client
 from core.fanout import run_parallel
+from core.progress import ProgressCallback, ProgressEvent
 from core.shared_context import context_block, sha256_of
 from core.structured_call import billed_usage, request_structured
 from core.token_summary import call_cost
@@ -37,6 +41,7 @@ from evaluators.schemas import (
 )
 from perspectives.perspective import evaluate, shared_prefix
 from reporting.grounding import check_run
+from reporting.wording import COMMITTEE_VERDICTS, CONFIDENCE, EVALUATOR_VERDICTS
 from synthesis.committee import SYNTHESIS_PRINCIPLES, SynthesisResult, adjust_confidence, synthesis_user
 from synthesis.committee import synthesis_validator as committee_validator
 from valuation.dcf import SCENARIOS, run_valuation
@@ -133,16 +138,70 @@ def run_committee(pack: dict, results: list[dict], valuation_math: dict) -> dict
     }
 
 
-def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> AutopsyRun:
+class _Events:
+    """Sends ProgressEvents to an optional callback; a failing callback never stops a paid run."""
+
+    def __init__(self, callback: ProgressCallback | None):
+        self.callback = callback
+
+    def __call__(self, event: ProgressEvent) -> None:
+        if self.callback is None:
+            return
+        try:
+            self.callback(event)
+        except Exception:
+            logger.warning(f"Progress callback failed on {event.stage} {event.status}", exc_info=True)
+
+    def result(self, result: dict) -> None:
+        """An evaluator or committee result as a done or failed event, in words."""
+        stage = "committee" if result["key"] == "synthesis" else "evaluator"
+        cost = call_cost(result) if "input_tokens" in result else None
+        if result["status"] != "success":
+            self(ProgressEvent(stage, "failed", key=result["key"], label=result["label"],
+                               text=result.get("error"), cost_usd=cost))
+            return
+        verdict = result.get("verdict")
+        if stage == "committee":
+            verdict_text = COMMITTEE_VERDICTS[verdict].split(":")[0]
+            text = result.get("headline") or result.get("judge_summary")
+        else:
+            verdict_text = EVALUATOR_VERDICTS.get(verdict) if verdict else None
+            text = result.get("key_finding") or "assumptions for the bear, base and bull cases"
+        confidence = result.get("confidence")
+        self(ProgressEvent(
+            stage, "done", key=result["key"], label=result["label"], text=text, verdict=verdict,
+            verdict_text=verdict_text, confidence_text=CONFIDENCE.get(confidence) if confidence else None,
+            cost_usd=cost,
+        ))
+
+
+def pack_summary_text(pack: dict) -> str:
+    """What the data layer gathered, in words, for the live view."""
+    years = sum(1 for row in pack["financials_annual"] if row.get("revenue") is not None)
+    quarters = len(pack.get("financials_quarterly") or [])
+    events = len(pack.get("filing_events") or [])
+    price = pack.get("price")
+    price_text = f"price of {price['date']}" if price else "no price"
+    return f"{years} annual reports, {quarters} quarters, {events} filing events, {price_text}"
+
+
+def run_autopsy(
+    raw: RawCompanyData, user_context: dict | None = None, on_event: ProgressCallback | None = None
+) -> AutopsyRun:
     started = time.monotonic()
+    events = _Events(on_event)
     pack, provenance = build_pack(raw, user_context)
+    events(ProgressEvent("pack", "done", label="Data pack", text=pack_summary_text(pack)))
     prefix = shared_prefix(d.SHARED_RULES, context_block(PACK_TAG, pack))
     logger.info(f"{pack['ticker']}: pack {pack_hash(pack)[:12]}, prefix {len(prefix):,} chars")
 
+    events(ProgressEvent("evaluator", "started", key="valuation_assumptions",
+                         label=d.VALUATION_ASSUMPTIONS.name))
     assumptions = evaluate(
         d.VALUATION_ASSUMPTIONS, prefix, ValuationAssumptions, v.valuation_assumptions_validator(pack)
     )
     logger.info(f"{assumptions['label']}: {assumptions['status']}")
+    events.result(assumptions)
     if assumptions["status"] == "success":
         valuation_math = run_valuation(scenarios_from(assumptions), pack)
     else:
@@ -150,6 +209,10 @@ def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> Autops
             "computed": False,
             "reasons": [f"valuation assumptions failed: {assumptions['error']}"],
         }
+    events(ProgressEvent(
+        "dcf", "done" if valuation_math.get("computed") else "failed", label="DCF computed by Python",
+        text=valuation_math.get("price_assumes") or "; ".join(valuation_math.get("reasons", [])) or None,
+    ))
 
     # Step B may cite the Python valuation math it received, as valuation_math.<field>.
     with_math = {**pack, "valuation_math": valuation_math}
@@ -174,15 +237,25 @@ def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> Autops
             lambda: evaluate(d.PRE_MORTEM, prefix, PreMortemResult, v.pre_mortem_validator(pack)),
         ),
     ]
-    parallel = run_parallel(tasks, warm_up_first=False)
+    for perspective in (d.BUSINESS_MODEL, d.FORENSIC, d.VALUATION, d.PRE_MORTEM):
+        events(ProgressEvent("evaluator", "started", key=perspective.key, label=perspective.name))
+    parallel = run_parallel(tasks, warm_up_first=False, on_done=lambda _, result: events.result(result))
     results = [assumptions, *parallel]
     for result in parallel:
         logger.info(f"{result['label']}: {result['status']} {result.get('verdict', result.get('error', ''))}")
 
+    events(ProgressEvent("committee", "started", key="synthesis", label="Investment Committee"))
     synthesis = run_committee(pack, results, valuation_math)
+    events.result(synthesis)
     logger.info(
         f"Investment Committee: {synthesis['status']} {synthesis.get('verdict', synthesis.get('error'))}"
     )
+    number_check = check_run(results, synthesis, with_math)
+    counts = number_check["counts"]
+    events(ProgressEvent(
+        "number_check", "done", label="Number check",
+        text=f"{counts.get('match', 0)} of {number_check['data_claims']} claims quoting the data match it",
+    ))
     return AutopsyRun(
         pack=pack,
         pack_hash=pack_hash(pack),
@@ -191,7 +264,7 @@ def run_autopsy(raw: RawCompanyData, user_context: dict | None = None) -> Autops
         results=results,
         valuation_math=valuation_math,
         synthesis=synthesis,
-        number_check=check_run(results, synthesis, with_math),
+        number_check=number_check,
         duration_s=time.monotonic() - started,
         calls=[*results, synthesis],
     )

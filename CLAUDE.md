@@ -55,6 +55,7 @@ python -m datalayer.fetch KO                   # fetch SEC + price data for one 
 python -m datalayer.pack KO                    # build the DATA PACK (+ provenance) into data_cache/ (free, no LLM)
 python -m scripts.freeze_golden 2026-10-15 KO SNOW KHC  # refreeze golden fixtures from data_cache/; review the diff
 python main.py KO                              # full run: 6 Claude calls, results/<ticker>_<date>_<time>/ (paid)
+python -m web                                  # local web UI at http://127.0.0.1:8001 (a run is paid as above)
 python -m eval.run_eval --cases KHC --reps 1   # eval on frozen golden packs (paid, ~0.6 USD per attempt)
 python -m eval.run_eval --reps 2 --batch       # all cases through Message Batches (half price, slower)
 python -m eval.run_eval --variant baseline --summary-only  # recompute a summary, free
@@ -97,7 +98,8 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `reporting/grounding.py` — `check_run()`: the DATA check plus calculated (DERIVED) claims reproduced from their basis formula, numbers in prose without a source, unknowns stated as zero; `tests/test_grounding.py` holds the mutation test with thresholds
 - `reporting/markdown.py`, `reporting/json_export.py` — `report.md` (committee first, Python valuation math, evaluator appendix, data quality, number check, cost) and `report.json`
 - `reporting/wording.py` — plain words for report.md: verdicts, confidence, analysts, fields, pack paths, company name for the ticker; `humanize()` is the last pass over the whole report, model text included; URLs, file names and hashes are left alone, and a ticker that is also a word or code (A, IT, LOW, T) is replaced only where it names the company ("LOW's", "(T)", "IT shares")
-- `main.py` — CLI for a full run; writes the report, the exact pack and its provenance
+- `main.py` — CLI for a full run; writes the report, the exact pack and its provenance (`reporting/save.py`)
+- `web/` — local web UI (docs/web_ui.md): `app.py` FastAPI routes with host/origin checks, `runs.py` one run at a time in a thread, `resolve.py` name or brand to ticker (D5), `view.py` the result in words; `static/` copied shell from Startup Autopsy (`tokens.css`, `events.js`, `cards.js`) plus `app.js`. `run_autopsy(on_event=...)` emits `core/progress.py` events
 - `eval/run_eval.py` — the behaviour eval on `eval/cases.json` (golden fixtures only; a private ticker is refused): runs, grades, writes `.claude/hillclimb/stock/<variant>/` (git-ignored), resumes interrupted runs, `--batch`
 - `eval/grading.py` — pure grading: verdict against labels, ERROR_COST (Startup Autopsy's matrix mapped to these verdicts), forbidden Forensic verdicts, grounding counts (headline: wrong numbers on exact paths; numbers found nowhere is weak evidence), baselines, stability
 - `eval/judge.py` — Haiku 5.5 at effort low checks must_find / must_not on the committee and Forensic text; code rejects evidence that is not a verbatim quote
