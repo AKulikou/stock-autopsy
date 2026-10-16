@@ -27,7 +27,7 @@ def test_null_is_kept_as_null_not_zero():
 
 
 def test_non_ascii_text_is_kept_readable():
-    assert canonical_json({"city": "Vilnius – Šnipiškės"}) == '{"city":"Vilnius – Šnipiškės"}'
+    assert canonical_json({"city": "Zürich – Šiaurė"}) == '{"city":"Zürich – Šiaurė"}'
 
 
 def test_context_block_marks_the_content_as_data():
