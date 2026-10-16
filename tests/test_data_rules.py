@@ -18,6 +18,7 @@ from xbrl_samples import (
 )
 
 from core.shared_context import canonical_json
+from datalayer.financials import is_real_split
 from datalayer.pack import build_pack, pack_hash
 
 
@@ -280,6 +281,62 @@ def test_cover_page_shares_filed_before_a_split_are_adjusted():
     }
     price = {**PRICE, "splits": [{"date": "2025-06-01", "ratio": 2.0}]}
     assert pack_of(dei=dei, price=price)["shares_outstanding"]["value"] == 2_000
+
+
+@pytest.mark.parametrize(
+    "ratio, real",
+    [(2.0, True), (0.5, True), (1.5, True), (1.25, True), (0.8, True), (10.0, True), (0.1, True),
+     (1.067, False), (1.1, False), (0.9, False), (2.37, False), (0.0, False)],
+)
+def test_only_simple_ratios_outside_the_adjustment_band_are_splits(ratio, real):
+    assert is_real_split(ratio) is real
+
+
+def test_a_spin_off_adjustment_in_the_split_history_changes_no_share_count():
+    price = {**PRICE, "splits": [{"date": "2025-06-01", "ratio": 1.067}]}
+    pack = pack_of(gaap=split_gaap(), price=price)
+    assert row(pack, 2024)["shares_diluted"] == 100  # not 106.7: a spin-off is not a split
+    assert any(
+        "2025-06-01 with ratio 1.067 is not a stock split" in n for n in pack["data_quality"]["period_notes"]
+    )
+
+
+def stale_cover_page_inputs() -> tuple[dict, dict]:
+    gaap = base_gaap()
+    gaap["WeightedAverageNumberOfDilutedSharesOutstanding"] = [
+        annual(1_000, FY2025),
+        fact(950, "2026-06-30", start="2026-04-01", filed="2026-07-25", form="10-Q"),
+        fact(960, "2026-06-30", start="2026-01-01", filed="2026-07-25", form="10-Q"),  # year to date
+    ]
+    dei = {"EntityCommonStockSharesOutstanding": [instant(4_000, "2009-12-31", filed="2010-02-20")]}
+    return gaap, dei
+
+
+def test_a_stale_cover_page_count_gives_way_to_the_latest_quarterly_diluted_count():
+    gaap, dei = stale_cover_page_inputs()
+    pack = pack_of(gaap=gaap, dei=dei)
+    shares = pack["shares_outstanding"]
+    assert (shares["value"], shares["date"]) == (950, "2026-06-30")  # the quarter, not the year to date
+    assert "stands in for a cover-page count dated 2009-12-31" in shares["source"]
+    assert any("cover-page count is dated 2009-12-31" in n for n in pack["data_quality"]["period_notes"])
+    assert pack["derived"]["valuation"]["market_cap"] == 9_500
+
+
+def test_a_recent_cover_page_count_is_still_used():
+    gaap, _ = stale_cover_page_inputs()
+    recent = instant(940, "2026-07-20", filed="2026-07-25", form="10-Q")
+    dei = {"EntityCommonStockSharesOutstanding": [recent]}
+    assert pack_of(gaap=gaap, dei=dei)["shares_outstanding"]["value"] == 940
+
+
+def test_a_stale_count_without_a_fallback_gives_way_to_a_fresher_source():
+    dei = {"EntityCommonStockSharesOutstanding": [instant(4_000, "2009-12-31", filed="2010-02-20")]}
+    gaap = base_gaap()
+    gaap.pop("WeightedAverageNumberOfDilutedSharesOutstanding", None)
+    pack = pack_of(gaap=gaap, dei=dei, price={**PRICE, "shares_reported": 3_000})
+    conflict = next(c for c in pack["data_quality"]["source_conflicts"] if c["field"] == "shares_outstanding")
+    assert conflict["used"] == "yfinance" and "stale" in conflict["reason"]
+    assert pack["shares_outstanding"]["value"] == 3_000
 
 
 # ---- rule 7: disagreeing sources are both recorded ----------------------------------

@@ -136,8 +136,9 @@
    }
   ],
   "period_notes": [
+   "Price history entry of 2026-01-05 with ratio 1.067 is not a stock split (a price adjustment for a corporate action such as a spin-off): share counts are not adjusted for it",
    "8 smaller differences (under 0.5%) between filings for the same period (rounding, minor reclassifications) are not listed in restated",
-   "shares_outstanding multiplied by 2.134 for splits after 2010-02-23"
+   "shares_outstanding: the SEC cover-page count is dated 2009-12-31, 6132 days before as_of (a company that reports it per share class has no total in company facts); the diluted weighted-average share count of the period ending 2026-06-30 (10-Q filed 2026-07-23) is used instead"
   ],
   "restated": [
    {
@@ -202,48 +203,18 @@
     "original_filed": "2018-01-31",
     "period": "FY2017",
     "restated": 8834000000
-   },
-   {
-    "field": "shares_diluted",
-    "filed": "2026-02-03",
-    "form": "10-K",
-    "original": 4425916000,
-    "original_filed": "2024-01-31",
-    "period": "FY2023",
-    "restated": 4148000000
-   },
-   {
-    "field": "shares_diluted",
-    "filed": "2026-02-03",
-    "form": "10-K",
-    "original": 4169836000,
-    "original_filed": "2025-01-31",
-    "period": "FY2024",
-    "restated": 3908000000
    }
   ],
   "source_conflicts": [
    {
     "dates": {
-     "edgar": "2009-12-31",
-     "yfinance": "2026-10-14"
-    },
-    "field": "shares_outstanding",
-    "used": "edgar",
-    "values": {
-     "edgar": 4402598126,
-     "yfinance": 3548636573.0
-    }
-   },
-   {
-    "dates": {
-     "edgar_shares": "2009-12-31",
+     "edgar_shares": "2026-06-30",
      "price": "2026-10-14"
     },
     "field": "market_cap",
     "used": "edgar",
     "values": {
-     "edgar": 92674690552,
+     "edgar": 75148500000,
      "yfinance": 76881214602.91882
     }
    }
@@ -353,7 +324,7 @@
     "receivables_growth": 0.09,
     "revenue_growth": 0.0012,
     "sbc_to_revenue": 0.0102,
-    "shares_diluted_change": -0.1225
+    "shares_diluted_change": -0.0637
    },
    {
     "cash_conversion": 1.7091,
@@ -416,15 +387,15 @@
   },
   "valuation": {
    "basis": "TTM: FY2025 + Q1-Q2 of the current year - the same quarters a year earlier",
-   "enterprise_value": 169260690552,
-   "ev_ebit": 9.24,
-   "ev_ebitda": 4.97,
-   "ev_revenue": 1.36,
-   "fcf_yield": 0.2206,
-   "market_cap": 92674690552,
+   "enterprise_value": 151734500000,
+   "ev_ebit": 8.28,
+   "ev_ebitda": 4.45,
+   "ev_revenue": 1.21,
+   "fcf_yield": 0.272,
+   "market_cap": 75148500000,
    "notes": [],
-   "p_fcf": 4.53,
-   "pe": 8.28,
+   "p_fcf": 3.68,
+   "pe": 6.71,
    "price_date": "2026-10-14",
    "ttm_period_end": "2026-06-30"
   }
@@ -448,7 +419,7 @@
    "period_start": "2016-01-01",
    "revenue": 80736000000,
    "share_repurchases": 5352000000,
-   "shares_diluted": 5201625000,
+   "shares_diluted": 4875000000,
    "short_term_investments": 97000000,
    "stock_based_compensation": 640000000,
    "total_assets": 180500000000,
@@ -471,7 +442,7 @@
    "period_start": "2017-01-01",
    "revenue": 85029000000,
    "share_repurchases": 5435000000,
-   "shares_diluted": 5106662000,
+   "shares_diluted": 4786000000,
    "short_term_investments": 19000000,
    "stock_based_compensation": 751000000,
    "total_assets": 187462000000,
@@ -494,7 +465,7 @@
    "period_start": "2018-01-01",
    "revenue": 94507000000,
    "share_repurchases": 5320000000,
-   "shares_diluted": 4950880000,
+   "shares_diluted": 4640000000,
    "short_term_investments": 94000000,
    "stock_based_compensation": 826000000,
    "total_assets": 251684000000,
@@ -517,7 +488,7 @@
    "period_start": "2019-01-01",
    "revenue": 108942000000,
    "share_repurchases": 504000000,
-   "shares_diluted": 4918870000,
+   "shares_diluted": 4610000000,
    "short_term_investments": 1709000000,
    "stock_based_compensation": 1021000000,
    "total_assets": 263414000000,
@@ -540,7 +511,7 @@
    "period_start": "2020-01-01",
    "revenue": 103564000000,
    "share_repurchases": 534000000,
-   "shares_diluted": 4933808000,
+   "shares_diluted": 4624000000,
    "short_term_investments": 292000000,
    "stock_based_compensation": 1193000000,
    "total_assets": 273869000000,
@@ -563,7 +534,7 @@
    "period_start": "2021-01-01",
    "revenue": 116385000000,
    "share_repurchases": 4672000000,
-   "shares_diluted": 4965818000,
+   "shares_diluted": 4654000000,
    "short_term_investments": 368000000,
    "stock_based_compensation": 1315000000,
    "total_assets": 275905000000,
@@ -586,7 +557,7 @@
    "period_start": "2022-01-01",
    "revenue": 121427000000,
    "share_repurchases": 13328000000,
-   "shares_diluted": 4726810000,
+   "shares_diluted": 4430000000,
    "short_term_investments": 402000000,
    "stock_based_compensation": 1336000000,
    "total_assets": 257275000000,
@@ -804,9 +775,9 @@
  },
  "schema_version": 1,
  "shares_outstanding": {
-  "date": "2009-12-31",
-  "source": "SEC cover page (dei:EntityCommonStockSharesOutstanding), 10-K filed 2010-02-23",
-  "value": 4402598126
+  "date": "2026-06-30",
+  "source": "SEC company facts (us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding, diluted weighted average of the period 2026-04-01 to 2026-06-30), 10-Q filed 2026-07-23; stands in for a cover-page count dated 2009-12-31",
+  "value": 3570000000
  },
  "sic": "4841",
  "sic_description": "Cable & Other Pay Television Services",

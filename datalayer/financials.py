@@ -7,7 +7,11 @@ Rules applied here (source of truth, data quality rules and period checks):
 - Several values for one period: the latest filing wins; a material difference
   from the first reported value is recorded in data_quality.restated.
 - Share counts reported before a stock split are multiplied by the split ratio,
-  so every share count is on today's basis.
+  so every share count is on today's basis. Only real splits count: Yahoo's split
+  history also holds price adjustments for corporate actions such as spin-offs
+  (Comcast, 2026-01-05, ratio 1.067), which change no share count (real_splits()).
+- A cover-page share count older than STALE_SHARES_DAYS is not used: the latest
+  diluted share count from the filings stands in for it, and data_quality says so.
 - Periods are identified by dates. A 53-week year is flagged in period_notes.
 - TTM = last fiscal year + current year-to-date - the same year-to-date a year
   earlier; it is labelled as TTM and never mixed with fiscal-year figures.
@@ -16,6 +20,7 @@ Rules applied here (source of truth, data quality rules and period checks):
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, timedelta
+from fractions import Fraction
 
 from datalayer import line_items as li
 from datalayer.quality import NOT_REPORTED, TAG_NOT_FOUND, DataQuality
@@ -37,6 +42,13 @@ DATE_TOLERANCE = timedelta(days=7)
 # Ratios of a share count before and after a split that are explained by a split
 # even when the split history is unknown.
 SPLIT_LIKE_RATIOS = (2, 3, 4, 5, 8, 10, 20, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 8, 1 / 10, 1 / 20)
+# A ratio strictly between these is a price adjustment for a corporate action (a spin-off,
+# a special dividend), not a split: real splits start at 5-for-4 and 4-for-5.
+NOT_A_SPLIT_RANGE = (0.8, 1.25)
+# A real split is a simple fraction p/q with q at most this.
+MAX_SPLIT_DENOMINATOR = 10
+# A cover-page share count older than this (before as_of) is not used.
+STALE_SHARES_DAYS = 400
 
 Match = Callable[[Fact], bool]
 
@@ -45,6 +57,30 @@ Match = Callable[[Fact], bool]
 class Split:
     day: date
     ratio: float
+
+
+def is_real_split(ratio: float) -> bool:
+    """A stock split, as opposed to a corporate-action price adjustment in the split history."""
+    low, high = NOT_A_SPLIT_RANGE
+    if ratio <= 0 or low < ratio < high:
+        return False
+    simple = Fraction(ratio).limit_denominator(MAX_SPLIT_DENOMINATOR)
+    return abs(float(simple) - ratio) <= 0.001 * ratio
+
+
+def real_splits(splits: list[Split], quality: DataQuality) -> list[Split]:
+    """The splits that change share counts; each other entry is named in period_notes."""
+    kept = []
+    for split in splits:
+        if is_real_split(split.ratio):
+            kept.append(split)
+        else:
+            quality.note(
+                f"Price history entry of {split.day.isoformat()} with ratio {split.ratio:g} is not a "
+                "stock split (a price adjustment for a corporate action such as a spin-off): share "
+                "counts are not adjusted for it"
+            )
+    return kept
 
 
 @dataclass
@@ -459,11 +495,37 @@ class Financials:
 
     # ---- shares outstanding ---------------------------------------------------------
 
+    def latest_diluted_shares(self) -> tuple[float | int, Fact] | None:
+        """The latest reported diluted share count: the latest period end, the shortest period."""
+        facts = self._facts(li.SHARES_DILUTED, lambda f: f.start is not None)
+        if not facts:
+            return None
+        latest = max(facts, key=lambda f: (f.end, -(f.days or 0), f.filed))
+        return self._value(li.SHARES_DILUTED, latest), latest
+
     def shares_outstanding(self, dei_facts: list[Fact]) -> dict | None:
         if not dei_facts:
             self.quality.missing("shares_outstanding", "latest", TAG_NOT_FOUND)
             return None
         latest = max(dei_facts, key=lambda f: (f.end, f.filed))
+        age = (self.as_of - latest.end).days
+        if age > STALE_SHARES_DAYS:
+            fallback = self.latest_diluted_shares()
+            if fallback is not None:
+                value, fact = fallback
+                self.quality.note(
+                    f"shares_outstanding: the SEC cover-page count is dated {latest.end.isoformat()}, "
+                    f"{age} days before as_of (a company that reports it per share class has no total "
+                    "in company facts); the diluted weighted-average share count of the period ending "
+                    f"{fact.end.isoformat()} ({fact.form} filed {fact.filed.isoformat()}) is used instead"
+                )
+                return {
+                    "value": value,
+                    "date": fact.end.isoformat(),
+                    "source": f"SEC company facts (us-gaap:{fact.concept}, diluted weighted average of "
+                    f"the period {fact.start.isoformat()} to {fact.end.isoformat()}), {fact.form} filed "
+                    f"{fact.filed}; stands in for a cover-page count dated {latest.end.isoformat()}",
+                }
         same = [f for f in dei_facts if f.end == latest.end and f.accn == latest.accn]
         value = sum(f.value for f in same)
         factor = self.split_factor(latest.filed)

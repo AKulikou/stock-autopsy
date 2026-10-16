@@ -7,10 +7,12 @@ after a deliberate change, refreeze with scripts/freeze_golden.py and review the
 """
 
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
 
+from datalayer.financials import STALE_SHARES_DAYS, is_real_split
 from datalayer.pack import build_pack
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
 
@@ -94,3 +96,45 @@ def test_no_number_in_a_golden_pack_is_nan_and_every_row_has_dates(packs, ticker
     json.dumps(pack, allow_nan=False)
     for row in pack["financials_annual"] + pack["financials_quarterly"]:
         assert row["period_start"] < row["period_end"]
+
+
+# Invariants every golden pack must keep (audit review R1, 2026-10-16): a pack can be
+# quoted faithfully by the model and still be wrong, so the pack is checked against the
+# frozen price snapshot that was taken with it.
+
+
+@pytest.fixture(scope="module")
+def raws() -> dict:
+    return {ticker: raw_from_fixture(FIXTURES / ticker) for ticker in GOLDEN}
+
+
+@pytest.mark.parametrize("ticker", GOLDEN)
+def test_market_cap_agrees_with_the_price_snapshot(packs, raws, ticker):
+    ours = packs[ticker]["derived"]["valuation"]["market_cap"]
+    theirs = raws[ticker].price["market_cap_reported"]
+    assert abs(ours / theirs - 1) <= 0.05, f"{ticker}: {ours:,.0f} vs Yahoo {theirs:,.0f}"
+
+
+@pytest.mark.parametrize("ticker", GOLDEN)
+def test_the_share_count_used_is_recent(packs, ticker):
+    pack = packs[ticker]
+    age = date.fromisoformat(pack["as_of"]) - date.fromisoformat(pack["shares_outstanding"]["date"])
+    assert age.days <= STALE_SHARES_DAYS
+
+
+@pytest.mark.parametrize("ticker", GOLDEN)
+def test_no_corporate_action_adjustment_is_applied_as_a_split(packs, raws, ticker):
+    notes = " ".join(packs[ticker]["data_quality"]["period_notes"])
+    for split in raws[ticker].price["splits"]:
+        if not is_real_split(split["ratio"]):
+            assert f"{split['date']} with ratio {split['ratio']:g} is not a stock split" in notes
+
+
+@pytest.mark.parametrize("ticker", GOLDEN)
+def test_no_restatement_is_a_split_ratio_in_disguise(packs, raws, ticker):
+    ratios = [s["ratio"] for s in raws[ticker].price["splits"]]
+    for entry in packs[ticker]["data_quality"]["restated"]:
+        if not entry["field"].startswith("shares") or not entry["original"]:
+            continue
+        change = entry["restated"] / entry["original"]
+        assert not any(abs(change * r - 1) < 0.002 or abs(change / r - 1) < 0.002 for r in ratios), entry

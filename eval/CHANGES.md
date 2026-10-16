@@ -8,6 +8,36 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-16 — data pack: spin-off adjustments are not splits, stale cover-page share counts are not used (data change; Comcast's pack corrected)
+
+- **Found by:** the independent review of the pre-publication audit. Comcast's pack used a
+  cover-page share count dated 2009-12-31 (company facts hold no total since Comcast reports
+  the count per share class) and applied Yahoo's 2026-01-05 entry of ratio 1.067 (the price
+  adjustment for the Versant spin-off) as a stock split. Market cap came out 92.7 billion
+  against Yahoo's 76.9; every share count filed before 2026-01-05 was 6.7% too high, which
+  also produced two fake share-count restatements (FY2023, FY2024). The conflict with Yahoo
+  was recorded but resolved for the 16-year-old EDGAR value. The grounding checks could not
+  see it: the model quoted the pack faithfully; the pack was wrong.
+- **Changed (code, no prompt):** a split-history ratio strictly between 0.8 and 1.25, or one
+  that is not a simple fraction p/q with q at most 10, is not a split: share counts are not
+  adjusted for it, and `period_notes` names it. A cover-page share count dated more than 400
+  days before as_of is not used: the latest diluted weighted-average share count from the
+  filings (latest period end, shortest period) stands in, with a note. `compare_sources`
+  uses the fresher source when the EDGAR value is stale and the two differ by more than 5%,
+  and records why. Golden-pack invariants: market cap within 5% of the frozen price
+  snapshot, share count dated within 400 days, no adjustment applied as a split, no
+  share-count restatement equal to a split ratio.
+- **Comcast's pack, rebuilt from the same frozen raw files:** shares 4.403 B (2009) ->
+  3.570 B (Q2 2026 diluted average); market cap 92.7 -> 75.1 billion (Yahoo 76.9); P/E
+  8.28 -> 6.71; P/FCF 4.53 -> 3.68; FCF yield 22.1% -> 27.2%; EV/EBIT 9.24 -> 8.28;
+  EV/EBITDA 4.97 -> 4.45; EV/revenue 1.36 -> 1.21; diluted shares FY2016-FY2022 6.7% lower
+  (FY2022 4.43 B, as filed); the two fake restatements and the shares conflict are gone.
+  KO, SNOW, KHC and PLUG come out byte-identical.
+- **Effect on earlier measurements:** both P2 variants saw the old Comcast pack, so their
+  comparison is like for like, but their Comcast numbers (implied return about 12.2% a year)
+  are not. The implied return is computed at run time and will rise; pending the next eval
+  run.
+
 ## 2026-10-15 — P2: what the price assumes + plain-language committee fields (prompt, schema and valuation math change; NOT measured yet)
 
 - **Changed (one bundle, to save budget):** the reverse DCF also solves the implied annual

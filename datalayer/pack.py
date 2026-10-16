@@ -24,7 +24,7 @@ from datalayer.cache import DailyCache
 from datalayer.extensions import EXTENSION_MATCHERS, EXTENSION_TAXONOMY, matching_concepts
 from datalayer.fetch import OK, RawCompanyData, fetch_company
 from datalayer.filings import annual_report_timing, coverage_start, filing_events, filing_rows
-from datalayer.financials import Financials, Split
+from datalayer.financials import STALE_SHARES_DAYS, Financials, Split, real_splits
 from datalayer.line_items import ALL_CONCEPTS, SHARES_OUTSTANDING_CONCEPT
 from datalayer.quality import NOT_FETCHED, PROVIDER_ERROR, DataQuality
 from datalayer.sec import SecClient
@@ -39,6 +39,8 @@ RISK_TOLERANCES = ("low", "medium", "high")
 # Two sources whose values differ by more than this share are recorded as a conflict;
 # a factor of ORDER_OF_MAGNITUDE or more is a units or scale bug until proven otherwise.
 CONFLICT_THRESHOLD = 0.02
+# Above this difference a stale EDGAR value gives way to the fresher source.
+STALE_CONFLICT_THRESHOLD = 0.05
 ORDER_OF_MAGNITUDE = 8
 PERIODIC_FORMS = ("10-K", "10-Q", "10-KT")
 
@@ -59,22 +61,31 @@ def positive_or_none(value, field_name: str, quality: DataQuality) -> float | No
     return value
 
 
-def compare_sources(field_name: str, edgar, yahoo, quality: DataQuality, dates: dict) -> None:
-    """Rule 7: record both values when EDGAR and Yahoo disagree; EDGAR is used."""
+def compare_sources(
+    field_name: str, edgar, yahoo, quality: DataQuality, dates: dict, edgar_stale: bool = False
+) -> str:
+    """
+    Rule 7: record both values when EDGAR and Yahoo disagree. EDGAR is used, unless
+    its value is stale and the two differ by more than STALE_CONFLICT_THRESHOLD: then
+    the fresher Yahoo value is used and the entry says why. Returns the source used.
+    """
     if edgar is None or yahoo is None:
-        return
+        return "edgar"
     largest = max(abs(edgar), abs(yahoo))
     if largest == 0 or abs(edgar - yahoo) / largest <= CONFLICT_THRESHOLD:
-        return
-    quality.source_conflicts.append(
-        {"field": field_name, "values": {"edgar": edgar, "yfinance": yahoo}, "used": "edgar", "dates": dates}
-    )
+        return "edgar"
+    used = "yfinance" if edgar_stale and abs(edgar - yahoo) / largest > STALE_CONFLICT_THRESHOLD else "edgar"
+    entry = {"field": field_name, "values": {"edgar": edgar, "yfinance": yahoo}, "used": used, "dates": dates}
+    if used == "yfinance":
+        entry["reason"] = "the EDGAR value is stale and differs by more than 5%; the fresher source is used"
+    quality.source_conflicts.append(entry)
     factor = largest / max(min(abs(edgar), abs(yahoo)), 1)
     if factor >= ORDER_OF_MAGNITUDE:
         quality.note(
             f"{field_name}: EDGAR and Yahoo differ by a factor of {factor:.0f}: a units or scale bug "
             "until proven otherwise"
         )
+    return used
 
 
 def use_extensions(raw: RawCompanyData, facts: dict, quality: DataQuality) -> dict[str, tuple[str, ...]]:
@@ -214,9 +225,10 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
                 "date": raw.price["date"],
                 "source": raw.price["source"] + ", close of the last trading day before as_of",
             }
-        splits = [
-            Split(date.fromisoformat(s["date"]), float(s["ratio"])) for s in raw.price.get("splits", [])
-        ]
+        splits = real_splits(
+            [Split(date.fromisoformat(s["date"]), float(s["ratio"])) for s in raw.price.get("splits", [])],
+            quality,
+        )
     if price is None:
         quality.missing("price", "latest", PROVIDER_ERROR)
     if splits is None:
@@ -245,13 +257,22 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
         yahoo_shares = positive_or_none(raw.price.get("shares_reported"), "yfinance shares", quality)
         yahoo_cap = positive_or_none(raw.price.get("market_cap_reported"), "yfinance market cap", quality)
         if shares:
-            compare_sources(
+            stale = (as_of - date.fromisoformat(shares["date"])).days > STALE_SHARES_DAYS
+            used = compare_sources(
                 "shares_outstanding",
                 shares["value"],
                 yahoo_shares,
                 quality,
                 {"edgar": shares["date"], "yfinance": raw.price["date"]},
+                edgar_stale=stale,
             )
+            if used == "yfinance":
+                shares = {
+                    "value": yahoo_shares,
+                    "date": raw.price["date"],
+                    "source": f"{raw.price['source']} (reported share count); the SEC count dated "
+                    f"{shares['date']} is stale",
+                }
     valuation = derived.valuation(price, shares, ttm, balance)
     if raw.price:
         compare_sources(
