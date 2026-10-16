@@ -225,3 +225,13 @@ def test_no_debt_where_the_pack_says_unknown_is_flagged():
 )
 def test_statements_that_respect_the_unknown_are_not_flagged(text):
     assert absent_as_zero([result(summary=text)], None, PACK) == []
+
+
+def test_a_dash_between_two_numbers_is_a_range_not_a_minus():
+    found = quantities("Gross margin stayed within the 58.1%-62.1% range.")
+    assert [(q.candidates[0], q.sign) for q in found] == [(0.581, None), (0.621, None)]
+
+
+@pytest.mark.parametrize("text", ["a 2-point step in operating margin", "a 2 percentage point step"])
+def test_percentage_points_are_read_as_percents(text):
+    assert quantities(text)[0].candidates == [0.02, 2.0]

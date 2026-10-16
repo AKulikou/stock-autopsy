@@ -51,9 +51,14 @@ NOT_QUANTITIES = re.compile(
     re.IGNORECASE,
 )
 NUMBER = re.compile(
-    r"(?<![\w.])-?\$?-?(\d[\d,]*(?:\.\d+)?)\s*"
-    r"(%|percent\b|trillion\b|tn\b|billion\b|bn\b|b\b|million\b|mn\b|m\b|thousand\b|k\b|x\b|times\b)?",
+    r"(?<![\w.%])-?\$?-?(\d[\d,]*(?:\.\d+)?)\s*"
+    r"(%|percent\b|percentage points?\b|-?points?\b|trillion\b|tn\b|billion\b|bn\b|b\b|million\b|mn\b|m\b"
+    r"|thousand\b|k\b|x\b|times\b)?",
     re.IGNORECASE,
+)
+# Units read as percents: a percentage point of a margin or a rate is 0.01.
+PERCENT_UNITS = (
+    "%", "percent", "percentage point", "percentage points", "point", "points", "-point", "-points",
 )
 
 # Wording right before a number that states its direction. Hedges such as "about"
@@ -90,8 +95,8 @@ class Quantity(NamedTuple):
     @property
     def shown(self) -> str:
         """The quantity as the text wrote it: 37%, $1.2 billion, 14.4x."""
-        value = self.candidates[-1] if self.unit in ("%", "percent") else self.candidates[0]
-        if self.unit in ("%", "percent"):
+        value = self.candidates[-1] if self.unit in PERCENT_UNITS else self.candidates[0]
+        if self.unit in PERCENT_UNITS:
             return f"{value:g}%"
         suffix = "x" if self.unit in ("x", "times") else ""
         return ("$" if self.money else "") + number_words(value) + suffix
@@ -138,7 +143,7 @@ def quantities(statement: str) -> list[Quantity]:
         half_unit = 0.5 * 10**-decimals
         sign = _direction(text[: match.start()], match.group(0))
         where = {"unit": unit, "money": "$" in match.group(0), "start": match.start()}
-        if unit in ("%", "percent"):
+        if unit in PERCENT_UNITS:
             found.append(Quantity([number / 100, number], half_unit / 100, sign, **where))
         elif unit in SCALES:
             found.append(Quantity([number * SCALES[unit]], half_unit * SCALES[unit], sign, **where))

@@ -29,6 +29,7 @@ judge (eval/judge.py): must_find and must_not statements, with verbatim evidence
 import argparse
 import json
 import logging
+import subprocess
 import sys
 import threading
 import time
@@ -42,7 +43,7 @@ from analysis.runner import AutopsyRun, run_autopsy  # noqa: E402
 from config import ANALYSIS_EFFORT, MODEL, PROMPT_CACHING, THINKING  # noqa: E402
 from core.claude_client import use_batches  # noqa: E402
 from core.token_summary import total_input  # noqa: E402
-from datalayer.pack import build_pack  # noqa: E402
+from datalayer.pack import build_pack, pack_hash  # noqa: E402
 from eval import grading as g  # noqa: E402
 from eval.judge import JUDGE_EFFORT, JUDGE_MODEL, judge_report  # noqa: E402
 from reporting.grounding import check_run  # noqa: E402
@@ -352,9 +353,36 @@ def run(cases: list[dict], reps: int, out: Path, batch: bool, concurrency: int) 
     print(f"wall time {time.monotonic() - started:.0f}s")
 
 
+def pack_seen_by(trace: dict, case: dict) -> dict | None:
+    """
+    The pack the attempt saw: rebuilt from the fixture if its hash still matches the
+    trace, otherwise the committed version of the frozen pack.json with that hash (a data
+    layer fix changes the pack; old answers must be checked against what they were given).
+    """
+    pack, _ = build_pack(raw_from_fixture(ROOT / case["fixture"]), case.get("user_context"))
+    wanted = trace.get("pack_sha256")
+    if wanted is None or pack_hash(pack) == wanted:
+        return pack
+    frozen = f"{case['fixture']}/pack.json"
+    git = ["git", "-C", str(ROOT)]
+    revisions = subprocess.run([*git, "log", "--format=%H", "--", frozen], capture_output=True, text=True,
+                               check=True).stdout.split()
+    for revision in revisions:
+        shown = subprocess.run([*git, "show", f"{revision}:{frozen}"], capture_output=True, text=True,
+                               encoding="utf-8")
+        if shown.returncode == 0:
+            candidate = json.loads(shown.stdout)
+            if pack_hash(candidate) == wanted:
+                return candidate
+    return None
+
+
 def regrade_numbers(row: dict, trace: dict, case: dict) -> None:
     """Rerun the grounding checks on a stored trace and update the row (no API call)."""
-    pack, _ = build_pack(raw_from_fixture(ROOT / case["fixture"]), case.get("user_context"))
+    pack = pack_seen_by(trace, case)
+    if pack is None:
+        row["meta"]["regrade_note"] = "the pack this attempt saw was not found; number grades kept"
+        return
     roots = {**pack, "valuation_math": trace["valuation_math"]}
     number_check = check_run(trace["results"], trace["synthesis"], roots)
     grades, numbers, not_found = number_grades(number_check, roots)

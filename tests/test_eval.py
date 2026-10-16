@@ -327,3 +327,24 @@ def test_the_judge_decides_by_majority(fake_claude, tmp_path):
     result = judge_report({"must_find": ["a finding"]}, synthesis, None)
     assert result["checks"][0]["present"] is True and result["checks"][0]["votes"] == "2/3 present"
     assert result["flaw_found"] == 1 and result["ballots"] == 3
+
+
+def test_a_regrade_checks_an_old_attempt_against_the_pack_it_saw():
+    """After a data fix the rebuilt pack differs; the committed pack with the trace's hash is used."""
+    import subprocess
+
+    case = next(c for c in run_eval.load_cases() if c["id"] == "CMCSA")
+    current = run_eval.pack_seen_by({}, case)
+    assert run_eval.pack_seen_by({"pack_sha256": run_eval.pack_hash(current)}, case) == current
+    revisions = subprocess.run(
+        ["git", "log", "--format=%H", "--", "tests/fixtures/golden/CMCSA/pack.json"],
+        capture_output=True, text=True, cwd=run_eval.ROOT,
+    ).stdout.split()
+    if len(revisions) < 2:
+        pytest.skip("no earlier version of the pack in this checkout")
+    earlier = json.loads(subprocess.run(
+        ["git", "show", f"{revisions[-1]}:tests/fixtures/golden/CMCSA/pack.json"],
+        capture_output=True, text=True, encoding="utf-8", cwd=run_eval.ROOT,
+    ).stdout)
+    assert run_eval.pack_seen_by({"pack_sha256": run_eval.pack_hash(earlier)}, case) == earlier
+    assert run_eval.pack_seen_by({"pack_sha256": "0" * 64}, case) is None
