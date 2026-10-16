@@ -30,6 +30,20 @@ was checked so far, and the eval result once there is one.
   ("no dividend" on PLUG and SNOW). Against M5 for 67404ad: far more DERIVED claims (130 in 5
   attempts against 89 in 6) and no rise in wrong numbers: the plain-words / DERIVED change did
   what it was meant to.
+- **`v2_after` result (this bundle; 1.49 USD):** primary hit 2/5, acceptable 4/5, error cost
+  1.00 (before 0.20). CMCSA conditional (right; implied return 12.2% a year), KO weak
+  (acceptable; the price implies about 5.1% a year if the base case comes true), SNOW weak,
+  KHC conditional (acceptable), **PLUG weak instead of red-flagged**. The PLUG change comes from
+  the Forensic Accountant, whose prompt did not change: WEAK with a severity-4 flag here
+  against RED_FLAG at severity 5 before, and the committee followed it. Grounding: 3 wrong
+  numbers in 167 data claims, 110 of 123 calculations reproduced, prose without a source 8 of
+  1,280 (25 before), 4 unknowns read as zero (SNOW "no dividend" x3, CMCSA once).
+- **Reading:** one rep per case cannot separate the bundle from noise. The valuation framing
+  behaves as intended where it can be seen (a 5% implied return reads as expensive, 12% as
+  a case under conditions); the one wrong verdict traces to an unchanged component.
+- **Decision (2026-10-16, delegated):** keep the bundle (the web page needs the plain-language
+  fields). Open: Forensic's red-flag call on PLUG is unstable (RED_FLAG 1 of 2 attempts); two
+  more PLUG attempts (~0.6 USD) would show how often, before any Forensic prompt change.
 - **Grading fix found on this run:** "June 30, 2026", "30 June 2026" and "SIC 3620" were read as
   quantities (6 of PLUG's 7 "wrong numbers"); now skipped. Regraded baseline and effort_medium
   are unchanged apart from prose counts.
