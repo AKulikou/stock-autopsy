@@ -117,9 +117,14 @@ What the eval showed:
   value 21% too high; the model quoted it faithfully and every check passed. Invariant
   tests now compare each golden pack with its frozen price snapshot, and the data layer
   no longer uses stale share counts or treats corporate-action adjustments as splits.
-- Labels: Coca-Cola, Snowflake and Kraft Heinz were labelled by the owner; Comcast and
-  Plug Power were labelled by Claude Code from the data packs before any run, with the
-  owner's delegation, and await the owner's review.
+- Labels: Coca-Cola, Snowflake and Kraft Heinz were labelled by the owner. Comcast and
+  Plug Power were drafted by Claude Code from the data packs under the owner's
+  delegation and reviewed in two independent reviews; the owner has not labelled them
+  blind. Plug Power is strict on purpose: only "red-flagged" counts as right, so that a
+  constant "weak case" cannot pass it. Its label rests on liquidity and dilution (cash
+  for about four months of burn, losses larger than revenue, a fourfold share count),
+  with the 2021 accounting failures as history; the routine amendments that only add
+  executive-pay and governance information are not counted as red flags.
 
 ## Roadmap
 

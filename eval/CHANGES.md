@@ -8,6 +8,26 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-16 — labels: Comcast and Plug Power revised after two reviews (eval instrument, no system change)
+
+- **Comcast:** primary conditional case, nothing acceptable (strong case dropped: with flat
+  revenue and about 84 billion of debt the risks do not support interest on their own);
+  rationale numbers from the corrected pack (P/E about 6.7, FCF yield about 27%).
+- **Plug Power:** still red-flagged only, strict on purpose. Rationale and must_find now rest on
+  liquidity and dilution (cash about 0.16 billion against an operating cash outflow of about
+  0.48 billion over twelve months, operating loss larger than revenue since FY2023, about
+  fourfold share count since FY2020); the 2021 non-reliance notice, late filings and the 2022
+  auditor change stay as history. The old rationale's "operating loss larger than revenue
+  every year since 2021" was wrong (not in FY2021 or FY2022).
+- **EDGAR check of the four amended annual reports in the pack window (2026-10-16, SEC
+  only):** 2017-05-01, 2023-05-01 and 2025-04-30 only add the Part III information
+  (executive pay and governance, certifications; no new numbers): not red flags. 2022-03-14
+  amends the FY2020 annual report (MD&A for the 2019-2020 quarters; the material weakness
+  extended to 2018 and 2019): part of the 2021 history. New must_not: treating the Part III
+  amendments as accounting red flags.
+- **Label status for both:** drafted by Claude Code from the pack under the owner's
+  delegation; reviewed in two independent reviews; not blind-labelled by the owner.
+
 ## 2026-10-16 — data pack: spin-off adjustments are not splits, stale cover-page share counts are not used (data change; Comcast's pack corrected)
 
 - **Found by:** the independent review of the pre-publication audit. Comcast's pack used a

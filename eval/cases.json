@@ -58,11 +58,9 @@
   {
     "id": "CMCSA",
     "fixture": "tests/fixtures/golden/CMCSA",
-    "label_status": "labelled 2026-10-15 from the pack, before any run; owner delegated the labels. Added so that 'weak case' is wrong somewhere: cheap, steady cash generator",
+    "label_status": "drafted by Claude Code from the pack under the owner's delegation; reviewed in two independent reviews (2026-10-16); not blind-labelled by the owner",
     "primary": "CONDITIONAL_CASE",
-    "acceptable": [
-      "STRONG_CASE"
-    ],
+    "acceptable": [],
     "rationale": "Flat revenue (3-year CAGR about 0.6%) but operating margins of 12-21% over ten years (17-19% in the last three) and about 20 billion of free cash flow over the last twelve months, at a price of about 6.7 times earnings and 3.7 times free cash flow (yield about 27%), with about 84 billion of debt. The price assumes decline; the case holds if cash flows stay near today's level. Calling it a weak case would mean the evidence does not support interest even at this price.",
     "must_find": [
       "Revenue is roughly flat or growing very slowly (low single-digit or near-zero growth).",
@@ -78,16 +76,17 @@
   {
     "id": "PLUG",
     "fixture": "tests/fixtures/golden/PLUG",
-    "label_status": "labelled 2026-10-15 from the pack, before any run; owner delegated the labels. Strict by design: red-flagged only, so a constant 'weak case' cannot pass it",
+    "label_status": "drafted by Claude Code from the pack under the owner's delegation; reviewed in two independent reviews (2026-10-16); not blind-labelled by the owner. Strict on purpose: only red-flagged counts, so a constant 'weak case' cannot pass it",
     "primary": "RED_FLAGGED",
     "acceptable": [],
-    "rationale": "A 2021 non-reliance notice with late annual and quarterly reports, four amended annual reports (latest 2025), a change of auditor in 2022, an operating loss larger than revenue every year since 2021 (TTM about -1.29 billion on 0.74 billion of revenue), cash of about 0.16 billion against that burn, and a fourfold rise in the share count since 2020. Severe, unresolved and dominating.",
+    "rationale": "Liquidity and dilution carry the label: cash of about 0.16 billion against an operating cash outflow of about 0.48 billion over the last twelve months (roughly four months of burn), an operating loss larger than revenue every year since FY2023 (TTM about -1.29 billion on 0.74 billion of revenue), and a share count up about fourfold since FY2020 (0.35 billion diluted then, 1.40 billion on the latest cover page). History, not a current red flag on its own: the 2021 non-reliance notice with late annual and quarterly reports, the 2022 amendment of the FY2020 annual report that extended the material weakness in internal control to 2018 and 2019, and a change of auditor in 2022; annual reports have been on time since. Checked on EDGAR on 2026-10-16: the amended annual reports of 2017-05-01, 2023-05-01 and 2025-04-30 only add the Part III information (executive pay and governance, no new numbers) and are not red flags.",
     "must_find": [
-      "Earlier financial statements could not be relied on or were restated (the 2021 non-reliance notice, late filings, or amended annual reports).",
-      "Losses or cash burn are very large relative to revenue or to the cash on hand."
+      "Liquidity is the threat: the cash on hand (about 0.16 billion) is small against the cash the business burns (operating cash outflow about 0.48 billion a year) or against losses larger than revenue.",
+      "The share count has risen steeply (about fourfold since 2020), diluting shareholders."
     ],
     "must_not": [
-      "Describes Plug Power as profitable or its free cash flow as positive."
+      "Describes Plug Power as profitable or its free cash flow as positive.",
+      "Treats the amended annual reports that only add Part III information (executive pay and governance) as accounting red flags."
     ],
     "forensic_not": [
       "STRONG",
