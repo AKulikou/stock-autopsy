@@ -215,7 +215,7 @@ Decisions:
 | D6 | Plain-language text | Fields in the committee schema (headline, for, against, unknowns, watch) and a one-sentence headline per evaluator, not a separate call (2026-10-15) |
 | D7 | Valuation framing and effort | Reverse DCF also solves the implied annual return; valuation is presented as "what the price assumes"; default effort stays (medium was 38% cheaper but produced the one "no debt" slip of M5) (2026-10-15) |
 | D8 | Language on screen | English UI and report; translated copy as an option (same list as Startup Autopsy, no Chinese) (2026-10-15) |
-| D9 | Order of work | Grounding fixes, then valuation framing with more golden tickers, then the plain-language layer, then the web page; the shared shell is copied from Startup Autopsy and moves to autopsy-template later (2026-10-15) |
+| D9 | Order of work | Grounding fixes, then valuation framing with more golden tickers, then the plain-language layer, then the web page; the shared shell is copied from Startup Autopsy (2026-10-15) |
 
 DATA PACK extensions over the source-of-truth schema (Phase 1 evaluators need them):
 `shares_outstanding`, `ttm`, `balance_sheet_latest`, `derived` (Python math with formulas),

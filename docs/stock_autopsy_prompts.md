@@ -10,7 +10,7 @@ The synthesis agent (Investment Committee) is the main product — it reconciles
 
 **Changelog**
 - 2026-10-15 — Added "Deviations in the implementation (Phase 1)": owner decisions D3/D4 and the data pack extensions the code uses.
-- 2026-10-15 — Data sources checked against SEC documentation (rate limit, User-Agent, CIK format, ticker map); Phase 1 starts from `autopsy-template`.
+- 2026-10-15 — Data sources checked against SEC documentation (rate limit, User-Agent, CIK format, ticker map); Phase 1 starts from the core shared with Startup Autopsy.
 - 2026-10-14 — Data quality rules: "absent is not zero", period and denominator checks. Added the `data_quality` block to the DATA PACK, shared rules 7–8, hooks in Evaluators 2, 3, 4, 5, and data layer tests in the usage notes.
 
 ---
@@ -509,7 +509,7 @@ You chair an investment committee. You received 8 independent analyst reports on
 
 ## IMPLEMENTATION PHASES (suggested)
 
-**Phase 1 — MVP (start from `autopsy-template`, the shared core extracted from Startup Autopsy):**
+**Phase 1 — MVP (start from the shared core extracted from Startup Autopsy):**
 Data layer with EDGAR + yfinance, 4 evaluators (Business Model, Forensic, Valuation, Pre-Mortem), Claude-based synthesis from day one.
 Parallel evaluator calls and prompt caching of the shared prefix come with the template, so Phase 1 already runs evaluators in parallel.
 
