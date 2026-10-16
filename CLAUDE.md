@@ -201,6 +201,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
 | M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during the runs) | baseline done and regraded (eval/CHANGES.md): acceptable 6/6, must_find 6/6, no must_not 6/6, 0 invented numbers, committee verdict stable but WEAK_CASE everywhere (no better than a constant on 3 tickers); judge by majority of 3. Variant ANALYSIS_EFFORT=medium done (before the prompt change 67404ad): 38% cheaper, acceptable 6/6, but one must_not ("no debt" where the pack says not reported) and a KHC committee verdict change; decision pending the owner. M5 spent 3.36 of 4 USD |
+| P2 + web | Valuation framing (implied annual return, what the price assumes), plain-language committee fields, golden cases CMCSA and PLUG, local web UI (docs/web_ui.md) | done 2026-10-16: v2_before / v2_after measured (eval/CHANGES.md), live web check on Comcast 0.61 USD; open: Forensic red-flag call on PLUG unstable |
 
 Decisions:
 
