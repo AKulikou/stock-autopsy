@@ -8,6 +8,44 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-16 — release eval `v3_release`: 5 golden cases x 2 reps after the data fix and the label revision
+
+- **Setup:** HEAD `b9b0282` (P2 bundle, corrected Comcast pack, revised labels), Sonnet 5.5 at
+  the default effort, `--batch`, judge Haiku 5.5 by majority of three. Estimate 3.0 USD (cap
+  4); **cost 2.67 USD** (869k input tokens, 28% read from cache; 387k output), 36 minutes.
+- **Verdicts:** primary hit 7/10, acceptable 9/10, error cost 0.40. A constant "weak case" on
+  the same attempts gets primary 4/10, acceptable 6/10, error cost 0.80: for the first time
+  the committee verdict beats the constant answer.
+
+| Case | rep0 | rep1 | Forensic | Implied annual return |
+|---|---|---|---|---|
+| KO | weak | weak | adequate, adequate | 5.0%, 4.9% |
+| SNOW | weak | weak | adequate, adequate | 3.8%, 3.4% |
+| KHC | weak | weak | weak, weak (not red-flagged) | 7.9%, 7.6% |
+| CMCSA | conditional | conditional | adequate, adequate | 12.2%, 13.8% |
+| PLUG | weak (wrong) | red-flagged | RED_FLAG sev 5, WEAK sev 4 | not computed (debt unknown) |
+
+- **Plug Power is unstable at the committee, not only at Forensic:** rep0 got a severity-5
+  red flag from Forensic and still said "weak case" (and missed the dilution must_find);
+  rep1 got WEAK from Forensic and said red-flagged. Across all runs since P2: red-flagged in
+  2 of 4 attempts.
+- **Judge:** must_find 9/10 (PLUG rep0, dilution), must_not clean 9/10 (SNOW rep0 again: "the
+  company reported no debt" in the early years, which the pack has as not reported; the
+  absent-as-zero linter flagged the same attempt).
+- **Grounding (after the parser fix below):** 7 wrong numbers on exact paths in 379 data
+  claims; 195 of 211 calculated claims reproduced; 51 of 2,696 prose numbers without a
+  source; 4 unknowns read as zero.
+- **Comparison:** v2_before 4/5 primary, 5/5 acceptable, error cost 0.20; v2_after 2/5, 4/5,
+  1.00 (one rep each, the old Comcast pack). Both v2 runs read Comcast at a P/E of 8.3 and an
+  implied return of about 12%; with the corrected pack the price is lower relative to the
+  cash flows and the implied return 12-14% a year, verdict unchanged. In both v2 runs the
+  Valuation analyst noticed the 2009 share count against Yahoo's 3.55 billion and said so; the
+  system did not act on it then.
+- **Checks fixed on this run (no API cost, all variants regraded):** a dash between two
+  numbers ("58.1%-62.1%") is a range, not a minus sign; "a 2-point step" is two percentage
+  points. A regrade now checks each attempt against the pack it saw (the committed pack whose
+  hash matches the trace), not against a pack rebuilt after a data fix.
+
 ## 2026-10-16 — labels: Comcast and Plug Power revised after two reviews (eval instrument, no system change)
 
 - **Comcast:** primary conditional case, nothing acceptable (strong case dropped: with flat
