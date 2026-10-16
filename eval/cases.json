@@ -63,10 +63,10 @@
     "acceptable": [
       "STRONG_CASE"
     ],
-    "rationale": "Flat revenue (3-year CAGR about 0.6%) but steady operating margins of 15-19% for ten years and about 20 billion of free cash flow a year, at a price of about 8 times earnings and 4.5 times free cash flow (yield about 22%), with about 84 billion of debt. The price assumes decline; the case holds if cash flows stay near today's level. Calling it a weak case would mean the evidence does not support interest even at this price.",
+    "rationale": "Flat revenue (3-year CAGR about 0.6%) but operating margins of 12-21% over ten years (17-19% in the last three) and about 20 billion of free cash flow over the last twelve months, at a price of about 6.7 times earnings and 3.7 times free cash flow (yield about 27%), with about 84 billion of debt. The price assumes decline; the case holds if cash flows stay near today's level. Calling it a weak case would mean the evidence does not support interest even at this price.",
     "must_find": [
       "Revenue is roughly flat or growing very slowly (low single-digit or near-zero growth).",
-      "The valuation is low: for example a P/E around 8, or a free cash flow yield around 20% or more."
+      "The valuation is low: for example a P/E around 7, or a free cash flow yield around 20% or more."
     ],
     "must_not": [
       "Describes the stock as expensive or says the price requires strong growth."
