@@ -170,7 +170,8 @@ def test_requests_from_another_site_or_host_are_refused(client, fake, tmp_path):
 def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client, fake):
     def russian(kwargs):
         source = kwargs["messages"][0]["content"]
-        numbers = " и ".join(n.text.replace(".", ",") for n in numbers_in(source, english=True))
+        numbers = " и ".join([n.text.replace(".", ",") for n in numbers_in(source, english=True)]
+                            + re.findall(r"\d{4}-\d{2}-\d{2}", source))  # dates are copied as written
         words = "Перевод этого раздела отчёта на русский язык с сохранением всех чисел. " * 40
         return text_response(f"{source.splitlines()[0]} (RU)\n\n{words}{numbers}\n")
 

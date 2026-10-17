@@ -1,5 +1,6 @@
 """Translated copies of a finished report (M13): number check, glossary, sections, retries, files."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,31 @@ def test_a_changed_or_dropped_number_is_found(source, translation):
 )
 def test_the_same_numbers_written_the_russian_way_pass(source, translation):
     assert missing_numbers(source, translation) == []
+
+
+@pytest.mark.parametrize(
+    ("source", "translation"),
+    [
+        ("what drove the weak Q4 2025", "что повлияло на слабый четвёртый квартал 2025 года"),
+        ("the high end of the 10-year record", "верхняя граница десятилетней истории"),
+        ("the user's 5-year horizon, years 1-5", "пятилетний горизонт, годы с первого по пятый"),
+        ("check the 10-K tax note and 8-K Item 4.02", "проверьте налоговое примечание годового отчёта"),
+        ("10-Q/A filed 2024-05-30", "исправленный отчёт подан 30 мая 2024 года"),
+        ("filed 2024-05-30", "подан 30.05.2024"),
+        ("filed 2024-05-30", "filed May 30, 2024"),
+    ],
+)
+def test_labels_durations_and_dates_may_be_written_in_words(source, translation):
+    assert missing_numbers(source, translation) == []
+
+
+@pytest.mark.parametrize(
+    ("source", "translation"),
+    [("filed 2024-05-30", "подан 30 июня 2024"), ("filed 2024-05-30 and 2025-02-20", "подан 30.05.2024"),
+     ("FY2017 and FY2018", "FY2017")],
+)
+def test_a_wrong_or_dropped_date_or_year_is_still_found(source, translation):
+    assert missing_numbers(source, translation)
 
 
 def test_each_number_of_the_translation_answers_for_one_number_of_the_source():
@@ -149,7 +175,8 @@ def russian(source: str, wrong_numbers: bool = False) -> str:
     numbers = [n.text.replace(".", ",") for n in numbers_in(source, english=True)]
     if wrong_numbers:
         numbers = numbers[1:]
-    return f"{heading} (RU)\n\n{RUSSIAN}{' '.join(numbers)}\n"
+    dates = re.findall(r"\d{4}-\d{2}-\d{2}", source)  # dates are checked as dates, copied as written
+    return f"{heading} (RU)\n\n{RUSSIAN}{' и '.join(numbers + dates)}\n"
 
 
 def translator(wrong_numbers_first: int = 0, wrong_in: str = "In plain words"):

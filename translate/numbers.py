@@ -20,6 +20,12 @@ compared after reading the separators and the scale words of both sides:
 Signs are not compared ("-3 billion" may become "убыток 3 млрд"), and neither are
 extra numbers in the translation. Code spans and link targets are left out on both
 sides: they are copied as they are.
+
+Labels and durations are not quantities, the same list as the DATA number check uses
+(reporting.number_check.NOT_QUANTITIES): "Q4 2025" may become "четвёртый квартал
+2025", "a 10-year record" "десятилетняя история", "10-K" stays. (Found on the first
+real translation, 2026-10-17: all ten rejections were such words.) Dates are compared
+as dates: 2024-05-30 may come back as written, as 30.05.2024 or as "30 мая 2024".
 """
 
 import re
@@ -112,10 +118,50 @@ def _power(match: re.Match) -> int:
     return 0
 
 
+# Labels and durations in the English source that a translation may write in words:
+# form names, 8-K items, quarter labels, "years 1-5", "a 10-year record", "over 3 years".
+_NOT_COMPARED = re.compile(
+    r"\b(?:NT\s+)?(?:10-K|10-Q|8-K|10-KT|20-F|40-F|S-1|S-4|DEF\s*14A)(?:/A)?s?\b"
+    r"|\bItem\s+\d+(?:\.\d+)?"
+    r"|\bQ[1-4]\b"
+    r"|\b(?:years?|quarters?)(?:\s+|-)\d{1,2}(?:\s*(?:-|–|to|through)\s*\d{1,2})?\b"
+    r"|\b\d{1,2}(?:-|\s+)(?:years?|quarters?|months?|weeks?|days?)\b",
+    re.IGNORECASE,
+)
+_ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+MONTHS = (
+    ("янв", "jan"), ("фев", "feb"), ("мар", "mar"), ("апр", "apr"), ("ма[яй]", "may"), ("июн", "jun"),
+    ("июл", "jul"), ("авг", "aug"), ("сен", "sep"), ("окт", "oct"), ("ноя", "nov"), ("дек", "dec"),
+)
+
+
+def _blank(pattern: re.Pattern, text: str) -> str:
+    return pattern.sub(lambda m: " " * len(m.group(0)), text)
+
+
+def date_found(year: str, month: str, day: str, translation: str) -> bool:
+    """2024-05-30 as written, as 30.05.2024 or 30/05/2024, or as "30 мая 2024" / "May 30, 2024"."""
+    d, m = int(day), int(month)
+    ru, en = MONTHS[m - 1]
+    forms = (
+        rf"\b{year}-{month}-{day}\b",
+        rf"\b0?{d}[./]0?{m}[./]{year}\b",
+        rf"\b0?{d}\s+(?:{ru}|{en})\w*\.?\s+{year}\b",
+        rf"\b{en}\w*\.?\s+0?{d},?\s+{year}\b",
+    )
+    return any(re.search(form, translation, re.IGNORECASE) for form in forms)
+
+
 def numbers_in(text: str, english: bool) -> list[Number]:
-    """The numbers of a text; `english` reads separators the English way only."""
+    """
+    The numbers of a text; `english` reads separators the English way only and leaves
+    out labels, durations and dates (_NOT_COMPARED, dates are checked as dates).
+    """
+    plain = _plain(text)
+    if english:
+        plain = _blank(_NOT_COMPARED, _blank(_ISO_DATE, plain))
     found = []
-    for match in _NUMBER.finditer(_plain(text)):
+    for match in _NUMBER.finditer(plain):
         readings = _english_readings(match["digits"]) if english else _any_readings(match["digits"])
         if english and re.search(_SPACE, match["digits"]):
             # "2 234" in English is two numbers, not a thousands group.
@@ -149,7 +195,11 @@ def missing_numbers(source: str, translation: str) -> list[str]:
                 return True
         return False
 
-    missing = []
+    missing = [
+        date.group(0)
+        for date in _ISO_DATE.finditer(_plain(source))
+        if not date_found(*date.groups(), _plain(translation))
+    ]
     # Numbers with a kind first, and a candidate of the same kind first, so a plain
     # number does not take the only "%" a percentage needs.
     for number in sorted(wanted, key=lambda n: n.kind is None):
