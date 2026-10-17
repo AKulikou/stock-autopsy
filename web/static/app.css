@@ -236,6 +236,14 @@ select {
   text-align: left; vertical-align: top; }
 .markdown th { background: var(--surface-muted); }
 
+.translate-box { margin-top: var(--space-6); }
+.translate-form { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.translate-box .is-error { color: var(--danger); }
+.translated-report { margin-top: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4); background: var(--surface); }
+.translated-report > summary { cursor: pointer; font-weight: 600; }
+.translated-report blockquote { margin-bottom: var(--space-4); }
+
 .downloads { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .download {
   display: inline-block; padding: var(--space-2) var(--space-4); border-radius: var(--radius);

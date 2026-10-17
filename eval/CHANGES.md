@@ -8,6 +8,21 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-17 — report translation (M13, variant A): not measured yet
+
+- **What:** `translate/` translates a finished report.md section by section with Haiku 5.5
+  (low effort, a medium-effort retry), on the page or by `python -m translate`. New against
+  Startup Autopsy's translator: a number check per section (same value and scale, retry once,
+  then the section stays in English) and a glossary per language. It does not change any
+  analysis answer: it runs after the report is written and never touches report.md.
+- **Checked so far (free):** unit tests with a fake client and a test glossary; the number
+  parser on all seven saved reports (about 7,000 numbers): no section rejected when compared
+  with itself or with a mechanical Russian rewrite of its numbers.
+- **To measure (owner's OK needed, about 0.1 USD):** translate the saved KO, TSLA and CMCSA
+  reports into Russian with the real glossary; record cost, time, sections kept in English and
+  number-check rejections here; the owner reads one. The real Russian glossary
+  (`translate/glossaries/russian.md`) is drafted in chat and reviewed by the owner first.
+
 ## 2026-10-16 — release eval `v3_release`: 5 golden cases x 2 reps after the data fix and the label revision
 
 - **Setup:** HEAD `b9b0282` (P2 bundle, corrected Comcast pack, revised labels), Sonnet 5.5 at

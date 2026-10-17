@@ -16,6 +16,7 @@ from analysis import runner as runner_module
 from core import claude_client as claude_client_module
 from eval import judge as judge_module
 from perspectives import perspective as perspective_module
+from translate import translator as translator_module
 
 
 def response(parsed, stop_reason="end_turn", input_tokens=1000, output_tokens=500,
@@ -45,13 +46,22 @@ class FakeClaude:
     read afterwards, like the API once the first response has begun.
     """
 
-    def __init__(self, handler=None, simulate_cache=False):
+    def __init__(self, handler=None, simulate_cache=False, create_handler=None):
         self.requests: list[dict] = []
         self.handler = handler
+        self.create_handler = create_handler
         self.simulate_cache = simulate_cache
         self._cached: set[str] = set()
         self._lock = threading.Lock()
-        self.messages = SimpleNamespace(parse=self._parse)
+        self.messages = SimpleNamespace(parse=self._parse, create=self._create)
+
+    def _create(self, **kwargs):
+        """Plain-text requests (the translator); answered by `create_handler`."""
+        with self._lock:
+            self.requests.append(kwargs)
+        if self.create_handler is None:
+            raise RuntimeError("this test sent a messages.create request it did not script")
+        return self.create_handler(kwargs)
 
     def _parse(self, **kwargs):
         with self._lock:
@@ -72,6 +82,15 @@ class FakeClaude:
         return answer
 
 
+def text_response(text, stop_reason="end_turn", input_tokens=3000, output_tokens=4000):
+    """A messages.create() answer with one text block."""
+    return SimpleNamespace(
+        content=[SimpleNamespace(type="text", text=text)],
+        stop_reason=stop_reason,
+        usage=SimpleNamespace(input_tokens=input_tokens, output_tokens=output_tokens),
+    )
+
+
 @pytest.fixture
 def fake_claude(monkeypatch):
     """Factory: build a FakeClaude and install it where the code gets its client."""
@@ -80,6 +99,7 @@ def fake_claude(monkeypatch):
         monkeypatch.setattr(perspective_module, "get_client", lambda: fake)
         monkeypatch.setattr(runner_module, "get_client", lambda: fake)
         monkeypatch.setattr(judge_module, "get_client", lambda: fake)
+        monkeypatch.setattr(translator_module, "get_client", lambda: fake)
         return fake
     return install
 

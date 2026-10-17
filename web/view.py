@@ -20,6 +20,7 @@ from reporting.wording import (
     humanize,
     path_words,
 )
+from translate.languages import CODES, NATIVE_NAMES
 from web.runs import Run
 
 CODE_KEYS = {"verdict", "status", "kind", "key", "check"}
@@ -226,4 +227,27 @@ def _number_check(autopsy: AutopsyRun) -> dict:
         "absent_as_zero": [a["text"] for a in check.get("absent_as_zero", [])],
         "prose_unsourced": len(check.get("prose", {}).get("unsourced", [])),
         "prose_numbers": check.get("prose", {}).get("numbers", 0),
+    }
+
+
+def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
+    """A finished translation for the page: the Markdown to show and what happened, in words."""
+    path = outcome["path"]
+    kept = outcome.get("untranslated_sections", 0)
+    if outcome["reused"]:
+        note = "This translation was made earlier; nothing was paid for it now."
+    else:
+        note = f"Translated in {outcome['duration_s']:.0f} s, about ${(cost or 0):.2f}."
+        if kept:
+            note += (f" {kept} section{'s' if kept > 1 else ''} stayed in English because the translation "
+                     "did not keep every number or was not in the language; each is marked.")
+    return {
+        "language": language,
+        "label": NATIVE_NAMES[language],
+        "code": CODES[language],
+        "markdown": path.read_text(encoding="utf-8"),
+        "note": note,
+        "download_label": f"Save report in {language} ({path.name})",
+        "kept_in_english": kept,
+        "cost_usd": round(cost or 0.0, 4),
     }

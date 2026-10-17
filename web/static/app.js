@@ -2,10 +2,13 @@
 
 import { createCard, el, updateCard, verdictBadge, verdictClass } from "./cards.js";
 import { followRun } from "./events.js";
+import { renderMarkdown } from "./markdown.js";
 
 const $ = (id) => document.getElementById(id);
 const VIEWS = ["input-view", "live-view", "result-view"];
 let timer = null;
+let languages = [];
+let defaultLanguage = null;
 
 function show(view) {
   for (const id of VIEWS) $(id).hidden = id !== view;
@@ -339,12 +342,74 @@ function renderResult(runId, view) {
     downloads.append(link);
   }
   root.append(downloads, el("p", "muted", `Estimated API cost of this run: $${view.cost_usd.toFixed(2)}, ${Math.round(view.duration_s / 60)} minutes.`));
+  root.append(translationPanel(runId));
+}
+
+// ---------- 5. Translation (on demand, after the result) ----------
+
+function translationPanel(runId) {
+  const box = el("section", "translate-box");
+  box.append(el("h2", null, "Read the report in another language"));
+  const form = el("div", "translate-form");
+  const label = el("label", null, "Language ");
+  const select = el("select");
+  for (const language of languages) {
+    const option = el("option", null, language.label);
+    option.value = language.name;
+    option.selected = language.name === defaultLanguage;
+    select.append(option);
+  }
+  label.append(select);
+  const button = el("button", "secondary", "Translate report");
+  button.type = "button";
+  form.append(label, button);
+  const status = el("p", "muted",
+    "A machine translation of report.md: about 0.03 USD and up to a minute. Every number is checked "
+    + "against the English report; a section that fails the check stays in English, marked.");
+  const output = el("div", "translation-output");
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    select.disabled = true;
+    status.classList.remove("is-error");
+    status.textContent = "Translating the report section by section…";
+    const { status: code, data } = await request("POST", `/api/runs/${runId}/translation`, { language: select.value })
+      .catch(() => ({ status: 0, data: {} }));
+    button.disabled = false;
+    select.disabled = false;
+    if (code !== 200) {
+      status.classList.add("is-error");
+      status.textContent = code === 0 ? "The local server does not answer." : detailText(data);
+      return;
+    }
+    status.textContent = data.note;
+    showTranslation(runId, data, output);
+  });
+  box.append(form, status, output);
+  return box;
+}
+
+function showTranslation(runId, translation, output) {
+  const link = el("a", "download", translation.download_label);
+  link.href = `/api/runs/${runId}/translations/${translation.code}`;
+  link.setAttribute("download", "");
+  const details = el("details", "translated-report");
+  details.open = true;
+  details.lang = translation.code;
+  details.append(el("summary", null, `Report in ${translation.label}`));
+  const body = el("div", "markdown");
+  body.innerHTML = renderMarkdown(translation.markdown); // escapes all text; raw HTML is never rendered
+  details.append(body);
+  const downloads = el("div", "downloads");
+  downloads.append(link);
+  output.replaceChildren(downloads, details);
 }
 
 // ---------- Start ----------
 
 async function init() {
   const { data } = await request("GET", "/api/options");
+  languages = data.languages || [];
+  defaultLanguage = data.default_language;
   for (const example of data.examples) {
     const chip = el("button", "chip", example.title);
     chip.type = "button";

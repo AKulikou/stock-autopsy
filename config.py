@@ -102,3 +102,11 @@ MAX_TOKENS = 20000
 # Web search, for the perspectives that need live facts. Billed per search on top
 # of tokens (10 USD per 1,000 searches when this was written; check the price).
 WEB_SEARCH_PRICE = 0.01
+
+# Translated copies of a finished report (translate/): a cheap model at low effort,
+# a stricter retry at medium effort for a section whose answer was rejected (as in
+# Startup Autopsy, where Haiku 5.5 at low effort translated a report for about
+# 0.02 USD). The English report stays the source of truth.
+TRANSLATION_MODEL = "claude-haiku-5-5"
+TRANSLATION_EFFORT = "low"
+TRANSLATION_RETRY_EFFORT = "medium"

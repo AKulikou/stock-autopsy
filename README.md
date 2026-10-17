@@ -63,6 +63,11 @@ cheap call and checked against the SEC list), shows the data being gathered and 
 analyst finishing, then the answer in plain words with what the price assumes, and every
 quoted number coloured by what the number check found. Design: [docs/web_ui.md](docs/web_ui.md).
 
+A finished report can be translated on demand (Russian first; the same languages as
+Startup Autopsy), on the page or with `python -m translate results/<run> --language Russian`:
+one cheap call per section, and a section whose numbers do not come back with the same value
+and scale stays in English. The English report remains the source of truth.
+
 Only companies that file 10-K and 10-Q reports can be analyzed. Foreign companies filing
 Form 20-F or 40-F are not read today, whatever their accounting standard, and neither are
 funds; the page says so when it shows such a company, and a run stops before any paid call

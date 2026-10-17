@@ -4,12 +4,14 @@ import json
 from dataclasses import replace
 
 import pytest
+from conftest import text_response
 from fastapi.testclient import TestClient
 from sample_outputs import handler_for
 
 from datalayer.pack import build_pack
 from datalayer.sec import UnknownTickerError
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
+from translate.numbers import numbers_in
 from web import resolve as resolve_module
 from web.app import create_app
 from web.resolve import Suggestion, Suggestions
@@ -84,7 +86,7 @@ def shown_texts(value, key=None):
 
 def test_the_page_and_its_scripts_are_served(client):
     assert "<title>Stock Autopsy</title>" in client.get("/").text
-    for asset in ("app.js", "events.js", "cards.js", "tokens.css", "app.css"):
+    for asset in ("app.js", "events.js", "cards.js", "markdown.js", "tokens.css", "app.css"):
         assert client.get(f"/static/{asset}").status_code == 200, asset
 
 
@@ -157,4 +159,36 @@ def test_requests_from_another_site_or_host_are_refused(client, fake, tmp_path):
     app = create_app(tmp_path / "r", fetch=fake_fetch, ticker_map=lambda: TICKER_MAP)
     with TestClient(app, base_url="http://attacker.example") as other:
         assert other.get("/api/options").status_code == 400
+    assert fake.requests == []
+
+
+def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client, fake):
+    def russian(kwargs):
+        source = kwargs["messages"][0]["content"]
+        numbers = " и ".join(n.text.replace(".", ",") for n in numbers_in(source, english=True))
+        words = "Перевод этого раздела отчёта на русский язык с сохранением всех чисел. " * 40
+        return text_response(f"{source.splitlines()[0]} (RU)\n\n{words}{numbers}\n")
+
+    fake.create_handler = russian
+    options = client.get("/api/options").json()
+    assert options["default_language"] == "Russian" and options["languages"][0]["label"] == "Русский"
+    run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    follow(client, run_id)
+    assert client.get(f"/api/runs/{run_id}/translations/ru").status_code == 404
+
+    done = client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).json()
+    assert done["download_label"] == "Save report in Russian (report.ru.md)"
+    assert done["markdown"].startswith("> Machine translation into Russian") and done["kept_in_english"] == 0
+    calls = len(fake.requests)
+    file = client.get(f"/api/runs/{run_id}/translations/ru")
+    assert file.status_code == 200 and file.text.replace("\r\n", "\n") == done["markdown"]
+    again = client.post(f"/api/runs/{run_id}/translation", json={"language": "ru"}).json()
+    assert "nothing was paid" in again["note"] and len(fake.requests) == calls
+    assert client.post(f"/api/runs/{run_id}/translation", json={"language": "Klingon"}).status_code == 422
+
+
+def test_an_analysis_that_did_not_finish_cannot_be_translated(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "BABA"}).json()["run_id"]
+    follow(client, run_id)
+    assert client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).status_code == 409
     assert fake.requests == []

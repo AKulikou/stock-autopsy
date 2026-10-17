@@ -40,12 +40,24 @@ the evidence, never "buy" or "sell".
    "Save report" (report.md). report.json is still written to the run folder for programs,
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 
+5. **Translation, on demand (M13, variant A).** Below the result: a language select
+   (Russian first, then Startup Autopsy's list) and "Translate report". One cheap call per
+   report section (Haiku 5.5, low effort; about 0.02-0.03 USD for the longest report, to be
+   confirmed on the first real translation). The translated copy appears on the page as
+   rendered Markdown (raw HTML is never rendered) and as "Save report in Russian
+   (report.ru.md)". Every number of a section must come back with the same value and scale
+   (`translate/numbers.py`); a section that fails the check twice stays in English, marked.
+   A glossary per language (`translate/glossaries/<language>.md`) gives the translator its
+   terms and is appended as a final section with the terms the report uses. The English
+   report stays the source of truth; report.json and the page cards stay English (variant B,
+   translating the cards, is not planned). Reports of earlier runs:
+   `python -m translate results/<run> --language Russian`.
+
 Everything a person reads goes through `reporting/wording.py` (the same last pass as
 report.md): no verdict codes, field names, pack paths or tickers.
 
 ## Not in this version (later list)
 
-- Translation of the report (D8 allows it as an option; Stock Autopsy has no translator yet).
 - A ten-year revenue and operating income chart, and hover details per number (form,
   period, filing date from the provenance).
 - Demo resilience: analyzing the latest cached pack when SEC or the price feed fails.

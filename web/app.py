@@ -10,6 +10,8 @@ The FastAPI application: one page and a small JSON API (design: docs/web_ui.md).
     GET  /api/runs/{id}/events       progress as server-sent events, from the first event
     GET  /api/runs/{id}/result       the finished result, in words
     GET  /api/runs/{id}/files/{kind} downloads: report (report.json is not offered)
+    POST /api/runs/{id}/translation {language}  a translated copy of the finished report (paid, cheap)
+    GET  /api/runs/{id}/translations/{code}     download it (report.ru.md)
 
 Meant for this machine only (python -m web binds to 127.0.0.1); the host and
 origin checks also stop another website open in the same browser from starting
@@ -20,6 +22,7 @@ import asyncio
 import json
 import logging
 import os
+import threading
 from collections.abc import Callable
 from datetime import date, datetime
 from pathlib import Path
@@ -31,12 +34,15 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from core.token_summary import call_cost, format_cost
 from datalayer.cache import DailyCache
 from datalayer.filings import unsupported_filer
 from datalayer.sec import SecClient, format_cik, normalize_ticker
+from translate.languages import DEFAULT_LANGUAGE, language_name, languages_for_page
+from translate.translator import translate_report, translated_path
 from web.resolve import FilerCheck, resolve
 from web.runs import BusyError, RunManager, fetch_live
-from web.view import download_paths, run_view
+from web.view import download_paths, run_view, translation_view
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +93,22 @@ class RunRequest(BaseModel):
     ticker: str = Field(min_length=1, max_length=10)
 
 
+class TranslationRequest(BaseModel):
+    language: str = Field(min_length=1, max_length=40, description="English name or code of the language.")
+
+
 def create_app(
     results_dir: Path = ROOT / "results",
     fetch: Callable = fetch_live,
     ticker_map: Callable[[], dict] = load_ticker_map,
     filer_check: FilerCheck = check_filer_live,
+    translate: Callable[[Path, str], dict] = translate_report,
 ) -> FastAPI:
     app = FastAPI(title="Stock Autopsy", docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(LOCAL_HOSTS))
     runs = RunManager(results_dir, fetch)
+    # One translation at a time: a double click must not pay twice.
+    translating = threading.Lock()
 
     @app.middleware("http")
     async def same_origin_posts(request: Request, call_next):
@@ -117,7 +130,8 @@ def create_app(
 
     @app.get("/api/options")
     def options():
-        return {"examples": [{"title": title, "query": query} for title, query in EXAMPLES]}
+        return {"examples": [{"title": title, "query": query} for title, query in EXAMPLES],
+                "languages": languages_for_page(), "default_language": DEFAULT_LANGUAGE}
 
     @app.post("/api/resolve")
     def resolve_company(body: ResolveRequest):
@@ -179,6 +193,39 @@ def create_app(
         if path is None:
             raise HTTPException(404, "This file is not available for this analysis.")
         return FileResponse(path, media_type=MEDIA_TYPES[kind], filename=f"{path.parent.name}_{path.name}")
+
+    @app.post("/api/runs/{run_id}/translation")
+    def translate_result(run_id: str, body: TranslationRequest):
+        """Blocks until the translation is written (under a minute); an existing one is reused for free."""
+        run = get_run(run_id)
+        language = language_name(body.language)
+        if language is None:
+            raise HTTPException(422, f"Translation into {body.language} is not offered.")
+        if not run.finished or run.out_dir is None or not download_paths(run).get("report"):
+            raise HTTPException(409, "Only a finished analysis with a saved report can be translated.")
+        if not translating.acquire(blocking=False):
+            raise HTTPException(409, "A translation is already running; it takes up to a minute.")
+        try:
+            outcome = translate(run.out_dir, language)
+        finally:
+            translating.release()
+        cost = call_cost(outcome) if outcome.get("input_tokens") is not None else None
+        logger.info(f"Web run {run.id}: translation into {language} {outcome['status']}, {format_cost(cost)}")
+        if outcome["status"] != "success":
+            raise HTTPException(
+                502, f"The translation failed ({outcome['error']}). The English report is complete."
+            )
+        return translation_view(outcome, language, cost)
+
+    @app.get("/api/runs/{run_id}/translations/{code}")
+    def translation_file(run_id: str, code: str):
+        run = get_run(run_id)
+        language = language_name(code)
+        path = translated_path(run.out_dir, language) if language and run.out_dir else None
+        if path is None or not path.exists():
+            raise HTTPException(404, "This translation does not exist yet.")
+        return FileResponse(path, media_type="text/markdown; charset=utf-8",
+                            filename=f"{path.parent.name}_{path.name}")
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     return app
