@@ -45,7 +45,7 @@ from translate.languages import DEFAULT_LANGUAGE, language_name, languages_for_p
 from translate.translator import translate_report, translated_path
 from web.resolve import FilerCheck, resolve
 from web.runs import BusyError, RunManager, fetch_live
-from web.view import download_paths, recent_view, run_view, translation_view
+from web.view import download_name, download_paths, recent_view, run_view, translation_view
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +210,7 @@ def create_app(
         path = download_paths(run).get(kind) if run.finished else None
         if path is None:
             raise HTTPException(404, "This file is not available for this analysis.")
-        return FileResponse(path, media_type=MEDIA_TYPES[kind], filename=f"{path.parent.name}_{path.name}")
+        return FileResponse(path, media_type=MEDIA_TYPES[kind], filename=download_name(run, path))
 
     @app.post("/api/runs/{run_id}/translation")
     def translate_result(run_id: str, body: TranslationRequest):
@@ -243,7 +243,7 @@ def create_app(
         if path is None or not path.exists():
             raise HTTPException(404, "This translation does not exist yet.")
         return FileResponse(path, media_type="text/markdown; charset=utf-8",
-                            filename=f"{path.parent.name}_{path.name}")
+                            filename=download_name(run, path))
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     return app

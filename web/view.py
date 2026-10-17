@@ -6,6 +6,9 @@ colour (CODE_KEYS); every other string goes through reporting.wording.humanize()
 the same last pass as report.md, so model text cannot bring codes onto the screen.
 """
 
+import re
+from pathlib import Path
+
 from analysis.runner import VERDICT_KEYS, AutopsyRun
 from reporting.data_quality import quality_lines, statements_to
 from reporting.markdown import money, number, pct
@@ -259,3 +262,24 @@ def recent_view(run: Run) -> dict:
         "outcome": outcome,
         "finished": run.finished_at.strftime("%H:%M") if run.finished_at else None,
     }
+
+
+MAX_NAME_IN_FILE = 40
+
+
+def file_name_part(company: str) -> str:
+    """'COCA COLA CO' -> 'Coca_Cola_Co', 'Yum! Brands, Inc.' -> 'Yum_Brands_Inc', at most 40 characters."""
+    slug = re.sub(r"[^A-Za-z0-9-]+", "_", company_display(company)).strip("_")
+    return slug[:MAX_NAME_IN_FILE].rstrip("_")
+
+
+def download_name(run: Run, path: Path) -> str:
+    """
+    The name a downloaded file gets: the company first (reports avoid tickers, and a name
+    reads better in a Downloads folder), then the run folder, which keeps the ticker for
+    uniqueness (GOOGL and GOOG are one company) and the time: Coca_Cola_Co_KO_2026-10-17_090436_report.md.
+    The folder in results/ keeps its ticker-first name.
+    """
+    company = run.autopsy.pack["company_name"] if run.autopsy else run.company
+    prefix = file_name_part(company) if company else ""
+    return f"{prefix + '_' if prefix else ''}{path.parent.name}_{path.name}"

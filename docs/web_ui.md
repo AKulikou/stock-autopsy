@@ -46,7 +46,8 @@ the evidence, never "buy" or "sell".
    Then the number check counter, the analysts (each opens with its claims, each claim
    coloured by what code found: matches the data pack, reproduced by code, found only in a
    table, not in the cited data), Python's valuation table, data quality in words, and
-   "Save report" (report.md). report.json is still written to the run folder for programs,
+   "Save report" (report.md; the downloaded file is named company first, then the run folder:
+   `Coca_Cola_Co_KO_2026-10-17_090436_report.md`; the folder in results/ keeps its ticker-first name). report.json is still written to the run folder for programs,
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 
 5. **Translation, on demand (M13, variant A).** Below the result: a language select

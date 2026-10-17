@@ -1,6 +1,7 @@
 """The web UI's API end to end, with a fake Claude and the frozen Coca-Cola fixture (no network)."""
 
 import json
+import re
 import threading
 import time
 from dataclasses import replace
@@ -18,6 +19,7 @@ from web import app as app_module
 from web import resolve as resolve_module
 from web.app import create_app
 from web.resolve import Suggestion, Suggestions
+from web.view import file_name_part
 
 BASE_URL = "http://127.0.0.1:8001"
 TICKER_MAP = {
@@ -258,3 +260,23 @@ def test_the_tagline_claims_only_what_the_number_check_proves(client):
     page = client.get("/").text
     assert "every quoted number checked against the data" in page
     assert "traced to a filing" not in page
+
+
+@pytest.mark.parametrize(
+    ("company", "part"),
+    [("COCA COLA CO", "Coca_Cola_Co"), ("Yum! Brands, Inc.", "Yum_Brands_Inc"), ("AT&T INC.", "At_T_Inc")],
+)
+def test_the_company_part_of_a_file_name(company, part):
+    assert file_name_part(company) == part
+
+
+def test_a_name_cut_at_forty_characters_ends_without_an_underscore():
+    assert file_name_part("Abcdefghij " * 6) == "Abcdefghij_Abcdefghij_Abcdefghij_Abcdefg"
+    assert file_name_part("Abcdefghi " * 6).endswith("Abcdefghi")
+
+
+def test_the_downloaded_report_is_named_after_the_company_first(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    follow(client, run_id)
+    disposition = client.get(f"/api/runs/{run_id}/files/report").headers["content-disposition"]
+    assert re.search(r'filename="Coca_Cola_Co_KO_\d{4}-\d{2}-\d{2}_\d{6}_report\.md"', disposition)
