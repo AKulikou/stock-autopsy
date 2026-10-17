@@ -288,3 +288,20 @@ def test_the_page_learns_the_five_analysts_and_what_each_waits_for(client):
         "valuation_assumptions", "business_model", "forensic", "valuation", "pre_mortem"]
     assert analysts[0]["waits_for"] == "the data pack"
     assert all(a["label"] and a["waits_for"] for a in analysts)
+
+
+def test_the_active_run_names_its_company_for_a_page_that_reattaches(tmp_path, fake):
+    release = threading.Event()
+
+    def waiting_fetch(ticker, as_of):
+        release.wait(5)
+        raise UnknownTickerError("stop")
+
+    app = create_app(tmp_path / "results", fetch=waiting_fetch, ticker_map=lambda: TICKER_MAP,
+                     filer_check=fake_filer_check)
+    with TestClient(app, base_url=BASE_URL) as waiting:
+        run_id = waiting.post("/api/runs", json={"ticker": "KO", "name": "Coca Cola Co"}).json()["run_id"]
+        active = waiting.get("/api/runs/active").json()
+        assert (active["run_id"], active["ticker"], active["name"]) == (run_id, "KO", "Coca Cola Co")
+        release.set()
+        follow(waiting, run_id)

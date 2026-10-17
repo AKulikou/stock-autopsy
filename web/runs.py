@@ -48,6 +48,7 @@ class Run:
     ticker: str
     started_at: datetime
     company: str | None = None
+    name: str | None = None  # the name the page showed when Analyze was pressed (display only)
     autopsy: AutopsyRun | None = None
     out_dir: Path | None = None
     error: str | None = None
@@ -90,12 +91,12 @@ class RunManager:
         self._runs: OrderedDict[str, Run] = OrderedDict()
         self._active: str | None = None
 
-    def start(self, ticker: str) -> Run:
+    def start(self, ticker: str, name: str | None = None) -> Run:
         """Start an analysis in a background thread. Raises BusyError if one is active."""
         if not self._busy.acquire(blocking=False):
             raise BusyError(self._active)
         try:
-            run = Run(id=uuid.uuid4().hex[:12], ticker=ticker, started_at=datetime.now())
+            run = Run(id=uuid.uuid4().hex[:12], ticker=ticker, started_at=datetime.now(), name=name)
             self._runs[run.id] = run
             while len(self._runs) > KEEP_RUNS:
                 self._runs.popitem(last=False)

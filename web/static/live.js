@@ -28,3 +28,20 @@ export function afterRunFailed(state) {
   if (state === "waiting") return "not_reached";
   return state;
 }
+
+// The live heading and the browser tab name the company (M11): a run takes minutes,
+// often in one of many tabs.
+export function liveHeading({ name, ticker } = {}) {
+  if (name && ticker && name !== ticker) return `Analyzing ${name} (${ticker})`;
+  return name || ticker ? `Analyzing ${name || ticker}` : "Analyzing";
+}
+
+export function tabTitle(subject, state) {
+  return subject ? `${subject}: ${state} | Stock Autopsy` : "Stock Autopsy";
+}
+
+// "Weak case: the evidence ..." -> "weak case", for the tab of a finished result.
+export function outcomeWords(view) {
+  const committee = view.committee;
+  return committee && committee.ok ? committee.verdict_text.split(":")[0].toLowerCase() : "no conclusion";
+}

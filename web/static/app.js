@@ -2,7 +2,15 @@
 
 import { createCard, el, setCardState, updateCard, verdictBadge, verdictClass } from "./cards.js";
 import { followRun } from "./events.js";
-import { STATE_TEXT, afterLostConnection, afterRestored, afterRunFailed } from "./live.js";
+import {
+  STATE_TEXT,
+  afterLostConnection,
+  afterRestored,
+  afterRunFailed,
+  liveHeading,
+  outcomeWords,
+  tabTitle,
+} from "./live.js";
 import { renderMarkdown } from "./markdown.js";
 
 const $ = (id) => document.getElementById(id);
@@ -11,11 +19,15 @@ let timer = null;
 let languages = [];
 let defaultLanguage = null;
 let analysts = []; // [{key, label, waits_for}] in the order a run starts them
+let subject = null; // {name, ticker} of the run on screen
 
 function show(view) {
   for (const id of VIEWS) $(id).hidden = id !== view;
   window.scrollTo({ top: 0 });
-  if (view === "input-view") loadRecent();
+  if (view === "input-view") {
+    document.title = tabTitle(null);
+    loadRecent();
+  }
 }
 
 async function request(method, url, body) {
@@ -72,7 +84,7 @@ async function find(query) {
       button.append(el("span", "unsupported-note", `Cannot be analyzed. ${c.unsupported}`));
     } else {
       button.append(el("span", null, "Analyze"));
-      button.addEventListener("click", () => analyze(c.ticker));
+      button.addEventListener("click", () => analyze(c.ticker, c.name));
     }
     $("candidates").append(button);
   }
@@ -82,12 +94,13 @@ async function find(query) {
   }
 }
 
-async function analyze(ticker) {
-  const { status, data } = await request("POST", "/api/runs", { ticker }).catch(() => ({ status: 0, data: {} }));
+async function analyze(ticker, name) {
+  const { status, data } = await request("POST", "/api/runs", { ticker, name }).catch(() => ({ status: 0, data: {} }));
   if (status === 202) {
-    startLive(data.run_id, 0);
+    startLive(data.run_id, 0, null, { name, ticker });
   } else if (status === 409 && data.active_run_id) {
-    startLive(data.active_run_id, null, detailText(data));
+    const active = await request("GET", "/api/runs/active").catch(() => ({ data: {} }));
+    startLive(data.active_run_id, null, detailText(data), { name: active.data.name, ticker: active.data.ticker });
   } else {
     inputMessage(status === 0 ? "The local server does not answer." : detailText(data), true);
   }
@@ -108,6 +121,7 @@ async function loadRecent() {
 }
 
 async function openResult(runId) {
+  subject = null;
   const { status, data } = await request("GET", `/api/runs/${runId}/result`).catch(() => ({ status: 0, data: {} }));
   if (status === 200 && data.analyzed) {
     renderResult(runId, data);
@@ -234,9 +248,12 @@ function resetLive() {
   $("live-message").hidden = true;
 }
 
-function startLive(runId, elapsedS, note) {
+function startLive(runId, elapsedS, note, who = {}) {
+  subject = who;
   resetLive();
   show("live-view");
+  $("live-heading").textContent = liveHeading(who);
+  document.title = tabTitle(who.ticker || who.name, "analyzing…");
   startTimer(elapsedS);
   if (note) liveNotice(note);
   const follow = followRun(runId, {
@@ -261,6 +278,7 @@ function startLive(runId, elapsedS, note) {
 
 function stoppedRun(text) {
   clearInterval(timer);
+  document.title = tabTitle(subject?.ticker || subject?.name, "stopped");
   applyLive(afterRunFailed);
   liveNotice(text, { isError: true, buttons: [["Choose another company", () => show("input-view")]] });
 }
@@ -361,6 +379,7 @@ function evaluatorDetails(card) {
 }
 
 function renderResult(runId, view) {
+  document.title = tabTitle(subject?.ticker || view.company, outcomeWords(view));
   const root = $("result");
   root.replaceChildren();
   const c = view.committee;
@@ -509,7 +528,9 @@ async function init() {
   });
   $("again").addEventListener("click", () => show("input-view"));
   const active = await request("GET", "/api/runs/active");
-  if (active.data.run_id) startLive(active.data.run_id, active.data.elapsed_s);
+  if (active.data.run_id) {
+    startLive(active.data.run_id, active.data.elapsed_s, null, { name: active.data.name, ticker: active.data.ticker });
+  }
   else loadRecent();
 }
 

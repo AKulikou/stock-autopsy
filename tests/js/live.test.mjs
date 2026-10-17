@@ -22,3 +22,15 @@ test("a lost connection makes running items unknown, and they run again when it 
 test("each new state has words", () => {
   for (const state of ["unknown", "stopped", "not_reached"]) assert.ok(STATE_TEXT[state]);
 });
+
+test("the live heading and the tab name the company being analyzed", async () => {
+  const { liveHeading, tabTitle, outcomeWords } = await import("../../web/static/live.js");
+  assert.equal(liveHeading({ name: "Levi Strauss & Co", ticker: "LEVI" }), "Analyzing Levi Strauss & Co (LEVI)");
+  assert.equal(liveHeading({ ticker: "LEVI" }), "Analyzing LEVI");
+  assert.equal(liveHeading({}), "Analyzing");
+  assert.equal(tabTitle("LEVI", "analyzing…"), "LEVI: analyzing… | Stock Autopsy");
+  const view = { committee: { ok: true, verdict_text: "Weak case: the evidence does not support the thesis" } };
+  assert.equal(tabTitle("LEVI", outcomeWords(view)), "LEVI: weak case | Stock Autopsy");
+  assert.equal(outcomeWords({ committee: { ok: false } }), "no conclusion");
+  assert.equal(tabTitle(null), "Stock Autopsy");
+});

@@ -99,6 +99,7 @@ class ResolveRequest(BaseModel):
 
 class RunRequest(BaseModel):
     ticker: str = Field(min_length=1, max_length=10)
+    name: str | None = Field(None, max_length=200, description="The company name on the page; display only.")
 
 
 class TranslationRequest(BaseModel):
@@ -155,7 +156,7 @@ def create_app(
     @app.post("/api/runs", status_code=202)
     def start_run(body: RunRequest):
         try:
-            run = runs.start(normalize_ticker(body.ticker))
+            run = runs.start(normalize_ticker(body.ticker), body.name)
         except BusyError as e:
             return JSONResponse(
                 {"detail": "Another analysis is running. It takes about 3 minutes; this page follows it.",
@@ -168,8 +169,9 @@ def create_app(
     def active_run():
         run = runs.get(runs.active_run_id) if runs.active_run_id else None
         if run is None:
-            return {"run_id": None, "elapsed_s": None}
-        return {"run_id": run.id, "elapsed_s": round((datetime.now() - run.started_at).total_seconds())}
+            return {"run_id": None, "elapsed_s": None, "ticker": None, "name": None}
+        return {"run_id": run.id, "elapsed_s": round((datetime.now() - run.started_at).total_seconds()),
+                "ticker": run.ticker, "name": run.name or run.company}
 
     @app.get("/api/runs/recent")
     def recent_runs():
