@@ -252,3 +252,9 @@ def test_finished_analyses_can_be_reopened_from_the_recent_list(client, fake):
     assert recent[1]["company"] == "Coca Cola Co" and recent[1]["outcome"] == "Conditional case"
     assert recent[0]["analyzed"] is False
     assert all("KO" not in text.split() for r in recent for text in shown_texts(r))
+
+
+def test_the_tagline_claims_only_what_the_number_check_proves(client):
+    page = client.get("/").text
+    assert "every quoted number checked against the data" in page
+    assert "traced to a filing" not in page

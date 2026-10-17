@@ -7,8 +7,10 @@ events for progress, bound to `127.0.0.1`, no accounts, history or hosting.
 
 ## The point
 
-An AI analysis you can check. The company's own SEC filings, four analysts and a
-committee, and every number on the screen traced to a filing or to Python's arithmetic.
+An AI analysis you can check: built on SEC filings and market prices, with every quoted
+number checked against the data. (The check proves that a quoted number matches the data
+pack, not that each number goes back to a filing: the price and the market value come from
+Yahoo Finance.)
 The reader is not an analyst: the answer comes first, in plain words, with the analysis
 behind it for anyone who wants to look. The answer is a statement about the strength of
 the evidence, never "buy" or "sell".
