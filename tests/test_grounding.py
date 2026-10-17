@@ -8,11 +8,13 @@ import json
 from pathlib import Path
 
 import pytest
+from derived_mutations import FACTORS, claims
 
 from reporting.grounding import (
     absent_as_zero,
     check_derived_claim,
     formula_values,
+    operand_constants,
     prose_numbers,
 )
 from reporting.number_check import check_claim, quantities
@@ -235,3 +237,72 @@ def test_a_dash_between_two_numbers_is_a_range_not_a_minus():
 @pytest.mark.parametrize("text", ["a 2-point step in operating margin", "a 2 percentage point step"])
 def test_percentage_points_are_read_as_percents(text):
     assert quantities(text)[0].candidates == [0.02, 2.0]
+
+
+# --- calculated claims: the three correct KO statements once reported as not reproduced (M15) ---
+
+KO_2026 = {
+    "derived": {"valuation": {"pe": 29.49}},
+    "balance_sheet_latest": {"total_debt": 45_000_000_000, "cash": 10_275_000_000,
+                             "short_term_investments": 2_000_000_000},
+    "ttm": {"operating_income": 13_300_000_000, "depreciation_amortization": 2_209_000_000},
+    "financials_annual": [
+        {"fiscal_year": 2025, "gross_profit": 29_000_000_000, "operating_income": 13_218_000_000},
+        {"fiscal_year": 2024, "gross_profit": 28_745_000_000, "operating_income": 10_000_000_000},
+    ],
+}
+
+
+@pytest.mark.parametrize(
+    "statement, basis",
+    [
+        ("A 50% share price fall at unchanged trailing earnings would take the P/E to about 14.7.",
+         "0.5 * derived.valuation.pe (29.49)"),
+        ("Net debt is about $32.7 billion, about 2.1 times trailing EBITDA.",
+         "(balance_sheet_latest.total_debt - balance_sheet_latest.cash - "
+         "balance_sheet_latest.short_term_investments) / "
+         "(ttm.operating_income + ttm.depreciation_amortization)"),
+        ("Costs below gross profit fell by about $3.0 billion.",
+         "(financials_annual.FY2024.gross_profit - financials_annual.FY2024.operating_income) - "
+         "(financials_annual.FY2025.gross_profit - financials_annual.FY2025.operating_income)"),
+    ],
+)
+def test_correct_ko_calculations_are_reproduced(statement, basis):
+    assert check_derived_claim({"statement": statement, "basis": basis}, KO_2026)["status"] == "reproduced"
+
+
+def test_a_quoted_value_in_brackets_is_not_an_operand():
+    assert operand_constants("0.5 * derived.valuation.pe (29.49)") == [0.5]
+    assert operand_constants("revenue / 2 - 1; x * 100") == [2.0]  # 1 and 100 are the formula's shape
+
+
+def test_a_growth_rate_keeps_its_sign():
+    basis = "financials_annual.FY2025.operating_income / financials_annual.FY2024.operating_income - 1"
+    rose = {"statement": "Operating income rose about 32.2% in FY2025.", "basis": basis}
+    assert check_derived_claim(rose, KO_2026)["status"] == "reproduced"
+    fell = {**rose, "statement": "Operating income fell about 32.2% in FY2025."}
+    assert check_derived_claim(fell, KO_2026)["status"] == "not_reproduced"
+
+
+# --- calculated claims: mutation test on the golden packs (tests/derived_mutations.py) ---
+
+
+def reproduced_share(factor: float = 1.0, flip: bool = False, kinds=None) -> float:
+    cases = [(k, c, p) for k, c, p in claims(factor, flip) if kinds is None or k in kinds]
+    done = [check_derived_claim(c, p)["status"] == "reproduced" for _, c, p in cases]
+    return sum(done) / len(done)
+
+
+def test_correct_calculations_on_the_golden_packs_are_reproduced():
+    assert reproduced_share() >= 0.99
+
+
+@pytest.mark.parametrize("factor", FACTORS)
+def test_wrong_calculations_on_the_golden_packs_are_caught(factor):
+    assert 1 - reproduced_share(factor) >= 0.9
+
+
+def test_a_flipped_direction_of_a_growth_rate_is_caught():
+    # A difference of two data terms has no sign of its own, so "rose by" and "fell by"
+    # both fit it: a flipped direction is caught for growth rates only (measured in M15).
+    assert 1 - reproduced_share(flip=True, kinds={"growth"}) >= 0.9

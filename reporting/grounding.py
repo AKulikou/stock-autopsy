@@ -4,7 +4,11 @@ run's numbers can be traced wherever they appear:
 
 - Calculated claims (DERIVED): every number must be reproducible from the values
   the basis cites, directly or by one step of arithmetic (difference, sum, ratio,
-  change, product, or a small constant such as "/ 2" written in the basis).
+  change, product, or a small constant such as "/ 2" written in the basis), or from
+  a formula written in the basis: its result or any part of it (a numerator, a
+  denominator). A constant the formula uses ("0.5 * pe") is explained when the
+  statement states it ("a 50% fall"). A difference of two data terms has no sign of
+  its own (a fall may be written old - new), so its size also matches "fell by".
 - Numbers in prose: every number in the evaluators' and the committee's text
   must appear in the pack, the valuation math, or one of the run's claims.
   Thresholds and plans the model chose itself (invalidation signals, the
@@ -66,20 +70,29 @@ def computed_from(values: list[float], constants: list[float] = ()) -> list[floa
     return results
 
 
-_ARITHMETIC = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.Constant, ast.Add, ast.Sub, ast.Mult,
-               ast.Div, ast.Pow, ast.USub, ast.UAdd)
+_ARITHMETIC = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.Constant, ast.Name, ast.Load, ast.Add,
+               ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.USub, ast.UAdd)
 _THOUSANDS = re.compile(r"(?<=\d),(?=\d{3}\b)")
+# A literal next to an arithmetic operator is an operand ("0.5 * pe", "x / 2"); one in
+# brackets after a path is the model quoting the value ("pe (29.49)").
+_OPERAND = re.compile(
+    r"(?:(?<=[*/+\-])|(?<=[*/+\-]\s))(\d+(?:\.\d+)?)(?![\w.])"
+    r"|(?<![\w.])(\d+(?:\.\d+)?)(?=\s?[*/+\-])"
+)
+# Constants of a formula's shape (a / b - 1, x * 100), not amounts a statement would state.
+CONVENTION_CONSTANTS = (0, 1, 100)
+_ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 
 
-def formula_values(basis: str, roots: dict) -> list[float]:
+def _formulas(basis: str, roots: dict) -> list[tuple[ast.AST, dict[str, float]]]:
     """
-    The value of each formula written in the basis ("a - (b + c)", "x / y = 5.3 / 8.8"),
-    with every pack path replaced by its value. Pure arithmetic only: anything else
+    Each formula written in the basis ("a - (b + c)", "x / y = 5.3 / 8.8") as a parse tree
+    whose pack paths are names, with their values. Pure arithmetic only: anything else
     (a word, a group of values, a call) leaves that formula out. Never uses eval().
     """
-    values = []
+    formulas = []
     for piece in re.split(r"[=;]", basis):
-        text, ok = piece, True
+        text, names, ok = piece, {}, True
         for token in _PATH_TOKEN.findall(piece):
             try:
                 value = resolve(roots, token.rstrip("."))
@@ -89,7 +102,9 @@ def formula_values(basis: str, roots: dict) -> list[float]:
             if isinstance(value, bool) or not isinstance(value, int | float):
                 ok = False
                 break
-            text = text.replace(token, f"({value!r})", 1)
+            name = f"__p{len(names)}"
+            names[name] = float(value)
+            text = text.replace(token, f" {name} ", 1)
         text = _THOUSANDS.sub("", text).replace("^", "**").strip()
         if not ok or not text:
             continue
@@ -97,26 +112,75 @@ def formula_values(basis: str, roots: dict) -> list[float]:
             tree = ast.parse(text, mode="eval")
         except SyntaxError:
             continue
-        if not all(isinstance(node, _ARITHMETIC) for node in ast.walk(tree)):
-            continue
-        try:
-            result = _evaluate(tree.body)
-        except (ArithmeticError, ValueError, TypeError):
-            continue
-        if isinstance(result, int | float) and math.isfinite(result):
-            values.append(float(result))
+        nodes = list(ast.walk(tree))
+        if all(isinstance(n, _ARITHMETIC) for n in nodes) and all(
+            n.id in names for n in nodes if isinstance(n, ast.Name)
+        ):
+            formulas.append((tree.body, names))
+    return formulas
+
+
+def _value(node: ast.AST, names: dict[str, float]) -> float | None:
+    try:
+        result = _evaluate(node, names)
+    except (ArithmeticError, ValueError, TypeError):
+        return None
+    return float(result) if isinstance(result, int | float) and math.isfinite(result) else None
+
+
+def formula_values(basis: str, roots: dict) -> list[float]:
+    """The value of each formula written in the basis, every pack path replaced by its value."""
+    return [v for tree, names in _formulas(basis, roots) if (v := _value(tree, names)) is not None]
+
+
+def _has_data(node: ast.AST) -> bool:
+    return any(isinstance(n, ast.Name) for n in ast.walk(node))
+
+
+def formula_parts(basis: str, roots: dict) -> list[float]:
+    """
+    Every value inside the basis formulas: each formula and each of its parts (a
+    numerator, a denominator, a bracket). A difference of two data terms counts with
+    both signs, because its sign is the writer's convention (a fall written old - new);
+    a change such as a / b - 1 keeps its sign.
+    """
+    values = []
+    for tree, names in _formulas(basis, roots):
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.BinOp | ast.UnaryOp):
+                continue
+            value = _value(node, names)
+            if value is None:
+                continue
+            values.append(value)
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Sub):
+                if _has_data(node.left) and _has_data(node.right):
+                    values.append(-value)
     return values
 
 
-def _evaluate(node: ast.AST) -> float:
+def operand_constants(basis: str) -> list[float]:
+    """Small literals the basis uses as operands ("0.5 * pe"), not values it quotes in brackets."""
+    text = _ISO_DATE.sub(" ", _PATH_TOKEN.sub(" P ", basis))
+    found = []
+    for match in _OPERAND.finditer(text):
+        number = float(match.group(1) or match.group(2))
+        if number <= MAX_CONSTANT and number not in CONVENTION_CONSTANTS:
+            found.append(number)
+    return found
+
+
+def _evaluate(node: ast.AST, names: dict[str, float] | None = None) -> float:
+    if isinstance(node, ast.Name):
+        return (names or {})[node.id]
     if isinstance(node, ast.Constant):
         if isinstance(node.value, bool) or not isinstance(node.value, int | float):
             raise TypeError("not a number")
         return node.value
     if isinstance(node, ast.UnaryOp):
-        operand = _evaluate(node.operand)
+        operand = _evaluate(node.operand, names)
         return -operand if isinstance(node.op, ast.USub) else operand
-    left, right = _evaluate(node.left), _evaluate(node.right)
+    left, right = _evaluate(node.left, names), _evaluate(node.right, names)
     if isinstance(node.op, ast.Pow):
         if abs(right) > 50:
             raise ValueError("exponent too large")
@@ -153,7 +217,12 @@ def check_derived_claim(claim: dict, roots: dict) -> dict:
         return {**outcome, "status": "no_number"}
     if not cited:
         return {**outcome, "status": "no_data_cited"}
-    reachable = cited + formula_values(claim["basis"], roots) + computed_from(cited, constants)
+    reachable = (
+        cited
+        + formula_parts(claim["basis"], roots)
+        + computed_from(cited, constants)
+        + operand_constants(claim["basis"])
+    )
     unexplained = [q.candidates[0] * (q.sign or 1) for q in found if not found_in(q, reachable)]
     if not unexplained:
         return {**outcome, "status": "reproduced"}

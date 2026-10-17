@@ -8,6 +8,28 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-17 — calculation check: stated constants, parts of a formula, the sign of a difference (M15)
+
+- **What (grading only, no model input changes):** in the check of calculated (DERIVED) claims,
+  (1) a constant the basis formula uses as an operand ("0.5 * pe") counts as explained when the
+  statement states it ("a 50% fall"); a value the model quotes in brackets ("pe (29.49)") and the
+  shape constants 0, 1 and 100 do not count; (2) every part of a basis formula (a numerator, a
+  denominator, a bracket) counts as reproduced; (3) a difference of two data terms counts with
+  both signs, because its sign is the writer's convention ("costs fell by $3.0 billion" written
+  as old - new), while a change such as a / b - 1 keeps its sign.
+- **Why:** three correct Coca-Cola statements of the 2026-10-17 web run were "not reproduced".
+- **Mutation test of calculated claims (new, tests/derived_mutations.py, 5 golden packs, 318
+  claims):** correct claims reproduced 280/318 before, 318/318 after (the "spread" kind, the KO
+  case, 3/29 -> 29/29; net debt over income with a three-term numerator 5/14 -> 14/14). Errors
+  caught, before = after: x1.1 313/318, x0.75 313/318, x2 317/318, x10 313/318 (98.7% overall);
+  a flipped direction on a growth rate 132/133. A flipped direction on a difference ("rose by"
+  for a fall) is not caught, before (both orders of a pair were already accepted, and the KO
+  "spread" accepted only the flipped one) or after.
+- **DATA claims mutation test:** that code did not change; 208 golden values, correct 100%
+  matched, errors caught x1.1 93.8%, x0.75 96.2%, x2 100%, x10 100%, flipped sign 100%.
+- **Regrade of `v3_release` (free):** calculations reproduced 195/211 -> 198/211 (SNOW rep1 +2,
+  KHC rep0 +1); no grade, verdict or wrong-number count changed.
+
 ## 2026-10-17 — "what the price assumes" sentence: no "4% to 4%" ranges (M14)
 
 - **What:** the Python sentence on what the price assumes, which valuation step B and the
