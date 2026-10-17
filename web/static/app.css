@@ -135,7 +135,15 @@ select {
   box-shadow: var(--shadow);
   transition: border-color 0.4s, opacity 0.4s;
 }
-.card.is-waiting { opacity: 0.75; }
+.card.is-running { opacity: 0.85; }
+.card.is-unknown { opacity: 0.85; border-style: dashed; }
+.card.is-stopped { border-top-color: var(--danger); }
+.status-mark { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--verdict-pending); }
+.card.is-stopped .status-mark { border-color: var(--danger); background: var(--danger); }
+.stage.is-unknown { border-style: dashed; }
+.stage.is-stopped { border-color: var(--danger); color: var(--text); }
+.stage.is-not_reached { opacity: 0.7; }
+.recent { margin-top: var(--space-6); }
 .card.is-failed { border-color: var(--danger); border-top-color: var(--danger); }
 .card.is-skipped { opacity: 0.6; }
 .card-question { margin: 0 0 var(--space-3); color: var(--text-muted); font-size: 0.9rem; }

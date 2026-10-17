@@ -251,3 +251,24 @@ def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
         "kept_in_english": kept,
         "cost_usd": round(cost or 0.0, 4),
     }
+
+
+def recent_view(run: Run) -> dict:
+    """One finished run in the "Recent analyses" list, in words (no ticker)."""
+    autopsy = run.autopsy
+    company = company_display(autopsy.pack["company_name"]) if autopsy else None
+    synthesis = autopsy.synthesis if autopsy else {}
+    if synthesis.get("status") == "success":
+        outcome = COMMITTEE_VERDICTS[synthesis["verdict"]].split(":")[0]
+    elif autopsy:
+        outcome = "no conclusion"
+    else:
+        outcome = "stopped before the analysis"
+    return {
+        "run_id": run.id,
+        "company": company or "A company that could not be analyzed",
+        "analyzed": autopsy is not None,
+        "verdict": synthesis.get("verdict"),
+        "outcome": outcome,
+        "finished": run.finished_at.strftime("%H:%M") if run.finished_at else None,
+    }

@@ -1,7 +1,8 @@
 // The page: choose a company -> data and live analysis -> result (docs/web_ui.md).
 
-import { createCard, el, updateCard, verdictBadge, verdictClass } from "./cards.js";
+import { createCard, el, setCardState, updateCard, verdictBadge, verdictClass } from "./cards.js";
 import { followRun } from "./events.js";
+import { STATE_TEXT, afterLostConnection, afterRestored, afterRunFailed } from "./live.js";
 import { renderMarkdown } from "./markdown.js";
 
 const $ = (id) => document.getElementById(id);
@@ -13,6 +14,7 @@ let defaultLanguage = null;
 function show(view) {
   for (const id of VIEWS) $(id).hidden = id !== view;
   window.scrollTo({ top: 0 });
+  if (view === "input-view") loadRecent();
 }
 
 async function request(method, url, body) {
@@ -90,16 +92,70 @@ async function analyze(ticker) {
   }
 }
 
+// Finished analyses the server still holds: a paid result is never only in results/.
+async function loadRecent() {
+  const { status, data } = await request("GET", "/api/runs/recent").catch(() => ({ status: 0, data: {} }));
+  const runs = status === 200 ? data.runs.filter((r) => r.analyzed) : [];
+  $("recent").hidden = !runs.length;
+  $("recent-list").replaceChildren(...runs.map((run) => {
+    const button = el("button", "candidate secondary");
+    button.type = "button";
+    button.append(el("strong", null, run.company), el("span", "muted", `${capitalize(run.outcome)} · finished ${run.finished}`));
+    button.addEventListener("click", () => openResult(run.run_id));
+    return button;
+  }));
+}
+
+async function openResult(runId) {
+  const { status, data } = await request("GET", `/api/runs/${runId}/result`).catch(() => ({ status: 0, data: {} }));
+  if (status === 200 && data.analyzed) {
+    renderResult(runId, data);
+    show("result-view");
+  } else {
+    inputMessage(status === 0 ? "The local server does not answer." : data.error || detailText(data), true);
+  }
+}
+
 // ---------- 2-3. Live ----------
 
 function setStage(id, state, text) {
   const stage = $(id);
   if (!stage) return;
   stage.className = `stage is-${state}`;
+  stage.dataset.state = state;
   const target = stage.querySelector(".stage-text");
+  if (state === "running" && typeof text === "string") stage.dataset.runningText = text;
   target.replaceChildren();
   if (typeof text === "string") target.textContent = text;
   else if (text) target.append(text);
+}
+
+// Move every card and stage of the live view to its next state (live.js).
+function applyLive(next) {
+  for (const node of $("live-view").querySelectorAll("[data-state]")) {
+    const state = next(node.dataset.state);
+    if (state === node.dataset.state) continue;
+    const text = STATE_TEXT[state] || (node.dataset.runningText ?? "Working…");
+    if (node.classList.contains("card")) setCardState(node, state, text);
+    else setStage(node.id, state, text);
+  }
+}
+
+function liveNotice(text, { isError = false, buttons = [] } = {}) {
+  const box = $("live-message");
+  box.classList.toggle("is-error", isError);
+  box.replaceChildren(el("p", null, text));
+  if (buttons.length) {
+    const row = el("div", "buttons");
+    for (const [label, action] of buttons) {
+      const button = el("button", "secondary", label);
+      button.type = "button";
+      button.addEventListener("click", action);
+      row.append(button);
+    }
+    box.append(row);
+  }
+  box.hidden = false;
 }
 
 function startTimer(elapsedS) {
@@ -129,7 +185,7 @@ function onProgress(event) {
       }
       break;
     case "pack":
-      setStage("stage-pack", "done", capitalize(event.text) + ".");
+      setStage("stage-pack", event.status === "done" ? "done" : "failed", capitalize(event.text) + ".");
       break;
     case "dcf":
       setStage("stage-dcf", event.status === "done" ? "done" : "failed", event.text || "");
@@ -178,30 +234,52 @@ function startLive(runId, elapsedS, note) {
   resetLive();
   show("live-view");
   startTimer(elapsedS);
-  if (note) {
-    $("live-message").textContent = note;
-    $("live-message").classList.remove("is-error");
-    $("live-message").hidden = false;
-  }
-  followRun(`/api/runs/${runId}/events`, onProgress, () => finishRun(runId));
+  if (note) liveNotice(note);
+  const follow = followRun(runId, {
+    onEvent: onProgress,
+    onEnd: (event) => finishRun(runId, event),
+    onConnection: (state) => {
+      if (state === "lost") {
+        // The server may still be working: keep the timer and the cards, offer no new start.
+        applyLive(afterLostConnection);
+        liveNotice("Lost the connection to the local server; reconnecting. The analysis may still be running there.");
+      } else if (state === "restored") {
+        applyLive(afterRestored);
+        $("live-message").hidden = true;
+      } else if (state === "gave_up") {
+        liveNotice("Lost the connection; the analysis may still be running on the server.", {
+          buttons: [["Check again", () => follow.retry()]],
+        });
+      }
+    },
+  });
 }
 
-async function finishRun(runId) {
+function stoppedRun(text) {
   clearInterval(timer);
-  const { status, data } = await request("GET", `/api/runs/${runId}/result`).catch(() => ({ status: 0 }));
-  if (status !== 200 || !data.analyzed) {
-    const box = $("live-message");
-    box.classList.add("is-error");
-    box.replaceChildren(el("p", null, data?.error || "The analysis stopped unexpectedly."));
-    const back = el("button", "secondary", "Choose another company");
-    back.type = "button";
-    back.addEventListener("click", () => show("input-view"));
-    box.append(back);
-    box.hidden = false;
+  applyLive(afterRunFailed);
+  liveNotice(text, { isError: true, buttons: [["Choose another company", () => show("input-view")]] });
+}
+
+async function finishRun(runId, event) {
+  if (event.status !== "done") {
+    stoppedRun(event.text || "The analysis stopped on the server.");
     return;
   }
-  renderResult(runId, data);
-  show("result-view");
+  const { status, data } = event.result
+    ? { status: 200, data: event.result }
+    : await request("GET", `/api/runs/${runId}/result`).catch(() => ({ status: 0, data: {} }));
+  if (status === 200 && data.analyzed) {
+    clearInterval(timer);
+    renderResult(runId, data);
+    show("result-view");
+  } else if (status === 200) {
+    stoppedRun(data.error || "The analysis stopped on the server.");
+  } else {
+    clearInterval(timer);
+    const text = status === 0 ? "The analysis finished, but the local server does not answer." : detailText(data);
+    liveNotice(text, { isError: true, buttons: [["Check again", () => finishRun(runId, event)]] });
+  }
 }
 
 // ---------- 4. Result ----------
@@ -426,6 +504,7 @@ async function init() {
   $("again").addEventListener("click", () => show("input-view"));
   const active = await request("GET", "/api/runs/active");
   if (active.data.run_id) startLive(active.data.run_id, active.data.elapsed_s);
+  else loadRecent();
 }
 
 init();

@@ -31,8 +31,9 @@ export function verdictBadge(verdictText, code) {
 
 // A card for an item that has started: {key, label, text (its question)}.
 export function createCard(container, { key, label, text }) {
-  const card = el("article", "card is-waiting");
+  const card = el("article", "card is-running");
   card.dataset.key = key;
+  card.dataset.state = "running";
   card.append(el("h3", "card-title", label));
   if (text) card.append(el("p", "card-question", text));
   const status = el("div", "card-status");
@@ -45,7 +46,8 @@ export function createCard(container, { key, label, text }) {
 
 // Update a card from a progress event of status done, failed or skipped.
 export function updateCard(card, event) {
-  card.classList.remove("is-waiting");
+  card.classList.remove("is-running");
+  card.dataset.state = event.status;
   const status = card.querySelector(".card-status");
   const summary = card.querySelector(".card-summary");
   status.replaceChildren();
@@ -66,4 +68,15 @@ export function updateCard(card, event) {
     status.append(el("span", "badge badge-skipped", "Not relevant here"));
     summary.textContent = event.text || "";
   }
+}
+
+// A card whose run ended or lost its connection while it was working (live.js):
+// state "running" again, "unknown" or "stopped", with the words for it.
+export function setCardState(card, state, text) {
+  card.classList.remove(`is-${card.dataset.state}`);
+  card.classList.add(`is-${state}`);
+  card.dataset.state = state;
+  const status = card.querySelector(".card-status");
+  const pulse = state === "running" ? el("span", "pulse") : el("span", "status-mark");
+  status.replaceChildren(pulse, el("span", "card-status-text", text));
 }

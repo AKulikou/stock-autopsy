@@ -30,7 +30,14 @@ the evidence, never "buy" or "sell".
    sentence on what today's price assumes.
 3. **Analysis (about 3 minutes).** One card per analyst: grey, then the verdict word,
    the confidence and the analyst's one-sentence key finding. The committee line last,
-   then the number check.
+   then the number check. The server sends a comment line every 15 s while the analysts
+   are silent; if the stream drops anyway, the page reopens it from the next event
+   (`?since=N`), and if that fails it asks for the result until the server stops answering
+   "still running". A lost connection is never shown as a failed run: running cards say
+   their status is unknown, the timer goes on, and "Check again" appears if the server
+   stays silent. A real failure marks running cards "Stopped" and waiting steps "Not
+   reached"; the screen is not reset (owner's decision, M6). Finished analyses still held
+   by the server are listed under "Recent analyses" on the first screen.
 4. **Result.** On top: the verdict in words, confidence and its reason, the committee's
    headline, "what the price assumes" (written by Python), and "not advice to buy or
    sell". Then for (3), against (3), what we do not know, what to watch, the conditions.

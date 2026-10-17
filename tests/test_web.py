@@ -1,6 +1,8 @@
 """The web UI's API end to end, with a fake Claude and the frozen Coca-Cola fixture (no network)."""
 
 import json
+import threading
+import time
 from dataclasses import replace
 
 import pytest
@@ -12,6 +14,7 @@ from datalayer.pack import build_pack
 from datalayer.sec import UnknownTickerError
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
 from translate.numbers import numbers_in
+from web import app as app_module
 from web import resolve as resolve_module
 from web.app import create_app
 from web.resolve import Suggestion, Suggestions
@@ -192,3 +195,60 @@ def test_an_analysis_that_did_not_finish_cannot_be_translated(client, fake):
     follow(client, run_id)
     assert client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).status_code == 409
     assert fake.requests == []
+
+
+def test_events_resume_from_a_given_event_without_a_replay(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    everything = follow(client, run_id)
+    later = []
+    with client.stream("GET", f"/api/runs/{run_id}/events?since=3") as stream:
+        for line in stream.iter_lines():
+            if line.startswith("data: "):
+                later.append(json.loads(line[len("data: "):]))
+    assert later == everything[3:]
+
+
+def test_a_quiet_run_sends_a_heartbeat_comment(tmp_path, fake, monkeypatch):
+    def slow_fetch(ticker, as_of):
+        time.sleep(0.6)
+        raise UnknownTickerError(f"{ticker}: Stock Autopsy covers US SEC filers only.")
+
+    monkeypatch.setattr(app_module, "HEARTBEAT_S", 0.1)
+    app = create_app(tmp_path / "results", fetch=slow_fetch, ticker_map=lambda: TICKER_MAP,
+                     filer_check=fake_filer_check)
+    with TestClient(app, base_url=BASE_URL) as slow:
+        run_id = slow.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+        with slow.stream("GET", f"/api/runs/{run_id}/events") as stream:
+            lines = list(stream.iter_lines())
+    assert ": still working" in lines
+    assert json.loads([line for line in lines if line.startswith("data: ")][-1][6:])["stage"] == "run"
+
+
+def test_a_running_analysis_answers_still_running_not_failed(tmp_path, fake):
+    release = threading.Event()
+
+    def waiting_fetch(ticker, as_of):
+        release.wait(5)
+        raise UnknownTickerError("stop")
+
+    app = create_app(tmp_path / "results", fetch=waiting_fetch, ticker_map=lambda: TICKER_MAP,
+                     filer_check=fake_filer_check)
+    with TestClient(app, base_url=BASE_URL) as waiting:
+        run_id = waiting.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+        answer = waiting.get(f"/api/runs/{run_id}/result")
+        assert answer.status_code == 409 and answer.json()["detail"] == "The analysis is still running."
+        assert waiting.get("/api/runs/recent").json()["runs"] == []
+        release.set()
+        follow(waiting, run_id)
+
+
+def test_finished_analyses_can_be_reopened_from_the_recent_list(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    follow(client, run_id)
+    failed_id = client.post("/api/runs", json={"ticker": "ZZZZ"}).json()["run_id"]
+    follow(client, failed_id)
+    recent = client.get("/api/runs/recent").json()["runs"]
+    assert [r["run_id"] for r in recent] == [failed_id, run_id]  # newest first
+    assert recent[1]["company"] == "Coca Cola Co" and recent[1]["outcome"] == "Conditional case"
+    assert recent[0]["analyzed"] is False
+    assert all("KO" not in text.split() for r in recent for text in shown_texts(r))

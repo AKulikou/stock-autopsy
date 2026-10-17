@@ -7,7 +7,9 @@ The FastAPI application: one page and a small JSON API (design: docs/web_ui.md).
                                      checked for 10-K / 10-Q reports in its filing history
     POST /api/runs {ticker}          start an analysis (one at a time)
     GET  /api/runs/active            the run in progress, if any (to reattach after a reload)
-    GET  /api/runs/{id}/events       progress as server-sent events, from the first event
+    GET  /api/runs/recent            finished runs still in memory, to reopen their results
+    GET  /api/runs/{id}/events?since=N  progress as server-sent events from event N (default the
+                                     first), with a comment line as a heartbeat while it is quiet
     GET  /api/runs/{id}/result       the finished result, in words
     GET  /api/runs/{id}/files/{kind} downloads: report (report.json is not offered)
     POST /api/runs/{id}/translation {language}  a translated copy of the finished report (paid, cheap)
@@ -23,12 +25,13 @@ import json
 import logging
 import os
 import threading
+import time
 from collections.abc import Callable
 from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -42,7 +45,7 @@ from translate.languages import DEFAULT_LANGUAGE, language_name, languages_for_p
 from translate.translator import translate_report, translated_path
 from web.resolve import FilerCheck, resolve
 from web.runs import BusyError, RunManager, fetch_live
-from web.view import download_paths, run_view, translation_view
+from web.view import download_paths, recent_view, run_view, translation_view
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +53,10 @@ ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 LOCAL_HOSTS = ("127.0.0.1", "localhost")
 EVENT_POLL_S = 0.3
+# An analyst call is silent for about a minute; a comment line every few seconds keeps
+# the stream from looking dead to the browser or anything in between (M4, 2026-10-17:
+# a stream dropped in a 40-second silence and the page reported a failure).
+HEARTBEAT_S = 15.0
 MEDIA_TYPES = {"report": "text/markdown; charset=utf-8"}
 EXAMPLES = (
     ("Coca-Cola", "KO"),
@@ -161,12 +168,18 @@ def create_app(
             return {"run_id": None, "elapsed_s": None}
         return {"run_id": run.id, "elapsed_s": round((datetime.now() - run.started_at).total_seconds())}
 
+    @app.get("/api/runs/recent")
+    def recent_runs():
+        return {"runs": [recent_view(run) for run in runs.recent()]}
+
     @app.get("/api/runs/{run_id}/events")
-    async def run_events(run_id: str):
+    async def run_events(run_id: str, since: int = Query(0, ge=0)):
+        """From event `since` on, so a page that lost the stream resumes without a replay."""
         run = get_run(run_id)
 
         async def stream():
-            sent = 0
+            sent = since
+            quiet_since = time.monotonic()
             while True:
                 events, finished = run.events_since(sent)
                 for event in events:
@@ -174,6 +187,11 @@ def create_app(
                 sent += len(events)
                 if finished:
                     return
+                if events:
+                    quiet_since = time.monotonic()
+                elif time.monotonic() - quiet_since >= HEARTBEAT_S:
+                    yield ": still working\n\n"  # a comment line: browsers ignore it
+                    quiet_since = time.monotonic()
                 await asyncio.sleep(EVENT_POLL_S)
 
         return StreamingResponse(stream(), media_type="text/event-stream",

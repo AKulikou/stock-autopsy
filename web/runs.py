@@ -51,6 +51,7 @@ class Run:
     autopsy: AutopsyRun | None = None
     out_dir: Path | None = None
     error: str | None = None
+    finished_at: datetime | None = None
     _events: list[dict] = field(default_factory=list)
     _finished: bool = False
     _lock: threading.Lock = field(default_factory=threading.Lock)
@@ -62,6 +63,7 @@ class Run:
     def finish(self, event: ProgressEvent) -> None:
         with self._lock:
             self._events.append(event.to_dict())
+            self.finished_at = datetime.now()
             self._finished = True
 
     def events_since(self, count: int) -> tuple[list[dict], bool]:
@@ -107,6 +109,10 @@ class RunManager:
 
     def get(self, run_id: str) -> Run | None:
         return self._runs.get(run_id)
+
+    def recent(self) -> list[Run]:
+        """Finished runs still in memory, newest first."""
+        return [run for run in reversed(self._runs.values()) if run.finished]
 
     @property
     def active_run_id(self) -> str | None:
