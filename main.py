@@ -44,9 +44,9 @@ def main(argv: list[str] | None = None) -> int:
     from analysis.runner import run_autopsy
     from core.token_summary import format_cost, log_token_summary
     from datalayer.cache import DailyCache
-    from datalayer.fetch import fetch_company
+    from datalayer.fetch import DataUnavailableError, fetch_company
     from datalayer.pack import HORIZONS, RISK_TOLERANCES
-    from datalayer.sec import SecClient
+    from datalayer.sec import SecAccessError, SecClient, UnknownTickerError
     from reporting.save import save_run
     from reporting.wording import COMMITTEE_VERDICTS, CONFIDENCE, company_display
 
@@ -59,8 +59,12 @@ def main(argv: list[str] | None = None) -> int:
     as_of = date.today()
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_path = setup_logging(stamp)
-    raw = fetch_company(args.ticker, as_of, SecClient(os.getenv("SEC_USER_AGENT")), DailyCache(as_of))
-    run = run_autopsy(raw, {"horizon": args.horizon, "risk_tolerance": args.risk})
+    try:
+        raw = fetch_company(args.ticker, as_of, SecClient(os.getenv("SEC_USER_AGENT")), DailyCache(as_of))
+        run = run_autopsy(raw, {"horizon": args.horizon, "risk_tolerance": args.risk})
+    except (UnknownTickerError, DataUnavailableError, SecAccessError) as e:
+        print(f"\nNo analysis: {e}")
+        return 2
 
     out = save_run(run, raw.ticker, as_of, RESULTS, datetime.strptime(stamp, "%Y%m%d_%H%M%S"))
     log_token_summary(run.calls)

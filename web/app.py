@@ -3,7 +3,8 @@ The FastAPI application: one page and a small JSON API (design: docs/web_ui.md).
 
     GET  /                           the page (web/static/index.html)
     GET  /api/options                example companies
-    POST /api/resolve {query}        ticker, or candidates for a name or brand (decision D5)
+    POST /api/resolve {query}        ticker, or candidates for a name or brand (decision D5), each
+                                     checked for 10-K / 10-Q reports in its filing history
     POST /api/runs {ticker}          start an analysis (one at a time)
     GET  /api/runs/active            the run in progress, if any (to reattach after a reload)
     GET  /api/runs/{id}/events       progress as server-sent events, from the first event
@@ -31,8 +32,9 @@ from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from datalayer.cache import DailyCache
-from datalayer.sec import SecClient, normalize_ticker
-from web.resolve import resolve
+from datalayer.filings import unsupported_filer
+from datalayer.sec import SecClient, format_cik, normalize_ticker
+from web.resolve import FilerCheck, resolve
 from web.runs import BusyError, RunManager, fetch_live
 from web.view import download_paths, run_view
 
@@ -59,6 +61,24 @@ def load_ticker_map() -> dict:
     return ticker_map
 
 
+def check_filer_live(ticker: str, cik: int) -> str | None:
+    """
+    Why the company cannot be analyzed, from its SEC filing history (free; cached
+    under the same name an analysis uses). None when it can, or when the history
+    is not reachable: then the data pack check still stops an empty run.
+    """
+    symbol = normalize_ticker(ticker)
+    try:
+        sec = SecClient(os.getenv("SEC_USER_AGENT"))
+        submissions, _ = DailyCache(date.today()).load_or_fetch(
+            symbol, "submissions", fetch=lambda: sec.submissions(format_cik(cik))
+        )
+    except Exception as e:
+        logger.warning(f"Filing history of {symbol} not checked: {type(e).__name__}: {e}")
+        return None
+    return unsupported_filer(submissions)
+
+
 class ResolveRequest(BaseModel):
     query: str = Field(min_length=1, max_length=100)
 
@@ -71,6 +91,7 @@ def create_app(
     results_dir: Path = ROOT / "results",
     fetch: Callable = fetch_live,
     ticker_map: Callable[[], dict] = load_ticker_map,
+    filer_check: FilerCheck = check_filer_live,
 ) -> FastAPI:
     app = FastAPI(title="Stock Autopsy", docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(LOCAL_HOSTS))
@@ -105,7 +126,7 @@ def create_app(
         except Exception as e:
             logger.warning(f"Ticker map unavailable: {type(e).__name__}: {e}")
             raise HTTPException(503, "The SEC ticker list is not reachable right now.") from None
-        return resolve(body.query, known)
+        return resolve(body.query, known, filer_check)
 
     @app.post("/api/runs", status_code=202)
     def start_run(body: RunRequest):

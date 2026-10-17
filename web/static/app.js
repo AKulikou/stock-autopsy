@@ -59,12 +59,19 @@ async function find(query) {
     button.type = "button";
     button.append(el("strong", null, c.name));
     if (c.note) button.append(el("span", "muted", c.note));
-    button.append(el("span", null, "Analyze"));
-    button.addEventListener("click", () => analyze(c.ticker));
+    if (c.unsupported) {
+      // No 10-K or 10-Q reports: a run would only pay for an empty data pack.
+      button.disabled = true;
+      button.classList.add("is-unsupported");
+      button.append(el("span", "unsupported-note", `Cannot be analyzed. ${c.unsupported}`));
+    } else {
+      button.append(el("span", null, "Analyze"));
+      button.addEventListener("click", () => analyze(c.ticker));
+    }
     $("candidates").append(button);
   }
   // A ticker typed exactly: no need to pick.
-  if (!data.suggested && data.candidates.length === 1) {
+  if (!data.suggested && data.candidates.length === 1 && !data.candidates[0].unsupported) {
     $("candidates").firstChild.focus();
   }
 }

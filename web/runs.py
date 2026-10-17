@@ -114,11 +114,13 @@ class RunManager:
 
     def _execute(self, run: Run) -> None:
         final = None
+        fetched = False
         try:
             logger.info(f"Web run {run.id} started: {run.ticker}")
             run.add_event(ProgressEvent("fetch", "started", label="SEC filings and price"))
             as_of = date.today()
             raw = self.fetch(run.ticker, as_of)
+            fetched = True
             run.company = raw.company_name
             received = [name for name, status in raw.fetch_status.items() if status == "ok"]
             run.add_event(ProgressEvent("fetch", "done", label="SEC filings and price",
@@ -129,7 +131,8 @@ class RunManager:
             final = ProgressEvent("run", "done", text="analyzed", cost_usd=run.cost_usd())
         except (UnknownTickerError, DataUnavailableError, SecAccessError) as e:
             run.error = str(e)
-            run.add_event(ProgressEvent("fetch", "failed", label="SEC filings and price", text=str(e)))
+            if not fetched:  # after the fetch, run_autopsy has already said which step stopped
+                run.add_event(ProgressEvent("fetch", "failed", label="SEC filings and price", text=str(e)))
             final = ProgressEvent("run", "failed", text=run.error, cost_usd=run.cost_usd())
         except Exception as e:
             logger.exception(f"Web run {run.id} failed")

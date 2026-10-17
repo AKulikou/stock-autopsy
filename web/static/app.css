@@ -263,6 +263,9 @@ select {
   padding: var(--space-3) var(--space-4);
 }
 .candidate strong { font-size: 1.05rem; }
+.candidate.is-unsupported { cursor: not-allowed; opacity: 1; border-style: dashed; }
+.candidate.is-unsupported strong { color: var(--text-muted); }
+.unsupported-note { color: var(--text); }
 .price-assumes {
   margin: var(--space-3) 0 0; padding: var(--space-3) var(--space-4);
   background: var(--surface-muted); border-radius: var(--radius);

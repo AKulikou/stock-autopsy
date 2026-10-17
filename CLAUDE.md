@@ -82,10 +82,10 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
 - `datalayer/extensions.py` — company extension concepts from filing XBRL instances (company facts lack them): when to fetch, which filings, parsing, a strict receivables matcher (case variants are one concept; two candidates = ambiguous, none used)
 - `datalayer/line_items.py` — pack line items and the us-gaap concepts each is read from; debt alternatives
 - `datalayer/financials.py` — `Financials`: annual rows (10 fiscal years), discrete quarters, TTM, latest balance sheet, restatements, split adjustment, total debt
-- `datalayer/filings.py` — filing events (amended reports, late notices, 8-K 4.01/4.02) and annual report timing
+- `datalayer/filings.py` — filing events (amended reports, late notices, 8-K 4.01/4.02) and annual report timing; `unsupported_filer()`: no 10-K or 10-Q in the filing history (a 20-F / 40-F filer, a fund) gives the reason in words, checked at the web lookup
 - `datalayer/derived.py` — margins, growth, FCF, valuation multiples on TTM (`FORMULAS`)
 - `datalayer/quality.py` — `DataQuality`: the `data_quality` block (missing with reason, restated, conflicts, partial, notes)
-- `datalayer/pack.py` — `build_pack()` → (pack, provenance), `pack_hash()`, freshness and source cross-checks; CLI
+- `datalayer/pack.py` — `build_pack()` → (pack, provenance), `pack_hash()`, freshness and source cross-checks, `require_statements()` (no annual statements: the run stops before any Claude call); CLI
 - `scripts/freeze_golden.py` — freezes trimmed inputs + packs of the golden tickers into `tests/fixtures/golden/`
 - `evaluators/definitions.py` — `SHARED_RULES` and the Phase 1 evaluators as `Perspective` data (Business Model, Forensic, Valuation steps A and B, Pre-Mortem)
 - `evaluators/schemas.py` — structured outputs: the verdict block (D3), tagged `Claim`s with a basis, per-evaluator fields, DCF scenario assumptions

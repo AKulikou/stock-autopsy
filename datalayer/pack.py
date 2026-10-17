@@ -22,7 +22,7 @@ from core.shared_context import canonical_json, sha256_of
 from datalayer import derived
 from datalayer.cache import DailyCache
 from datalayer.extensions import EXTENSION_MATCHERS, EXTENSION_TAXONOMY, matching_concepts
-from datalayer.fetch import OK, RawCompanyData, fetch_company
+from datalayer.fetch import OK, DataUnavailableError, RawCompanyData, fetch_company
 from datalayer.filings import annual_report_timing, coverage_start, filing_events, filing_rows
 from datalayer.financials import STALE_SHARES_DAYS, Financials, Split, real_splits
 from datalayer.line_items import ALL_CONCEPTS, SHARES_OUTSTANDING_CONCEPT
@@ -347,6 +347,25 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
     return pack, fin.provenance
 
 
+NO_STATEMENTS = (
+    "SEC company facts hold no annual statements for this company (a foreign company filing Form 20-F, "
+    "or a fund?). This version reads 10-K and 10-Q reports only, so nothing was sent for analysis."
+)
+
+
+def require_statements(pack: dict) -> None:
+    """
+    Stop before any paid call when the pack has no annual revenue or net income:
+    the analysts would only say there is nothing to analyze.
+
+    Raises:
+        DataUnavailableError: with NO_STATEMENTS
+    """
+    rows = pack.get("financials_annual") or []
+    if not any(row.get("revenue") is not None or row.get("net_income") is not None for row in rows):
+        raise DataUnavailableError(NO_STATEMENTS)
+
+
 def pack_hash(pack: dict) -> str:
     return sha256_of(canonical_json(pack))
 
@@ -387,6 +406,10 @@ def main(argv: list[str] | None = None) -> int:
     DailyCache.store(cache.path(raw.ticker, "pack"), pack)
     DailyCache.store(cache.path(raw.ticker, "provenance"), provenance)
     print("\n".join(summary_lines(pack)))
+    try:
+        require_statements(pack)
+    except DataUnavailableError as e:
+        print(f"An analysis would stop here: {e}")
     if raw.fetch_status.get("yfinance") != OK:
         print(f"Price source failed: {raw.fetch_errors.get('yfinance')}")
     print(f"Saved {cache.path(raw.ticker, 'pack')}")
@@ -397,4 +420,4 @@ if __name__ == "__main__":
     sys.exit(main())
 
 
-__all__ = ["build_pack", "pack_hash", "summary_lines", "json"]
+__all__ = ["build_pack", "pack_hash", "require_statements", "summary_lines", "json"]

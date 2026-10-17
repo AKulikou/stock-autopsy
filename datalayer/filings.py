@@ -91,3 +91,30 @@ def annual_report_timing(rows: list[dict], since: date, as_of: date) -> list[dic
                 }
             )
     return sorted(timing, key=lambda t: t["period_end"])
+
+
+# Periodic reports whose financial statements this version reads (10-K, 10-Q);
+# without any of them in the filing history the data pack would be empty.
+READABLE_REPORT_FORMS = ("10-K", "10-KT", "10-Q")
+FOREIGN_ANNUAL_FORMS = {"20-F": "a foreign company", "40-F": "a Canadian company"}
+FUND_FORMS = ("N-CSR", "N-CSRS", "NPORT-P", "N-1A", "485BPOS")
+NO_FINANCIAL_DATA = "this version reads 10-K and 10-Q reports only, so there would be no financial data"
+
+
+def unsupported_filer(submissions: dict) -> str | None:
+    """
+    Why a company cannot be analyzed, in words, judged from the forms in its recent
+    filing history (at least the last year); None if it files 10-K or 10-Q reports.
+    Foreign companies file 20-F or 40-F, funds and ETFs N-CSR and N-PORT, a shell
+    may have only a registration statement.
+    """
+    recent = submissions.get("filings", {}).get("recent", {})
+    forms = {form.removesuffix("/A") for form in recent.get("form", [])}
+    if forms & set(READABLE_REPORT_FORMS):
+        return None
+    for form, kind in FOREIGN_ANNUAL_FORMS.items():
+        if form in forms:
+            return f"Files Form {form} ({kind}): {NO_FINANCIAL_DATA}."
+    if forms & set(FUND_FORMS):
+        return f"A fund (files fund reports such as N-CSR, not a 10-K): {NO_FINANCIAL_DATA}."
+    return f"No 10-K or 10-Q report in its SEC filing history: {NO_FINANCIAL_DATA}."

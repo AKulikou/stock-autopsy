@@ -21,7 +21,10 @@ the evidence, never "buy" or "sell".
    call (Haiku 5.5, a fraction of a cent) that proposes up to three US-listed companies;
    Python keeps only those in the SEC ticker list and shows their SEC names; the person
    picks one. The suggestion is shown as a suggestion and never enters the data pack.
-   Honest stop in words when nothing matches ("not in the SEC filer list").
+   Honest stop in words when nothing matches ("not in the SEC filer list"). Each candidate's
+   SEC filing history is checked for free: a company with no 10-K or 10-Q report (a foreign
+   company on Form 20-F or 40-F, a fund) is shown with the reason and cannot be analyzed.
+   If an empty data pack is reached any other way, the run stops before the first Claude call.
 2. **Data.** Steps light up: filings and price received, the data pack with real counts
    (annual reports, quarters, filing events, price date), then Python's DCF with the
    sentence on what today's price assumes.

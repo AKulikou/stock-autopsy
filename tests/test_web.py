@@ -1,6 +1,7 @@
 """The web UI's API end to end, with a fake Claude and the frozen Coca-Cola fixture (no network)."""
 
 import json
+from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,6 +18,7 @@ BASE_URL = "http://127.0.0.1:8001"
 TICKER_MAP = {
     "0": {"cik_str": 21344, "ticker": "KO", "title": "COCA COLA CO"},
     "1": {"cik_str": 1041061, "ticker": "YUM", "title": "YUM BRANDS INC"},
+    "2": {"cik_str": 1577552, "ticker": "BABA", "title": "Alibaba Group Holding Ltd"},
 }
 CODES = ("STRONG_CASE", "CONDITIONAL_CASE", "WEAK_CASE", "RED_FLAGGED", "INSUFFICIENT_DATA",
          "RED_FLAG", "ADEQUATE", "[DATA]", "financials_annual.", "derived.")
@@ -24,9 +26,16 @@ CODE_KEYS = {"verdict", "status", "kind", "key", "check"}
 
 
 def fake_fetch(ticker, as_of):
+    if ticker == "BABA":  # a foreign filer: a price, no us-gaap statements
+        raw = raw_from_fixture(FIXTURES / "KO")
+        return replace(raw, ticker="BABA", company_facts={"cik": 1, "entityName": "Alibaba", "facts": {}})
     if ticker != "KO":
         raise UnknownTickerError(f"{ticker}: Stock Autopsy covers US SEC filers only.")
     return raw_from_fixture(FIXTURES / "KO")
+
+
+def fake_filer_check(ticker, cik):
+    return "Files Form 20-F (a foreign company): no financial data." if ticker == "BABA" else None
 
 
 @pytest.fixture
@@ -36,7 +45,8 @@ def ko_pack():
 
 @pytest.fixture
 def client(tmp_path):
-    app = create_app(tmp_path / "results", fetch=fake_fetch, ticker_map=lambda: TICKER_MAP)
+    app = create_app(tmp_path / "results", fetch=fake_fetch, ticker_map=lambda: TICKER_MAP,
+                     filer_check=fake_filer_check)
     with TestClient(app, base_url=BASE_URL) as test_client:
         yield test_client
 
@@ -80,7 +90,9 @@ def test_the_page_and_its_scripts_are_served(client):
 
 def test_a_ticker_in_capitals_resolves_without_a_model_call(client, fake):
     found = client.post("/api/resolve", json={"query": "KO"}).json()
-    assert found["candidates"] == [{"ticker": "KO", "name": "Coca Cola Co", "note": None}]
+    assert found["candidates"] == [
+        {"ticker": "KO", "name": "Coca Cola Co", "note": None, "unsupported": None}
+    ]
     assert found["suggested"] is False and fake.requests == []
 
 
@@ -119,6 +131,23 @@ def test_an_unknown_ticker_ends_the_run_with_the_reason(client, fake):
     events = follow(client, run_id)
     assert events[-1]["status"] == "failed" and "SEC filers only" in events[-1]["text"]
     assert client.get(f"/api/runs/{run_id}/result").json()["analyzed"] is False
+    assert fake.requests == []
+
+
+def test_a_foreign_filer_is_flagged_at_the_lookup_for_free(client, fake):
+    found = client.post("/api/resolve", json={"query": "BABA"}).json()
+    assert found["candidates"][0]["unsupported"].startswith("Files Form 20-F")
+    assert fake.requests == []
+
+
+def test_a_run_on_an_empty_data_pack_stops_before_any_claude_call(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "BABA"}).json()["run_id"]
+    events = follow(client, run_id)
+    stages = [(e["stage"], e["status"]) for e in events]
+    assert stages == [("fetch", "started"), ("fetch", "done"), ("pack", "failed"), ("run", "failed")]
+    assert "no annual statements" in events[-1]["text"]
+    view = client.get(f"/api/runs/{run_id}/result").json()
+    assert view["analyzed"] is False and "no annual statements" in view["error"]
     assert fake.requests == []
 
 

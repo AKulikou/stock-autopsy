@@ -27,8 +27,8 @@ from core.progress import ProgressCallback, ProgressEvent
 from core.shared_context import context_block, sha256_of
 from core.structured_call import billed_usage, request_structured
 from core.token_summary import call_cost
-from datalayer.fetch import RawCompanyData
-from datalayer.pack import build_pack, pack_hash
+from datalayer.fetch import DataUnavailableError, RawCompanyData
+from datalayer.pack import build_pack, pack_hash, require_statements
 from evaluators import definitions as d
 from evaluators import validation as v
 from evaluators.schemas import (
@@ -188,9 +188,18 @@ def pack_summary_text(pack: dict) -> str:
 def run_autopsy(
     raw: RawCompanyData, user_context: dict | None = None, on_event: ProgressCallback | None = None
 ) -> AutopsyRun:
+    """
+    Raises:
+        DataUnavailableError: the pack holds no annual statements (before any Claude call)
+    """
     started = time.monotonic()
     events = _Events(on_event)
     pack, provenance = build_pack(raw, user_context)
+    try:
+        require_statements(pack)
+    except DataUnavailableError as e:
+        events(ProgressEvent("pack", "failed", label="Data pack", text=str(e)))
+        raise
     events(ProgressEvent("pack", "done", label="Data pack", text=pack_summary_text(pack)))
     prefix = shared_prefix(d.SHARED_RULES, context_block(PACK_TAG, pack))
     logger.info(f"{pack['ticker']}: pack {pack_hash(pack)[:12]}, prefix {len(prefix):,} chars")
