@@ -335,6 +335,25 @@ def test_a_stale_cover_page_count_gives_way_to_the_latest_quarterly_diluted_coun
     assert pack["derived"]["valuation"]["market_cap"] == 9_500
 
 
+def test_a_missing_cover_page_count_takes_the_same_fallback_as_a_stale_one():
+    gaap, _ = stale_cover_page_inputs()
+    pack = pack_of(gaap=gaap, dei={})
+    shares = pack["shares_outstanding"]
+    assert (shares["value"], shares["date"]) == (950, "2026-06-30")
+    assert "stands in for a missing cover-page count" in shares["source"]
+    assert any("hold no cover-page count" in n for n in pack["data_quality"]["period_notes"])
+    assert pack["derived"]["valuation"]["market_cap"] == 9_500
+    assert missing(pack, "shares_outstanding") == []
+
+
+def test_no_cover_page_count_and_no_diluted_count_is_unknown_with_a_reason():
+    gaap = base_gaap()
+    gaap.pop("WeightedAverageNumberOfDilutedSharesOutstanding", None)
+    pack = pack_of(gaap=gaap, dei={})
+    assert pack["shares_outstanding"] is None
+    assert missing(pack, "shares_outstanding")[0]["reason"] == "tag_not_found"
+
+
 def test_a_recent_cover_page_count_is_still_used():
     gaap, _ = stale_cover_page_inputs()
     recent = instant(940, "2026-07-20", filed="2026-07-25", form="10-Q")

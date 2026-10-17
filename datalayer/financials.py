@@ -10,8 +10,9 @@ Rules applied here (source of truth, data quality rules and period checks):
   so every share count is on today's basis. Only real splits count: Yahoo's split
   history also holds price adjustments for corporate actions such as spin-offs
   (Comcast, 2026-01-05, ratio 1.067), which change no share count (real_splits()).
-- A cover-page share count older than STALE_SHARES_DAYS is not used: the latest
-  diluted share count from the filings stands in for it, and data_quality says so.
+- A cover-page share count that is missing or older than STALE_SHARES_DAYS is not
+  used: the latest diluted share count from the filings stands in for it, and
+  data_quality says so.
 - Periods are identified by dates. A 53-week year is flagged in period_notes.
 - TTM = last fiscal year + current year-to-date - the same year-to-date a year
   earlier; it is labelled as TTM and never mixed with fiscal-year figures.
@@ -506,28 +507,43 @@ class Financials:
         return self._value(li.SHARES_DILUTED, latest), latest
 
     def shares_outstanding(self, dei_facts: list[Fact]) -> dict | None:
-        if not dei_facts:
-            self.quality.missing("shares_outstanding", "latest", TAG_NOT_FOUND)
-            return None
-        latest = max(dei_facts, key=lambda f: (f.end, f.filed))
-        age = (self.as_of - latest.end).days
-        if age > STALE_SHARES_DAYS:
+        """
+        The cover-page count; when it is missing or older than STALE_SHARES_DAYS (both
+        mean company facts hold no current total, e.g. a count per share class only),
+        the latest diluted weighted-average count stands in for it, with a note.
+        """
+        latest = max(dei_facts, key=lambda f: (f.end, f.filed)) if dei_facts else None
+        age = (self.as_of - latest.end).days if latest else None
+        if latest is None or age > STALE_SHARES_DAYS:
             fallback = self.latest_diluted_shares()
             if fallback is not None:
                 value, fact = fallback
-                self.quality.note(
-                    f"shares_outstanding: the SEC cover-page count is dated {latest.end.isoformat()}, "
-                    f"{age} days before as_of (a company that reports it per share class has no total "
-                    "in company facts); the diluted weighted-average share count of the period ending "
-                    f"{fact.end.isoformat()} ({fact.form} filed {fact.filed.isoformat()}) is used instead"
+                instead = (
+                    f"the diluted weighted-average share count of the period ending {fact.end.isoformat()} "
+                    f"({fact.form} filed {fact.filed.isoformat()}) is used instead"
                 )
+                if latest is None:
+                    self.quality.note(
+                        f"shares_outstanding: SEC company facts hold no cover-page count; {instead}"
+                    )
+                    stands_in = "stands in for a missing cover-page count"
+                else:
+                    self.quality.note(
+                        f"shares_outstanding: the SEC cover-page count is dated {latest.end.isoformat()}, "
+                        f"{age} days before as_of (a company that reports it per share class has no total "
+                        f"in company facts); {instead}"
+                    )
+                    stands_in = f"stands in for a cover-page count dated {latest.end.isoformat()}"
                 return {
                     "value": value,
                     "date": fact.end.isoformat(),
                     "source": f"SEC company facts (us-gaap:{fact.concept}, diluted weighted average of "
                     f"the period {fact.start.isoformat()} to {fact.end.isoformat()}), {fact.form} filed "
-                    f"{fact.filed}; stands in for a cover-page count dated {latest.end.isoformat()}",
+                    f"{fact.filed}; {stands_in}",
                 }
+            if latest is None:
+                self.quality.missing("shares_outstanding", "latest", TAG_NOT_FOUND)
+                return None
         same = [f for f in dei_facts if f.end == latest.end and f.accn == latest.accn]
         value = sum(f.value for f in same)
         factor = self.split_factor(latest.filed)
