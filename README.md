@@ -61,12 +61,17 @@ python -m web                                   # the same in a local web page: 
 The web page takes a company, a brand or a ticker (a name or brand is looked up with one
 cheap call and checked against the SEC list), shows the data being gathered and each
 analyst finishing, then the answer in plain words with what the price assumes, and every
-quoted number coloured by what the number check found. Design: [docs/web_ui.md](docs/web_ui.md).
+quoted number coloured by what the number check found. A dropped progress stream is
+reopened from the next event (the server also sends a heartbeat during the long silent
+steps), so a lost connection is never reported as a failed run, and finished analyses can
+be reopened from "Recent analyses". Design: [docs/web_ui.md](docs/web_ui.md).
 
 A finished report can be translated on demand (Russian first; the same languages as
 Startup Autopsy), on the page or with `python -m translate results/<run> --language Russian`:
 one cheap call per section, and a section whose numbers do not come back with the same value
-and scale stays in English. The English report remains the source of truth.
+and scale stays in English. A glossary per language fixes the terms and is appended to the
+copy (Russian so far, awaiting the owner's review). The English report remains the source
+of truth.
 
 Only companies that file 10-K and 10-Q reports can be analyzed. Foreign companies filing
 Form 20-F or 40-F are not read today, whatever their accounting standard, and neither are
@@ -84,7 +89,9 @@ about 0.26-0.30 USD and takes longer.
 ## Testing and its honest limits
 
 Unit tests use a scripted fake Claude client and frozen fixtures, so they never
-touch the network. The behaviour eval runs the real pipeline on frozen packs of
+touch the network; the page's own logic (reconnecting a dropped stream, card states) is
+tested with Node's test runner, which pytest starts when Node 22+ is installed (CI installs
+it). The behaviour eval runs the real pipeline on frozen packs of
 five golden companies: Coca-Cola (boring quality), Snowflake (fast-growing,
 loss-making), Kraft Heinz (the 2019 restatement), Comcast (cheap and flat, where
 "weak case" is a wrong answer) and Plug Power (red flags dominate). Every measurement
@@ -128,7 +135,9 @@ What the eval showed:
   flagged. In the M5 runs: 8 and 5 wrong numbers (all partial) in about 270 data claims
   per variant, one calculation off by about 5%, and the one "no debt" sentence the judge
   also found. In the release run: 7 wrong numbers in 379 data claims, 195 of 211
-  calculations reproduced, and one "no debt" sentence again (Snowflake).
+  calculations reproduced (198 after a regrade with the corrected calculation check of
+  2026-10-17, which no longer rejects a stated constant, a part of a formula or the size of
+  a difference written old - new), and one "no debt" sentence again (Snowflake).
 - **The number check proves faithfulness to the data pack, not that the pack is right.**
   A quoted number "matches" when it equals the pack value it cites. Comcast's pack was
   built on a 2009 share count and a spin-off read as a stock split, which put its market
