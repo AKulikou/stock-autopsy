@@ -14,6 +14,8 @@ jobs:
       # config.py fails fast without a key; the tests replace Claude with a fake
       # client, so this placeholder never reaches the API.
       ANTHROPIC_API_KEY: sk-ant-ci-placeholder
+      # tests/test_js.py runs the page's Node tests; here a missing Node fails instead of skipping.
+      REQUIRE_NODE_TESTS: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -21,6 +23,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: requirements-dev.txt
+      - uses: actions/setup-node@v7  # v7.1.0 is the latest release (checked 2026-10-17)
+        with:
+          node-version: "24"
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: pytest
