@@ -7,14 +7,13 @@ import time
 from dataclasses import replace
 
 import pytest
-from conftest import text_response
+from conftest import fake_russian, text_response
 from fastapi.testclient import TestClient
 from sample_outputs import handler_for
 
 from datalayer.pack import build_pack
 from datalayer.sec import UnknownTickerError
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
-from translate.numbers import numbers_in
 from web import app as app_module
 from web import resolve as resolve_module
 from web.app import create_app
@@ -169,11 +168,7 @@ def test_requests_from_another_site_or_host_are_refused(client, fake, tmp_path):
 
 def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client, fake):
     def russian(kwargs):
-        source = kwargs["messages"][0]["content"]
-        numbers = " и ".join([n.text.replace(".", ",") for n in numbers_in(source, english=True)]
-                            + re.findall(r"\d{4}-\d{2}-\d{2}", source))  # dates are copied as written
-        words = "Перевод этого раздела отчёта на русский язык с сохранением всех чисел. " * 40
-        return text_response(f"{source.splitlines()[0]} (RU)\n\n{words}{numbers}\n")
+        return text_response(fake_russian(kwargs["messages"][0]["content"]))
 
     fake.create_handler = russian
     options = client.get("/api/options").json()

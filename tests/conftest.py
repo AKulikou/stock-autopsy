@@ -111,3 +111,24 @@ def no_real_client(monkeypatch):
     def refuse():
         raise RuntimeError("a test reached the real Anthropic client; patch its module in fake_claude")
     monkeypatch.setattr(claude_client_module, "_direct_client", refuse)
+
+
+# Scale and unit words a fake translation must keep as words of the same meaning.
+RUSSIAN_UNITS = {"trillion": "трлн", "billion": "млрд", "million": "млн", "thousand": "тыс.",
+                 "percent": "процентов", "times": "раза", "points": "п. п.", "point": "п. п.",
+                 "percentage": ""}
+
+
+def fake_russian(source: str) -> str:
+    """
+    A stand-in translation that keeps the Markdown structure, every number, date and
+    code span, and turns each English word into a Russian one (scale words into their
+    Russian forms), so it passes the translator's checks the way a good answer does.
+    """
+    import re
+
+    def word(match: re.Match) -> str:
+        return RUSSIAN_UNITS.get(match.group(0).lower(), "текст")
+
+    kept = re.split(r"(`[^`]*`)", source)
+    return "".join(part if part.startswith("`") else re.sub(r"\b[A-Za-z]{2,}\b", word, part) for part in kept)

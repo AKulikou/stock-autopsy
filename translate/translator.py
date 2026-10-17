@@ -45,7 +45,9 @@ thousands separators and the scale words the way {language} writes them (for exa
 "1.5 billion" may become "1,5 млрд" in Russian), but never round, convert or drop a
 number, and write dates and years exactly as in the original. A percentage stays a
 percentage and percentage points stay percentage points.
-Write the whole translation in {language}. Output only the translated text.
+Write the whole translation in {language}. Output only the translated text: no comments,
+notes, corrections or placeholders of your own, and every heading, table row and list item
+exactly once, as in the original.
 """
 
 GLOSSARY_NOTE = """
@@ -211,6 +213,31 @@ def heading_untranslated(source: str, translation: str) -> bool:
     return _heading(translation).lower() == heading.lower()
 
 
+def structure(text: str) -> tuple[int, int, int]:
+    """(headings, table rows, list items): what a translation must not add or drop."""
+    lines = [line.lstrip() for line in text.splitlines()]
+    return (
+        sum(line.startswith("#") for line in lines),
+        sum(line.startswith("|") for line in lines),
+        sum(bool(re.match(r"(?:[-*+]|\d+[.)])\s", line)) for line in lines),
+    )
+
+
+def structure_changed(source: str, translation: str) -> str | None:
+    """
+    How the Markdown structure differs, or None. Seen on the first real translations
+    (2026-10-17): the translator added its own comments and repeated a heading, or put
+    a stub table with "..." placeholders before the real one; numbers cannot see that.
+    """
+    names = ("headings", "table rows", "list items")
+    changed = [
+        f"{name} {before} -> {after}"
+        for name, before, after in zip(names, structure(source), structure(translation), strict=True)
+        if before != after
+    ]
+    return ", ".join(changed) or None
+
+
 def section_problem(source: str, translation: str, language: str) -> str | None:
     """Why a translated section cannot be used as it is, or None."""
     if looks_untranslated(source, translation):
@@ -222,6 +249,9 @@ def section_problem(source: str, translation: str, language: str) -> str | None:
     missing = missing_numbers(source, translation)
     if missing:
         return f"{NUMBERS_CHANGED}: {', '.join(missing[:5])}"
+    changed = structure_changed(source, translation)
+    if changed:
+        return f"structure changed: {changed}"
     if heading_untranslated(source, translation):
         return HEADING_LEFT
     return None

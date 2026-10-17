@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 import pytest
-from conftest import text_response
+from conftest import fake_russian, text_response
 
 from translate.glossary import GLOSSARY_DIR, GlossaryError, load_glossary, parse_glossary
 from translate.languages import LANGUAGES, language_name
@@ -15,7 +15,9 @@ from translate.translator import (
     UNTRANSLATED_NOTE,
     heading_untranslated,
     looks_untranslated,
+    section_problem,
     split_sections,
+    structure_changed,
     translate_document,
     translate_report,
     translated_path,
@@ -357,3 +359,28 @@ def test_the_russian_glossary_is_complete_and_titled():
     glossary = load_glossary("Russian")
     assert glossary.title == "Словарь" and len(glossary.entries) >= 50
     assert all(len(e.explanation) > 20 for e in glossary.entries)
+
+
+# Structure: the two defects of the first real translations (2026-10-17).
+
+TABLE_SECTION = (
+    "### Valuation Analyst (assumptions)\n\n| Assumption | Reasoning |\n|---|---|\n"
+    "| Revenue growth | Base growth of 4% sits above the 3-year CAGR of 3.69%. |\n"
+)
+
+
+def test_comments_and_a_repeated_heading_are_rejected():
+    comment = "Заголовок остаётся на английском. Ошибка выше: вот перевод:"
+    answer = f"### Valuation Analyst (assumptions)\n\n{comment}\n\n" + fake_russian(TABLE_SECTION)
+    assert section_problem(TABLE_SECTION, answer, "Russian").startswith("structure changed: headings 1 -> 2")
+
+
+def test_a_stub_table_before_the_real_one_is_rejected():
+    stub = "| Оценщик | Утверждение |\n|---|---|\n| Valuation Analyst | Базовый сценарий... |\n\n"
+    answer = fake_russian(TABLE_SECTION).replace("| текст", stub + "| текст", 1)
+    assert "table rows 3 -> 6" in section_problem(TABLE_SECTION, answer, "Russian")
+
+
+def test_a_faithful_translation_keeps_the_structure():
+    assert structure_changed(TABLE_SECTION, fake_russian(TABLE_SECTION)) is None
+    assert section_problem(TABLE_SECTION, fake_russian(TABLE_SECTION), "Russian") is None
