@@ -79,9 +79,9 @@ def real_splits(splits: list[Split], quality: DataQuality) -> list[Split]:
             kept.append(split)
         else:
             quality.note(
-                f"Price history entry of {split.day.isoformat()} with ratio {split.ratio:g} is not a "
-                "stock split (a price adjustment for a corporate action such as a spin-off): share "
-                "counts are not adjusted for it"
+                f"Price history entry of {split.day.isoformat()} with ratio {split.ratio:g} is not treated "
+                "as a stock split: a corporate-action price adjustment (for example a spin-off or a special "
+                "or stock dividend); share counts are not adjusted for it"
             )
     return kept
 

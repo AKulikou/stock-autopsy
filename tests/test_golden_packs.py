@@ -127,7 +127,7 @@ def test_no_corporate_action_adjustment_is_applied_as_a_split(packs, raws, ticke
     notes = " ".join(packs[ticker]["data_quality"]["period_notes"])
     for split in raws[ticker].price["splits"]:
         if not is_real_split(split["ratio"]):
-            assert f"{split['date']} with ratio {split['ratio']:g} is not a stock split" in notes
+            assert f"{split['date']} with ratio {split['ratio']:g} is not treated as a stock split" in notes
 
 
 @pytest.mark.parametrize("ticker", GOLDEN)

@@ -136,7 +136,7 @@
    }
   ],
   "period_notes": [
-   "Price history entry of 2026-01-05 with ratio 1.067 is not a stock split (a price adjustment for a corporate action such as a spin-off): share counts are not adjusted for it",
+   "Price history entry of 2026-01-05 with ratio 1.067 is not treated as a stock split: a corporate-action price adjustment (for example a spin-off or a special or stock dividend); share counts are not adjusted for it",
    "8 smaller differences (under 0.5%) between filings for the same period (rounding, minor reclassifications) are not listed in restated",
    "shares_outstanding: the SEC cover-page count is dated 2009-12-31, 6132 days before as_of (a company that reports it per share class has no total in company facts); the diluted weighted-average share count of the period ending 2026-06-30 (10-Q filed 2026-07-23) is used instead"
   ],

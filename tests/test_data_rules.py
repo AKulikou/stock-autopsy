@@ -302,16 +302,16 @@ def test_a_one_for_twenty_reverse_split_after_the_last_annual_report_divides_the
     price = {**PRICE, "splits": [{"date": "2026-05-01", "ratio": 0.05}]}
     pack = pack_of(gaap=gaap, price=price)
     assert (row(pack, 2024)["shares_diluted"], row(pack, 2025)["shares_diluted"]) == (100, 120)
-    assert not any("not a stock split" in n for n in pack["data_quality"]["period_notes"])
+    assert not any("not treated as a stock split" in n for n in pack["data_quality"]["period_notes"])
 
 
 def test_a_spin_off_adjustment_in_the_split_history_changes_no_share_count():
     price = {**PRICE, "splits": [{"date": "2025-06-01", "ratio": 1.067}]}
     pack = pack_of(gaap=split_gaap(), price=price)
     assert row(pack, 2024)["shares_diluted"] == 100  # not 106.7: a spin-off is not a split
-    assert any(
-        "2025-06-01 with ratio 1.067 is not a stock split" in n for n in pack["data_quality"]["period_notes"]
-    )
+    notes = pack["data_quality"]["period_notes"]
+    assert any("2025-06-01 with ratio 1.067 is not treated as a stock split" in n for n in notes)
+    assert any("a special or stock dividend" in n for n in notes)
 
 
 def stale_cover_page_inputs() -> tuple[dict, dict]:

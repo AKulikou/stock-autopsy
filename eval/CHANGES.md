@@ -8,6 +8,19 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-17 — data pack: split-history note reworded, reverse splits, missing share counts
+
+- **What:** three data-layer changes from review 2. (1) Reverse splits beyond 1-for-10
+  (1/12 ... 1/100) are now splits; before, their share counts stayed 12-100 times too high.
+  (2) A missing cover-page share count takes the same fallback as a stale one (the latest
+  diluted weighted-average count); Meta and Alphabet now get a market value. (3) The note for
+  a split-history entry that is not a split now reads "not treated as a stock split: a
+  corporate-action price adjustment (for example a spin-off or a special or stock dividend)"
+  instead of naming a spin-off only.
+- **Golden packs:** only Comcast's changes, in that one note line (hash `fe84c1acd56c` ->
+  `17ea6b1887e1`); the regrade finds the old pack in git history. KO, SNOW, KHC and PLUG are
+  unchanged. Expected effect on answers: none measurable; not evaluated.
+
 ## 2026-10-17 — report translation (M13, variant A): not measured yet
 
 - **What:** `translate/` translates a finished report.md section by section with Haiku 5.5
