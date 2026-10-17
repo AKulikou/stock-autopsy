@@ -120,6 +120,7 @@ select {
 }
 .stage.is-done { color: var(--text); }
 .stage.is-failed { border-color: var(--danger); }
+.stage.is-not_computed { border-color: var(--notice-border); background: var(--notice-bg); color: var(--text); }
 
 .cards {
   display: grid;

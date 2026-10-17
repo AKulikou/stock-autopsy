@@ -175,6 +175,21 @@ class _Events:
         ))
 
 
+def dcf_event(valuation_math: dict, assumptions_ok: bool) -> ProgressEvent:
+    """
+    Done; failed only when the step really failed (the assumptions call); otherwise the
+    data could not carry a DCF (no revenue, no share count): "not computed", with why.
+    """
+    label = "DCF computed by Python"
+    if valuation_math.get("computed"):
+        return ProgressEvent("dcf", "done", label=label, text=valuation_math.get("price_assumes"))
+    reasons = "; ".join(valuation_math.get("reasons", []))
+    reasons = reasons.replace("TTM revenue", "revenue over the last twelve months")
+    if not assumptions_ok:
+        return ProgressEvent("dcf", "failed", label=label, text=f"DCF not computed: {reasons}.")
+    return ProgressEvent("dcf", "not_computed", label=label, text=f"DCF not computed: {reasons}.")
+
+
 def pack_summary_text(pack: dict) -> str:
     """What the data layer gathered, in words, for the live view."""
     years = sum(1 for row in pack["financials_annual"] if row.get("revenue") is not None)
@@ -218,10 +233,7 @@ def run_autopsy(
             "computed": False,
             "reasons": [f"valuation assumptions failed: {assumptions['error']}"],
         }
-    events(ProgressEvent(
-        "dcf", "done" if valuation_math.get("computed") else "failed", label="DCF computed by Python",
-        text=valuation_math.get("price_assumes") or "; ".join(valuation_math.get("reasons", [])) or None,
-    ))
+    events(dcf_event(valuation_math, assumptions["status"] == "success"))
 
     # Step B may cite the Python valuation math it received, as valuation_math.<field>.
     with_math = {**pack, "valuation_math": valuation_math}

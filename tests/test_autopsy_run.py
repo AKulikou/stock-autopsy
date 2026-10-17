@@ -1,5 +1,6 @@
 """A whole run on a golden ticker with the fake client: order, prompts, reports, failures."""
 
+import copy
 import json
 import re
 
@@ -7,7 +8,7 @@ import pytest
 from conftest import response
 from sample_outputs import forensic, handler_for, synthesis
 
-from analysis.runner import run_autopsy
+from analysis.runner import dcf_event, run_autopsy
 from core.shared_context import context_block
 from datalayer.pack import build_pack
 from evaluators.schemas import Claim, ForensicResult, PreMortemResult, ValuationAssumptions
@@ -15,6 +16,7 @@ from reporting.json_export import build_json
 from reporting.markdown import DISCLAIMER, build_report
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
 from synthesis.committee import SynthesisResult
+from valuation.dcf import run_valuation
 
 
 @pytest.fixture
@@ -256,3 +258,15 @@ def test_truncated_answer_becomes_an_error_result(fake_claude, raw_ko, ko_pack):
     fake_claude(truncated)
     run = run_autopsy(raw_ko)
     assert "max_tokens" in run.result("pre_mortem")["error"]
+
+
+def test_a_dcf_the_data_cannot_carry_is_not_computed_not_failed(ko_pack):
+    pack = copy.deepcopy(ko_pack)
+    pack["ttm"]["revenue"] = None
+    valuation_math = run_valuation({}, pack)
+    assert valuation_math["computed"] is False
+    event = dcf_event(valuation_math, assumptions_ok=True)
+    assert event.status == "not_computed"
+    assert event.text == "DCF not computed: revenue over the last twelve months is missing or not positive."
+    failed = {"computed": False, "reasons": ["valuation assumptions failed: ConnectionError"]}
+    assert dcf_event(failed, assumptions_ok=False).status == "failed"

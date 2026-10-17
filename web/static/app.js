@@ -188,7 +188,8 @@ function onProgress(event) {
       setStage("stage-pack", event.status === "done" ? "done" : "failed", capitalize(event.text) + ".");
       break;
     case "dcf":
-      setStage("stage-dcf", event.status === "done" ? "done" : "failed", event.text || "");
+      // "not_computed" is a data limitation (no revenue, no share count), not a failure.
+      setStage("stage-dcf", event.status, event.text || "");
       break;
     case "evaluator": {
       let card = cards.querySelector(`[data-key="${CSS.escape(event.key)}"]`);

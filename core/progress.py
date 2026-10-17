@@ -10,7 +10,9 @@ for programs; label and text are the words a person reads.
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 
-STATUSES = ("started", "done", "failed", "skipped")
+# "not_computed": a step that could not run on this data (the DCF without revenue or a share
+# count), which is a data limitation, not a failure.
+STATUSES = ("started", "done", "failed", "skipped", "not_computed")
 
 
 @dataclass(frozen=True)
