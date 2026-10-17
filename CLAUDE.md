@@ -50,6 +50,7 @@ The shape of the pipeline:
 python -m venv venv && venv\Scripts\activate   # Windows
 pip install -r requirements-dev.txt            # app + pytest + ruff
 pytest                                         # unit tests, fake Claude client, no API calls, no network
+node --test tests/js/                          # the page's own logic (pytest runs it too when Node 22+ is installed)
 ruff check .                                   # lint (config in pyproject.toml, target Python 3.10)
 python -m datalayer.fetch KO                   # fetch SEC + price data for one ticker into data_cache/ (free, no LLM)
 python -m datalayer.pack KO                    # build the DATA PACK (+ provenance) into data_cache/ (free, no LLM)
@@ -204,6 +205,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
 | M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during the runs) | baseline done and regraded (eval/CHANGES.md): acceptable 6/6, must_find 6/6, no must_not 6/6, 0 invented numbers, committee verdict stable but WEAK_CASE everywhere (no better than a constant on 3 tickers); judge by majority of 3. Variant ANALYSIS_EFFORT=medium done (before the prompt change 67404ad): 38% cheaper, acceptable 6/6, but one must_not ("no debt" where the pack says not reported) and a KHC committee verdict change; decision (D7): keep the default effort. M5 spent 3.36 of 4 USD |
+| Manual test | The owner's web test (2026-10-17): foreign filers stopped before a paid run (M7), report translation code with a number check and a glossary (M13, real Russian glossary and the 0.1 USD measurement pending), dropped event stream and truthful cards (M4, M6), review 2 items 3.1-3.3 and 3.5, presentation M1-M3 and M8-M12 | done 2026-10-17, no paid call; waiting: the owner's manual re-test, the Russian glossary, the translation measurement; backlog: M5 (cache), 20-F support, the liquidity item, F5 |
 | P2 + web | Valuation framing (implied annual return, what the price assumes), plain-language committee fields, golden cases CMCSA and PLUG, local web UI (docs/web_ui.md) | done 2026-10-16: v2_before / v2_after measured (eval/CHANGES.md), live web check on Comcast 0.61 USD; open: Forensic red-flag call on PLUG unstable |
 
 Decisions:
