@@ -7,6 +7,7 @@ from the results.
 
 from analysis.runner import AutopsyRun
 from core.token_summary import format_cost
+from reporting.data_quality import freshness, freshness_line, quality_lines, statements_to
 from reporting.number_check import number_words
 from reporting.wording import (
     CLAIM_TAGS,
@@ -82,6 +83,7 @@ def header(run: AutopsyRun) -> list[str]:
         f"| Data as of | {pack['as_of']} |",
         f"| Price | {price_text} |",
         f"| Financial statements | SEC EDGAR financial data (XBRL) from filings made by {pack['as_of']} |",
+        f"| Financial statements to | {statements_to(pack) or 'unknown'} |",
         f"| Price source | {PRICE_SOURCE if price else 'not available'} |",
         f"| User context | horizon {pack['user_context']['horizon']}, "
         f"risk tolerance {pack['user_context']['risk_tolerance']} |",
@@ -345,6 +347,11 @@ def data_quality_section(run: AutopsyRun) -> list[str]:
         + ".",
         "",
     ]
+    facts = quality_lines(run.pack, with_restated=False)
+    fresh = freshness(run.pack)
+    if fresh:
+        lines += [f"**{freshness_line(fresh)}**", ""]
+        facts = facts[1:]
     if q["restated"]:
         lines += [
             "| Restated | Period | Original | Restated | Original filed | Restating filing |",
@@ -362,30 +369,8 @@ def data_quality_section(run: AutopsyRun) -> list[str]:
             for r in q["restated"]
         ]
         lines.append("")
-    lines += [
-        "**Missing (unknown, not zero):**",
-        *bullets(
-            f"{field(m['field'])}: {', '.join(m['periods'])} "
-            f"({MISSING_REASONS.get(m['reason'], m['reason'])})"
-            for m in q["missing"]
-        ),
-        "",
-    ]
-    if q["partial"]:
-        lines += ["**Partial:**", *bullets(f"{field(p['field'])}: {p['covers']}" for p in q["partial"]), ""]
-    if q["source_conflicts"]:
-        lines += [
-            "**Source conflicts:**",
-            *bullets(
-                f"{field(c['field'])}: SEC {c['values']['edgar']:,}, "
-                f"Yahoo Finance {c['values']['yfinance']:,}; "
-                "the SEC figure is used"
-                for c in q["source_conflicts"]
-            ),
-            "",
-        ]
-    if q["period_notes"]:
-        lines += ["**Notes:**", *bullets(q["period_notes"]), ""]
+    if facts:
+        lines += [*bullets(facts), ""]
     return lines
 
 

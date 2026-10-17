@@ -7,6 +7,7 @@ the same last pass as report.md, so model text cannot bring codes onto the scree
 """
 
 from analysis.runner import VERDICT_KEYS, AutopsyRun
+from reporting.data_quality import quality_lines, statements_to
 from reporting.markdown import money, number, pct
 from reporting.wording import (
     CLAIM_TAGS,
@@ -14,7 +15,6 @@ from reporting.wording import (
     CONFIDENCE,
     EVALUATOR_VERDICTS,
     EVALUATORS,
-    MISSING_REASONS,
     company_display,
     field,
     humanize,
@@ -73,6 +73,7 @@ def run_view(run: Run) -> dict:
         "company": company,
         "as_of": pack["as_of"],
         "price": _price(pack),
+        "statements_to": statements_to(pack),
         "committee": _committee(autopsy),
         "valuation": _valuation(autopsy),
         "evaluators": [_evaluator(r, autopsy) for r in autopsy.results],
@@ -196,21 +197,7 @@ def _evaluator(result: dict, autopsy: AutopsyRun) -> dict:
 
 
 def _data_quality(pack: dict) -> list[str]:
-    q = pack["data_quality"]
-    by_period: dict[str, list[str]] = {}
-    for r in q["restated"]:
-        by_period.setdefault(r["period"], []).append(field(r["field"]))
-    items = [
-        f"{period}: earlier figures were restated ({', '.join(fields)})"
-        for period, fields in by_period.items()
-    ]
-    items += [
-        f"{field(m['field'])} ({', '.join(m['periods'])}): {MISSING_REASONS.get(m['reason'], m['reason'])} "
-        "— unknown, not zero"
-        for m in q["missing"]
-    ]
-    items += [f"{field(p['field'])}: {p['covers']}" for p in q["partial"]]
-    return items + list(q["period_notes"])
+    return quality_lines(pack)
 
 
 def _number_check(autopsy: AutopsyRun) -> dict:

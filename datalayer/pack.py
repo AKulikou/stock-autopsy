@@ -14,6 +14,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 from dataclasses import replace
 from datetime import date
@@ -161,6 +162,26 @@ def no_growth_across_switch(metrics: list[dict], provenance: dict, quality: Data
     return metrics
 
 
+FRESHNESS_NOTE = (
+    "The {form} for the period ending {period} (filed {filed}) is not yet in SEC company facts: "
+    "TTM, quarters and the latest balance sheet end {covers}"
+)
+FRESHNESS_COVERS = "periods up to {covers} only"
+_FRESHNESS = re.compile(
+    re.escape(FRESHNESS_NOTE)
+    .replace(re.escape("{form}"), r"(?P<form>\S+)")
+    .replace(re.escape("{period}"), r"(?P<period>\S+)")
+    .replace(re.escape("{filed}"), r"(?P<filed>[^)]+)")
+    .replace(re.escape("{covers}"), r"(?P<covers>\S+)")
+)
+
+
+def parse_freshness_note(note: str) -> dict | None:
+    """The parts of a check_freshness() note ({form, period, filed, covers}), or None for any other note."""
+    match = _FRESHNESS.fullmatch(note)
+    return match.groupdict() if match else None
+
+
 def check_freshness(rows: list[dict], facts: dict, as_of: date, quality: DataQuality) -> None:
     """
     Company facts can lag the filings: a 10-Q in the filing history whose period
@@ -180,14 +201,11 @@ def check_freshness(rows: list[dict], facts: dict, as_of: date, quality: DataQua
     )
     if latest_fact_end is None or date.fromisoformat(newest["report_date"]) <= latest_fact_end:
         return
-    covers = f"periods up to {latest_fact_end.isoformat()} only"
+    covers = FRESHNESS_COVERS.format(covers=latest_fact_end.isoformat())
     quality.add_partial("ttm", covers)
     quality.add_partial("balance_sheet_latest", covers)
-    quality.note(
-        f"The {newest['form']} for the period ending {newest['report_date']} (filed {newest['filed']}) "
-        "is not yet in SEC company facts: TTM, quarters and the latest balance sheet end "
-        f"{latest_fact_end.isoformat()}"
-    )
+    quality.note(FRESHNESS_NOTE.format(form=newest["form"], period=newest["report_date"],
+                                       filed=newest["filed"], covers=latest_fact_end.isoformat()))
 
 
 def fiscal_year_end(raw: RawCompanyData, last_period_end: str | None, quality: DataQuality) -> str | None:

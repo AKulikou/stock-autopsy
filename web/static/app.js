@@ -302,6 +302,7 @@ function banner(view) {
   const [short, meaning] = c.verdict_text.split(": ");
   box.append(
     el("p", "verdict-label", `${view.company} · data as of ${view.as_of}`),
+    el("p", "verdict-label", `Financial statements to ${view.statements_to || "an unknown date"}`),
     el("p", "verdict-text", short),
     el("p", "verdict-meaning", capitalize(meaning || "") + "."),
   );
