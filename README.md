@@ -111,7 +111,9 @@ What the eval showed:
   conditional case twice, and Plug Power red-flagged once and weak once: the committee did
   not follow a severity-5 red flag from the Forensic analyst in one attempt and raised one
   without it in the other. That is the system's least stable call. Two reps per company
-  are still a small sample. The run cost 2.67 USD through the Message Batches API.
+  are still a small sample. The whole gap over the constant answer comes from Comcast (2 of
+  2) and Plug Power (1 of 2), the two companies the owner has not labelled blind; on the
+  three owner-labelled companies the committee scored exactly like the constant answer. The run cost 2.67 USD through the Message Batches API.
 - Valuation is judged by what the price assumes rather than by a DCF value at one
   chosen discount rate: Python solves the yearly return a buyer at today's price gets if
   the base case comes true. At the eval's prices that was about 5% a year for Coca-Cola
@@ -140,7 +142,9 @@ What the eval showed:
   constant "weak case" cannot pass it. Its label rests on liquidity and dilution (cash
   for about four months of burn, losses larger than revenue, a fourfold share count),
   with the 2021 accounting failures as history; the routine amendments that only add
-  executive-pay and governance information are not counted as red flags.
+  executive-pay and governance information are not counted as red flags. The prompts do
+  not yet name liquidity as a red flag and the data pack does not compute a cash runway;
+  that gap between the label and the definitions is one reason the verdict flips.
 
 ## Roadmap
 
