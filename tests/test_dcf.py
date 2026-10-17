@@ -80,7 +80,19 @@ def test_the_price_sentence_is_written_by_python():
     inputs = DcfInputs(**{**INPUTS.__dict__, "price": price})
     sentence = price_assumes(flat(), inputs, implied_annual_return(flat(), inputs))
     assert sentence.endswith("a buyer earns about 8.0% a year.")
-    assert "revenue growth of 0% to 0% a year and an operating margin of 20% to 20%" in sentence
+    assert "(revenue growth of 0% a year and an operating margin of 20% over five years)" in sentence
+
+
+def test_a_changing_growth_or_margin_says_which_way_it_moves():
+    base = flat().model_copy(update={"revenue_growth": [0.05, 0.045, 0.04, 0.035, 0.03],
+                                     "operating_margin": [0.25, 0.26, 0.27, 0.28, 0.28]})
+    sentence = price_assumes(base, INPUTS, {"implied_annual_return": 0.07})
+    assert ("(revenue growth slowing from 5% to 3% a year and an operating margin rising from 25% to 28% "
+            "over five years)") in sentence
+    rising = base.model_copy(update={"revenue_growth": [0.02, 0.06], "operating_margin": [0.3, 0.2]})
+    sentence = price_assumes(rising, INPUTS, {"implied_annual_return": 0.07})
+    assert ("revenue growth rising from 2% to 6% a year "
+            "and an operating margin falling from 30% to 20%") in sentence
 
 
 def test_sensitivities_are_sorted_by_effect():

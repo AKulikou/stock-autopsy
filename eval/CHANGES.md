@@ -8,6 +8,14 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-17 — "what the price assumes" sentence: no "4% to 4%" ranges (M14)
+
+- **What:** the Python sentence on what the price assumes, which valuation step B and the
+  committee also read, now says "revenue growth of 4% a year" when the first and last year are
+  equal (it said "4% to 4%"), and "slowing from 5% to 3% a year" / "rising from ... to ..." when
+  they differ; the same for the operating margin ("rising" / "falling"). Numbers unchanged.
+- **Expected effect:** none on verdicts; clearer text for the reader. Not evaluated.
+
 ## 2026-10-17 — data pack: split-history note reworded, reverse splits, missing share counts
 
 - **What:** three data-layer changes from review 2. (1) Reverse splits beyond 1-for-10

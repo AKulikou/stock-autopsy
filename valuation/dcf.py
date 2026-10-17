@@ -190,13 +190,22 @@ def implied_annual_return(base: ScenarioAssumptions, inputs: DcfInputs) -> dict:
     }
 
 
+def path_words(name: str, first: float, last: float, unit: str = "") -> str:
+    """'revenue growth of 4% a year', or '... slowing from 5% to 3% a year' / 'rising from ... to ...'."""
+    start, end = f"{first:.0%}", f"{last:.0%}"
+    if start == end:
+        return f"{name} of {start}{unit}"
+    direction = "rising" if last > first else ("slowing" if "growth" in name else "falling")
+    return f"{name} {direction} from {start} to {end}{unit}"
+
+
 def price_assumes(base: ScenarioAssumptions, inputs: DcfInputs, implied: dict) -> str | None:
     """One plain sentence on what today's price assumes, filled in by Python, not the model."""
     if inputs.price is None:
         return None
-    growth = f"{base.revenue_growth[0]:.0%} to {base.revenue_growth[-1]:.0%}"
-    margin = f"{base.operating_margin[0]:.0%} to {base.operating_margin[-1]:.0%}"
-    case = f"revenue growth of {growth} a year and an operating margin of {margin} over five years"
+    growth = path_words("revenue growth", base.revenue_growth[0], base.revenue_growth[-1], " a year")
+    margin = path_words("an operating margin", base.operating_margin[0], base.operating_margin[-1])
+    case = f"{growth} and {margin} over five years"
     rate = implied.get("implied_annual_return")
     if rate is not None:
         return (
