@@ -19,3 +19,13 @@ test("a failed or skipped analyst is never shown as done", () => {
   assert.equal(finishedLook({ status: "failed" }).state, "failed");
   assert.equal(finishedLook({ status: "skipped" }).state, "skipped");
 });
+
+test("every verdict badge starts with a capital letter", async () => {
+  const { badgeLabel } = await import("../../web/static/cards.js");
+  // The analysts' verdict words (reporting/wording.py EVALUATOR_VERDICTS) and the committee's.
+  for (const word of ["strong", "adequate", "weak", "red flag", "not enough data", "Weak case", "Done"]) {
+    const label = badgeLabel(word);
+    assert.equal(label[0], label[0].toUpperCase(), label);
+    assert.equal(label.slice(1), word.slice(1));
+  }
+});

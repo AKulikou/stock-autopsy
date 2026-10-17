@@ -32,8 +32,14 @@ export function el(tag, className, text) {
   return node;
 }
 
+// A verdict word standing alone starts with a capital ("Adequate"); the same words stay
+// lower case inside sentences (reporting/wording.py keeps them so), M12.
+export function badgeLabel(text) {
+  return text ? text[0].toUpperCase() + text.slice(1) : text;
+}
+
 export function verdictBadge(verdictText, code) {
-  return el("span", `badge verdict-${verdictClass(code)}`, verdictText);
+  return el("span", `badge verdict-${verdictClass(code)}`, badgeLabel(verdictText));
 }
 
 // What a finished, failed or skipped item looks like: {state, verdictClass, mark, badge}.
