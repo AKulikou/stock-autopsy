@@ -63,8 +63,9 @@ the evidence, never "buy" or "sell".
 
 5. **Translation, on demand (M13, variant A).** Below the result: a language select
    (Russian first, then Startup Autopsy's list) and "Translate report". One cheap call per
-   report section (Haiku 5.5, low effort; about 0.02-0.03 USD for the longest report, to be
-   confirmed on the first real translation). The translated copy appears on the page as
+   report section (Haiku 5.5, low effort; 0.023-0.031 USD and 41-63 s per report, measured on
+   three reports on 2026-10-17). A section must also keep its headings, table rows and list
+   items. The translated copy appears on the page as
    rendered Markdown (raw HTML is never rendered) and as "Save report in Russian
    (report.ru.md)". Every number of a section must come back with the same value and scale
    (`translate/numbers.py`); a section that fails the check twice stays in English, marked.

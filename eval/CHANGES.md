@@ -51,7 +51,32 @@ was checked so far, and the eval result once there is one.
   `17ea6b1887e1`); the regrade finds the old pack in git history. KO, SNOW, KHC and PLUG are
   unchanged. Expected effect on answers: none measurable; not evaluated.
 
-## 2026-10-17 — report translation (M13, variant A): not measured yet
+## 2026-10-17 — report translation (M13, variant A): measured on three saved reports
+
+- **Measurement (owner's OK, Haiku 5.5, real Russian glossary of 96 terms):** final runs with
+  all checks of the day (number check with labels, durations and dates in words; structure
+  check):
+
+  | Report | Cost | Time | Sections | Kept in English | Number rejections | Retries |
+  |---|---|---|---|---|---|---|
+  | Coca-Cola (KO, 2026-10-17) | 0.031 USD | 63 s | 19 | 0 | 0 | 4 (3 left in English, 1 structure) |
+  | Tesla (TSLA, 2026-10-17) | 0.025 USD | 43 s | 19 | 1 (Business Model, English twice) | 0 | 3 |
+  | Comcast (CMCSA, 2026-10-16) | 0.023 USD | 41 s | 19 | 0 | 0 | 1 (left in English) |
+
+- **What the first runs found (and fixed the same day):** the first Coca-Cola run kept 5 of 19
+  sections in English after 10 number rejections, all false (Q4, "10-year", "5-year", a date
+  written the Russian way) -> labels, durations and dates are now compared as words and dates.
+  The next Coca-Cola and Tesla runs passed the number check with two defects it cannot see: the
+  translator's own comments with a repeated heading, and a stub table with "..." before the real
+  one -> a section must keep its count of headings, table rows and list items.
+- **Remaining:** Haiku at low effort sometimes answers an analyst's section in English (6
+  answers in the final three runs); the retry fixes most. The product name in the title was
+  translated once ("Стоп-анализ акций"). The owner reads one translation and reviews the
+  glossary.
+- **Cost of the whole measurement:** 0.155 USD (six report translations, two of them before
+  the fixes).
+
+## 2026-10-17 — report translation (M13, variant A): code before the measurement
 
 - **What:** `translate/` translates a finished report.md section by section with Haiku 5.5
   (low effort, a medium-effort retry), on the page or by `python -m translate`. New against
