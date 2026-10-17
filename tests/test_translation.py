@@ -315,3 +315,18 @@ def test_languages_are_named_by_their_english_name_or_code():
     assert LANGUAGES[0][0] == "Russian"
     assert language_name("RU") == language_name(" russian ") == "Russian"
     assert language_name("Chinese") is None
+
+
+def test_a_bracketed_note_at_the_end_of_the_english_field_is_not_matched():
+    glossary = parse_glossary(
+        "# Словарь\n\n| English | Термин | Пояснение |\n|---|---|---|\n"
+        "| strong / weak (analyst verdicts) | сильно / слабо | Вердикты аналитиков. |\n"
+    )
+    assert glossary.entries[0].variants == ("strong", "weak")
+    assert glossary.used_in("The Forensic verdict was weak.")
+
+
+def test_the_russian_glossary_is_complete_and_titled():
+    glossary = load_glossary("Russian")
+    assert glossary.title == "Словарь" and len(glossary.entries) >= 50
+    assert all(len(e.explanation) > 20 for e in glossary.entries)

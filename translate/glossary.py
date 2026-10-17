@@ -9,7 +9,8 @@ translate/glossaries/<language>.md, version-controlled and reviewed by a person.
     | free cash flow / FCF | свободный денежный поток (FCF) | One or two sentences. |
 
 Each row has three fields: the English term as reports write it (variants separated
-by " / "), the term the translator must use, and an explanation. Other lines
+by " / "; a note in brackets at its end is for reviewers and is not matched), the term
+the translator must use, and an explanation. Other lines
 (subheadings, notes for reviewers) are ignored. A glossary is used twice: the
 entries whose English term occurs in a section go to the translator with that
 section, and the entries that occur anywhere in the report are appended to the
@@ -23,6 +24,7 @@ from pathlib import Path
 
 GLOSSARY_DIR = Path(__file__).resolve().parent / "glossaries"
 _SEPARATOR_CELL = re.compile(r"^:?-{2,}:?$")
+_NOTE = re.compile(r"\s*\([^)]*\)\s*$")
 
 
 class GlossaryError(ValueError):
@@ -95,7 +97,8 @@ def parse_glossary(text: str, source: str = "glossary") -> Glossary:
             raise GlossaryError(
                 f"{source}, line {number}: a row needs English, term and explanation: {line!r}"
             )
-        variants = tuple(v.strip() for v in cells[0].split(" / ") if v.strip())
+        english = _NOTE.sub("", cells[0])  # "strong / weak (analyst verdicts)": the note is for reviewers
+        variants = tuple(v.strip() for v in english.split(" / ") if v.strip())
         entries.append(Entry(variants, cells[1], cells[2]))
     if not entries:
         raise GlossaryError(f"{source}: no entries")
