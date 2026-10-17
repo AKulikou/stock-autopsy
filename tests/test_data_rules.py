@@ -286,10 +286,23 @@ def test_cover_page_shares_filed_before_a_split_are_adjusted():
 @pytest.mark.parametrize(
     "ratio, real",
     [(2.0, True), (0.5, True), (1.5, True), (1.25, True), (0.8, True), (10.0, True), (0.1, True),
-     (1.067, False), (1.1, False), (0.9, False), (2.37, False), (0.0, False)],
+     (1 / 12, True), (1 / 20, True), (1 / 25, True), (1 / 50, True), (1 / 100, True), (50.0, True),
+     (1.067, False), (1.1, False), (0.9, False), (2.37, False), (1 / 2.37, False), (0.0, False)],
 )
 def test_only_simple_ratios_outside_the_adjustment_band_are_splits(ratio, real):
     assert is_real_split(ratio) is real
+
+
+def test_a_one_for_twenty_reverse_split_after_the_last_annual_report_divides_the_share_counts():
+    gaap = base_gaap()
+    gaap["WeightedAverageNumberOfDilutedSharesOutstanding"] = [
+        annual(2_000, FY2024, filed="2025-02-20"),
+        annual(2_400, FY2025),
+    ]
+    price = {**PRICE, "splits": [{"date": "2026-05-01", "ratio": 0.05}]}
+    pack = pack_of(gaap=gaap, price=price)
+    assert (row(pack, 2024)["shares_diluted"], row(pack, 2025)["shares_diluted"]) == (100, 120)
+    assert not any("not a stock split" in n for n in pack["data_quality"]["period_notes"])
 
 
 def test_a_spin_off_adjustment_in_the_split_history_changes_no_share_count():

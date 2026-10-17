@@ -45,7 +45,8 @@ SPLIT_LIKE_RATIOS = (2, 3, 4, 5, 8, 10, 20, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 8, 1
 # A ratio strictly between these is a price adjustment for a corporate action (a spin-off,
 # a special dividend), not a split: real splits start at 5-for-4 and 4-for-5.
 NOT_A_SPLIT_RANGE = (0.8, 1.25)
-# A real split is a simple fraction p/q with q at most this.
+# A real split is a simple fraction p/q with q at most this, read the way the split
+# goes: a 1-for-20 reverse split (0.05) is as simple as a 20-for-1 split (20.0).
 MAX_SPLIT_DENOMINATOR = 10
 # A cover-page share count older than this (before as_of) is not used.
 STALE_SHARES_DAYS = 400
@@ -64,8 +65,9 @@ def is_real_split(ratio: float) -> bool:
     low, high = NOT_A_SPLIT_RANGE
     if ratio <= 0 or low < ratio < high:
         return False
-    simple = Fraction(ratio).limit_denominator(MAX_SPLIT_DENOMINATOR)
-    return abs(float(simple) - ratio) <= 0.001 * ratio
+    big = max(ratio, 1 / ratio)
+    simple = Fraction(big).limit_denominator(MAX_SPLIT_DENOMINATOR)
+    return abs(float(simple) - big) <= 0.001 * big
 
 
 def real_splits(splits: list[Split], quality: DataQuality) -> list[Split]:
