@@ -37,6 +37,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from analysis.runner import LIVE_ANALYSTS
 from core.token_summary import call_cost, format_cost
 from datalayer.cache import DailyCache
 from datalayer.filings import unsupported_filer
@@ -137,7 +138,9 @@ def create_app(
 
     @app.get("/api/options")
     def options():
+        analysts = [{"key": p.key, "label": p.name, "waits_for": waits} for p, waits in LIVE_ANALYSTS]
         return {"examples": [{"title": title, "query": query} for title, query in EXAMPLES],
+                "analysts": analysts,
                 "languages": languages_for_page(), "default_language": DEFAULT_LANGUAGE}
 
     @app.post("/api/resolve")

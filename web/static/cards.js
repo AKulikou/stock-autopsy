@@ -1,6 +1,13 @@
-// Analysis cards: one per evaluator, grey while waiting, coloured with the
-// verdict in words once it finishes, outlined in red if it failed. Colours
-// support the words; they never replace them.
+// Analysis cards: one per analyst, shown from the start of a run. Each look has its
+// own mark, and none reuses the verdict colours for anything but a verdict (M9):
+//
+//   waiting    dimmed, a hollow grey dot, "Waits for ..."
+//   running    a dot pulsing in the page accent, a thin moving accent line on top
+//   done       no verdict (the valuation assumptions): an accent check mark and "Done"
+//   verdict    a steady lamp and the card top in the verdict colour, the verdict in words
+//   failed     a red outline and "Failed"
+//
+// Colours support the words; they never replace them.
 
 const VERDICT_CLASS = {
   STRONG_CASE: "good",
@@ -29,54 +36,68 @@ export function verdictBadge(verdictText, code) {
   return el("span", `badge verdict-${verdictClass(code)}`, verdictText);
 }
 
-// A card for an item that has started: {key, label, text (its question)}.
-export function createCard(container, { key, label, text }) {
-  const card = el("article", "card is-running");
+// What a finished, failed or skipped item looks like: {state, verdictClass, mark, badge}.
+// A step without a verdict is "done" in the accent, never the grey of a pending item (M10).
+export function finishedLook(event) {
+  if (event.status === "failed") return { state: "failed", mark: "failed", badge: "Failed" };
+  if (event.status === "skipped") return { state: "skipped", mark: "hollow", badge: "Not relevant here" };
+  if (event.verdict) {
+    return { state: "done", verdictClass: verdictClass(event.verdict), mark: "lamp", badge: event.verdict_text };
+  }
+  return { state: "done", verdictClass: "done", mark: "check", badge: null };
+}
+
+const MARKS = { running: "pulse", hollow: "status-mark", lamp: "lamp", check: "check-mark", failed: "status-mark" };
+
+function mark(kind) {
+  return el("span", MARKS[kind], kind === "check" ? "✓" : null);
+}
+
+// A card in the waiting look, before its analyst starts: {key, label, waitsFor}.
+export function createCard(container, { key, label, waitsFor }) {
+  const card = el("article", "card is-waiting");
   card.dataset.key = key;
-  card.dataset.state = "running";
+  card.dataset.state = "waiting";
   card.append(el("h3", "card-title", label));
-  if (text) card.append(el("p", "card-question", text));
   const status = el("div", "card-status");
-  status.append(el("span", "pulse"), el("span", "card-status-text", "Working…"));
-  card.append(status);
-  card.append(el("p", "card-summary"));
+  status.append(mark("hollow"), el("span", "card-status-text", waitsFor ? `Waits for ${waitsFor}.` : "Waiting."));
+  card.append(status, el("p", "card-summary"));
   container.append(card);
   return card;
 }
 
-// Update a card from a progress event of status done, failed or skipped.
-export function updateCard(card, event) {
-  card.classList.remove("is-running");
-  card.dataset.state = event.status;
-  const status = card.querySelector(".card-status");
-  const summary = card.querySelector(".card-summary");
-  status.replaceChildren();
-  if (event.status === "done") {
-    card.classList.add("is-done", `verdict-${verdictClass(event.verdict)}`);
-    status.append(verdictBadge(event.verdict_text || "Done", event.verdict));
-    if (event.confidence_text) {
-      status.append(el("span", "confidence", `${event.confidence_text} confidence`));
-    }
-    summary.textContent = event.text || "";
-  } else if (event.status === "failed") {
-    card.classList.add("is-failed");
-    status.append(el("span", "badge badge-failed", "Failed"));
-    summary.textContent = "This analysis failed; the overall verdict will rest on the others.";
-    summary.title = event.text || "";
-  } else if (event.status === "skipped") {
-    card.classList.add("is-skipped");
-    status.append(el("span", "badge badge-skipped", "Not relevant here"));
-    summary.textContent = event.text || "";
-  }
-}
-
-// A card whose run ended or lost its connection while it was working (live.js):
-// state "running" again, "unknown" or "stopped", with the words for it.
+// The card's state with its words: running ("Working…"), unknown or stopped (live.js).
 export function setCardState(card, state, text) {
   card.classList.remove(`is-${card.dataset.state}`);
   card.classList.add(`is-${state}`);
   card.dataset.state = state;
   const status = card.querySelector(".card-status");
-  const pulse = state === "running" ? el("span", "pulse") : el("span", "status-mark");
-  status.replaceChildren(pulse, el("span", "card-status-text", text));
+  status.replaceChildren(mark(state === "running" ? "running" : "hollow"), el("span", "card-status-text", text));
+}
+
+// Update a card from a progress event of status done, failed or skipped.
+export function updateCard(card, event) {
+  const look = finishedLook(event);
+  card.classList.remove(`is-${card.dataset.state}`);
+  card.classList.add(`is-${look.state}`);
+  if (look.verdictClass) card.classList.add(`verdict-${look.verdictClass}`);
+  card.dataset.state = look.state;
+  const status = card.querySelector(".card-status");
+  const summary = card.querySelector(".card-summary");
+  status.replaceChildren(mark(look.mark));
+  if (look.state === "done") {
+    if (look.badge) status.append(verdictBadge(look.badge, event.verdict));
+    else status.append(el("span", "card-status-text done-text", "Done"));
+    if (event.confidence_text) {
+      status.append(el("span", "confidence", `${event.confidence_text} confidence`));
+    }
+    summary.textContent = event.text || "";
+  } else if (look.state === "failed") {
+    status.append(el("span", "badge badge-failed", look.badge));
+    summary.textContent = "This analysis failed; the overall verdict will rest on the others.";
+    summary.title = event.text || "";
+  } else {
+    status.append(el("span", "badge badge-skipped", look.badge));
+    summary.textContent = event.text || "";
+  }
 }

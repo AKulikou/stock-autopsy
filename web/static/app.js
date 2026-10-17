@@ -10,6 +10,7 @@ const VIEWS = ["input-view", "live-view", "result-view"];
 let timer = null;
 let languages = [];
 let defaultLanguage = null;
+let analysts = []; // [{key, label, waits_for}] in the order a run starts them
 
 function show(view) {
   for (const id of VIEWS) $(id).hidden = id !== view;
@@ -194,7 +195,8 @@ function onProgress(event) {
     case "evaluator": {
       let card = cards.querySelector(`[data-key="${CSS.escape(event.key)}"]`);
       if (event.status === "started") {
-        if (!card) createCard(cards, { key: event.key, label: event.label });
+        if (!card) card = createCard(cards, { key: event.key, label: event.label });
+        setCardState(card, "running", "Working…");
         if (event.key === "valuation_assumptions") setStage("stage-dcf", "waiting", "Waits for the valuation assumptions.");
       } else {
         if (!card) card = createCard(cards, { key: event.key, label: event.label });
@@ -223,6 +225,7 @@ function onProgress(event) {
 
 function resetLive() {
   $("cards").replaceChildren();
+  for (const a of analysts) createCard($("cards"), { key: a.key, label: a.label, waitsFor: a.waits_for });
   setStage("stage-fetch", "running", "Fetching the company's filings and price…");
   setStage("stage-pack", "waiting", "Waits for the filings.");
   setStage("stage-dcf", "waiting", "Waits for the valuation assumptions.");
@@ -489,6 +492,7 @@ function showTranslation(runId, translation, output) {
 async function init() {
   const { data } = await request("GET", "/api/options");
   languages = data.languages || [];
+  analysts = data.analysts || [];
   defaultLanguage = data.default_language;
   for (const example of data.examples) {
     const chip = el("button", "chip", example.title);

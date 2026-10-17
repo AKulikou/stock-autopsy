@@ -53,6 +53,15 @@ PACK_TAG = "data_pack"
 # perspectives succeeded; with fewer, a conclusion would rest on too little.
 MIN_PERSPECTIVES_FOR_SYNTHESIS = 3
 VERDICT_KEYS = ("business_model", "forensic", "valuation", "pre_mortem")
+# The analysts in the order a run starts them, and what each waits for (the live view
+# shows them waiting from the start).
+LIVE_ANALYSTS = (
+    (d.VALUATION_ASSUMPTIONS, "the data pack"),
+    (d.BUSINESS_MODEL, "the valuation assumptions"),
+    (d.FORENSIC, "the valuation assumptions"),
+    (d.VALUATION, "the valuation assumptions and the DCF"),
+    (d.PRE_MORTEM, "the valuation assumptions"),
+)
 
 
 @dataclass

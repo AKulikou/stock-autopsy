@@ -30,8 +30,12 @@ the evidence, never "buy" or "sell".
 2. **Data.** Steps light up: filings and price received, the data pack with real counts
    (annual reports, quarters, filing events, price date), then Python's DCF with the
    sentence on what today's price assumes.
-3. **Analysis (about 3 minutes).** One card per analyst: grey, then the verdict word,
-   the confidence and the analyst's one-sentence key finding. The committee line last,
+3. **Analysis (about 3 minutes).** One card per analyst from the start, each with its own
+   look (M9): waiting (dimmed, a hollow dot, "Waits for ..."), running (a dot pulsing in the
+   page accent and a moving accent line on top), done without a verdict (an accent check
+   mark, M10), done with a verdict (a steady lamp and the card top in the verdict colour, the
+   verdict word, the confidence and the analyst's one-sentence key finding), failed (red).
+   The status colours never reuse the verdict colours. The committee line last,
    then the number check. The server sends a comment line every 15 s while the analysts
    are silent; if the stream drops anyway, the page reopens it from the next event
    (`?since=N`), and if that fails it asks for the result until the server stops answering

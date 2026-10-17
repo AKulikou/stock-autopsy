@@ -280,3 +280,11 @@ def test_the_downloaded_report_is_named_after_the_company_first(client, fake):
     follow(client, run_id)
     disposition = client.get(f"/api/runs/{run_id}/files/report").headers["content-disposition"]
     assert re.search(r'filename="Coca_Cola_Co_KO_\d{4}-\d{2}-\d{2}_\d{6}_report\.md"', disposition)
+
+
+def test_the_page_learns_the_five_analysts_and_what_each_waits_for(client):
+    analysts = client.get("/api/options").json()["analysts"]
+    assert [a["key"] for a in analysts] == [
+        "valuation_assumptions", "business_model", "forensic", "valuation", "pre_mortem"]
+    assert analysts[0]["waits_for"] == "the data pack"
+    assert all(a["label"] and a["waits_for"] for a in analysts)
