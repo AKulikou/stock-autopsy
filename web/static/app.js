@@ -497,7 +497,7 @@ function showTranslation(runId, translation, output) {
   const details = el("details", "translated-report");
   details.open = true;
   details.lang = translation.code;
-  details.append(el("summary", null, `Report in ${translation.label}`));
+  details.append(el("summary", null, `Report in ${translation.language}`));
   const body = el("div", "markdown");
   body.innerHTML = renderMarkdown(translation.markdown); // escapes all text; raw HTML is never rendered
   details.append(body);

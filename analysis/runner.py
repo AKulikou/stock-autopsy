@@ -206,7 +206,12 @@ def pack_summary_text(pack: dict) -> str:
     events = len(pack.get("filing_events") or [])
     price = pack.get("price")
     price_text = f"price of {price['date']}" if price else "no price"
-    return f"{years} annual reports, {quarters} quarters, {events} filing events, {price_text}"
+    counts = [_count(years, "annual report"), _count(quarters, "quarter"), _count(events, "filing event")]
+    return ", ".join([*counts, price_text])
+
+
+def _count(n: int, noun: str) -> str:
+    return f"{n} {noun}" if n == 1 else f"{n} {noun}s"
 
 
 def run_autopsy(

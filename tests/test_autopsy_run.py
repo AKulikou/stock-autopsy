@@ -8,7 +8,7 @@ import pytest
 from conftest import response
 from sample_outputs import forensic, handler_for, synthesis
 
-from analysis.runner import dcf_event, run_autopsy
+from analysis.runner import dcf_event, pack_summary_text, run_autopsy
 from core.shared_context import context_block
 from datalayer.pack import build_pack
 from evaluators.schemas import Claim, ForensicResult, PreMortemResult, ValuationAssumptions
@@ -270,3 +270,10 @@ def test_a_dcf_the_data_cannot_carry_is_not_computed_not_failed(ko_pack):
     assert event.text == "DCF not computed: revenue over the last twelve months is missing or not positive."
     failed = {"computed": False, "reasons": ["valuation assumptions failed: ConnectionError"]}
     assert dcf_event(failed, assumptions_ok=False).status == "failed"
+
+
+def test_the_pack_summary_counts_in_words(ko_pack):
+    pack = {**ko_pack, "filing_events": ko_pack["filing_events"][:1], "price": None}
+    text = pack_summary_text(pack)
+    assert "1 filing event," in text and text.endswith("no price")
+    assert "quarters" in text
