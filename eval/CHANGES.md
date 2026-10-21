@@ -8,6 +8,31 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-17 — live run through the page: Coca-Cola, then a Russian translation (reviewed 2026-10-21)
+
+No behavior change; a check of the page after M1-M15 on code 922c655. Headless Chrome typed
+"Coca-Cola", picked Coca Cola Co and translated the result on the page.
+
+- Cost and time: run 0.656 USD, 173 s (cache reads 0, as expected while each analyst has its
+  own schema); translation 0.021 USD, 39 s, no section kept in English, no number rejection.
+- Result: weak case, medium confidence (acceptable by the label). 27 of 31 quoted numbers
+  match, 1 not in the cited data; 24 of 27 calculations reproduced; 5 of 299 prose numbers
+  without a source.
+- Seen on screen: tagline (M1); lookup offered Coca Cola Co and Keurig Dr Pepper and flagged
+  Coca-Cola Europacific Partners as a 20-F filer before any paid call (M7); "Analyzing Coca Cola
+  Co" while running (M11); card states waits / working / done and capitalized verdict badges
+  (M9, M10, M12); the price sentence "revenue growth slowing from 4% to 3% a year" (M14); data
+  quality with the freshness gap first and restatements grouped (M2); live updates at 0:02,
+  0:25, 1:00 and 1:59 and the result after 3 minutes (M4: no failure shown; the server log does
+  not record reconnects, so a reconnect cannot be ruled out). "DCF not computed" did not occur
+  (M8 untested live). The download name is covered by a test, not by the live run (M3).
+- Fixed after the review (5037b0f): "1 filing events" on the data pack step; "Report in
+  Русский" above the translation, now "Report in Russian".
+- Left for the owner: the price sentence says "At today's price of 93.90" without a currency
+  while the rest of the page writes $93.90. The sentence reaches the committee, so changing it
+  is a behavior change, not made while 67404ad is unmeasured.
+- Screenshots: `screens_2026-10-17/` in the owner's handoff folder (01-06, 08-10).
+
 ## 2026-10-17 — calculation check: stated constants, parts of a formula, the sign of a difference (M15)
 
 - **What (grading only, no model input changes):** in the check of calculated (DERIVED) claims,
