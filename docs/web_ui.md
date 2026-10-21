@@ -57,7 +57,7 @@ the evidence, never "buy" or "sell".
    important first: a filed quarter missing from SEC company facts, then restatements grouped
    by year, conflicts, notes, rounding, one line for what this version never collects; the
    date the statements reach also stands at the top, M2), and
-   "Save report" (report.md; the downloaded file is named company first, then the run folder:
+   "Save report (.md)" (report.md; the downloaded file is named company first, then the run folder:
    `Coca_Cola_Co_KO_2026-10-17_090436_report.md`; the folder in results/ keeps its ticker-first name). report.json is still written to the run folder for programs,
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 
@@ -67,7 +67,7 @@ the evidence, never "buy" or "sell".
    three reports on 2026-10-17). A section must also keep its headings, table rows and list
    items. The translated copy appears on the page as
    rendered Markdown (raw HTML is never rendered) and as "Save report in Russian
-   (report.ru.md)". Every number of a section must come back with the same value and scale
+   (.md)" (report.ru.md, named company first like the English report). Every number of a section must come back with the same value and scale
    (`translate/numbers.py`); a section that fails the check twice stays in English, marked.
    A glossary per language (`translate/glossaries/<language>.md`; Russian only so far, 96
    terms drafted on 2026-10-17 and awaiting the owner's review) gives the translator its

@@ -45,7 +45,8 @@ CHECKS = {
 }
 # report.json is still written to the run folder for programs; the page does not offer it.
 DOWNLOADS = {"report": "report.md"}
-DOWNLOAD_LABELS = {"report": "Save report (report.md)"}
+# The file is saved under the company's name (download_name), so the label names only its type.
+DOWNLOAD_LABELS = {"report": "Save report (.md)"}
 
 
 def _words(value, ticker: str, company: str, key: str | None = None):
@@ -245,7 +246,7 @@ def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
         "code": CODES[language],
         "markdown": path.read_text(encoding="utf-8"),
         "note": note,
-        "download_label": f"Save report in {language} ({path.name})",
+        "download_label": f"Save report in {language} (.md)",
         "kept_in_english": kept,
         "cost_usd": round(cost or 0.0, 4),
     }
