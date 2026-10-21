@@ -309,3 +309,19 @@ def test_the_implied_growth_row_names_the_return_it_is_needed_for(client, fake):
     valuation = client.get(f"/api/runs/{run_id}/result").json()["valuation"]
     assert re.fullmatch(r"Revenue growth for five years needed to earn [\d.]+% a year",
                         valuation["implied_growth_label"])
+
+
+def test_a_section_kept_in_english_is_named_with_its_reason_on_the_page(client, fake):
+    def english_forensic(kwargs):
+        source = kwargs["messages"][0]["content"]
+        return text_response(source if source.startswith("### Forensic Accountant") else fake_russian(source))
+
+    fake.create_handler = english_forensic
+    run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    follow(client, run_id)
+    done = client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).json()
+    assert done["kept_in_english"] == 1
+    assert ("1 section stayed in English and is marked in the text: Forensic Accountant "
+            "(the translator returned the English text, twice).") in done["note"]
+    again = client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).json()
+    assert "Forensic Accountant (the translator returned the English text, twice)" in again["note"]

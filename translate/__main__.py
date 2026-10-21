@@ -26,10 +26,11 @@ def describe(outcome: dict, language: str, cost: float | None) -> str:
     if outcome["status"] != "success":
         return f"The translation into {language} failed ({outcome['error']}); no file was written."
     kept = outcome["untranslated_sections"]
+    reasons = "".join(f" Kept in English: {k['heading']} ({k['reason']})." for k in outcome["kept_sections"])
     return (
         f"Translated into {language}: {outcome['path']}. {outcome['sections']} sections, "
         f"{kept} kept in English, {outcome['number_rejections']} answers rejected because a number changed, "
-        f"{outcome['calls']} calls, {format_cost(cost)}, {outcome['duration_s']:.0f} s."
+        f"{outcome['calls']} calls, {format_cost(cost)}, {outcome['duration_s']:.0f} s.{reasons}"
     )
 
 

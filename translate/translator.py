@@ -75,7 +75,12 @@ SECTION_WORKERS = 4
 # keep 4-35% of their words (names, file names, links), an untranslated one 100%.
 UNTRANSLATED_SHARE = 0.6
 MIN_WORDS_TO_CHECK = 25
-UNTRANSLATED_NOTE = "> This section could not be translated; the English original follows.\n\n"
+# Put above a section kept in English, with the reason in words, so a reader of the
+# copy (and the page, which reads it back with kept_sections()) sees why.
+UNTRANSLATED_NOTE = "> Kept in English: {reason}. The English original follows.\n\n"
+_KEPT = re.compile(
+    r"(?m)^> Kept in English: (?P<reason>.+)\. The English original follows\.\n\n#{2,3} (?P<heading>.+)$"
+)
 
 # The overlap check cannot see a section that comes back in a third language; the
 # script of the letters tells Russian from Lithuanian, and letters outside a Latin
@@ -288,9 +293,38 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
         if problem == HEADING_LEFT:
             logger.warning(f"[Translation] '{heading}': the heading stayed English after a retry")
             return {**attempt, **billed, "calls": 2, "untranslated": False, "number_rejections": rejections}
-    logger.warning(f"[Translation] '{heading}' kept in English after a retry ({attempts[-1][1]})")
-    return {"status": "success", "text": UNTRANSLATED_NOTE + section, "model": TRANSLATION_MODEL,
-            **billed, "calls": 2, "untranslated": True, "number_rejections": rejections}
+    reason = kept_reason([problem for _, problem in attempts])
+    logger.warning(f"[Translation] '{heading}' kept in English after a retry ({reason})")
+    return {"status": "success", "text": UNTRANSLATED_NOTE.format(reason=reason) + section,
+            "model": TRANSLATION_MODEL, **billed, "calls": 2, "untranslated": True,
+            "kept": {"heading": heading.lstrip("#").strip(), "reason": reason},
+            "number_rejections": rejections}
+
+
+def _problem_words(problem: str) -> str:
+    detail = f" ({problem.split(': ', 1)[1]})" if ": " in problem else ""
+    if problem == "left in English":
+        return "the translator returned the English text"
+    if problem.startswith(NUMBERS_CHANGED):
+        return f"a number did not come back with the same value{detail}"
+    if problem.startswith("structure changed"):
+        return f"the translation added or dropped headings, table rows or list items{detail}"
+    return f"the translation was {problem.split(': ', 1)[0]}{detail}"  # "not in Russian (...)"
+
+
+def kept_reason(problems: list[str]) -> str:
+    """Why a section stayed in English, in words: the problems of the rejected attempts."""
+    words = [_problem_words(problem) for problem in problems]
+    if len(words) == 2 and words[0] == words[1]:
+        text = words[0]
+        start = text.rfind(" (") if text.endswith(")") else len(text)
+        return f"{text[:start]}, twice{text[start:]}"
+    return "; then ".join(words)
+
+
+def kept_sections(markdown: str) -> list[dict]:
+    """The sections a translated copy kept in English, with the reason: [{heading, reason}]."""
+    return [{"heading": m["heading"].strip(), "reason": m["reason"]} for m in _KEPT.finditer(markdown)]
 
 
 def _number_rejections(attempts: list[tuple[dict, str]]) -> int:
@@ -335,6 +369,7 @@ def translate_document(markdown: str, language: str, glossary: Glossary | None =
         "status": "success",
         "text": text,
         "untranslated_sections": sum(o["untranslated"] for o in outcomes),
+        "kept_sections": [o["kept"] for o in outcomes if o["untranslated"]],
         "number_rejections": sum(o["number_rejections"] for o in outcomes),
         "sections": len(sections),
         **billed,

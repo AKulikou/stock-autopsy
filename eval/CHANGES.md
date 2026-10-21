@@ -8,6 +8,20 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-21 — translation: a section kept in English says why (C7)
+
+Investigation (free, from the logs of 2026-10-17): in the Tesla copy the section "Business Model
+Analyst" was rejected twice as "left in English"; the DEBUG lines show the model returned the
+English section unchanged both times. Not a number-check rejection, a timeout or a parse failure.
+The likely cause is the old prompt rule "keep the analyst names in English" on a section that
+starts with an analyst's name; C4 removed that rule (unmeasured).
+
+What changed: the fallback was marked but gave no reason ("This section could not be translated").
+The mark now says "Kept in English: the translator returned the English text, twice. The English
+original follows." (or the numbers that changed, the structure that changed, the wrong language).
+The page reads the marks back from the copy and names each section with its reason, also for a
+translation made earlier; the CLI prints them. No change to what the translator is asked.
+
 ## 2026-10-21 — translation: one translated name per analyst (C4)
 
 What changed: the translation prompt (our translation code, not an analyst prompt) said "Keep the

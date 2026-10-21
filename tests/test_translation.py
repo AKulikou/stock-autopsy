@@ -12,8 +12,8 @@ from translate.numbers import missing_numbers, numbers_in
 from translate.translator import (
     MACHINE_TRANSLATION_NOTE,
     RETRY_NOTE,
-    UNTRANSLATED_NOTE,
     heading_untranslated,
+    kept_sections,
     looks_untranslated,
     section_problem,
     split_sections,
@@ -244,7 +244,32 @@ def test_a_section_whose_numbers_change_twice_stays_in_english(fake):
     fake.create_handler = translator(wrong_numbers_first=2)
     outcome = translate_document(REPORT, "Russian")
     assert (outcome["untranslated_sections"], outcome["number_rejections"]) == (1, 2)
-    assert UNTRANSLATED_NOTE + "### In plain words\n\nRevenue was $47.94 billion" in outcome["text"]
+    note = "> Kept in English: a number did not come back with the same value, twice (47.94 billion)."
+    kept = f"{note} The English original follows.\n\n### In plain words\n\nRevenue was $47.94 billion"
+    assert kept in outcome["text"]
+    assert outcome["kept_sections"] == [{"heading": "In plain words", "reason": note[19:-1]}]
+    assert kept_sections(outcome["text"]) == outcome["kept_sections"]
+
+
+def test_a_section_returned_in_english_says_so_where_it_stays(fake):
+    def english_forensic(kwargs):
+        source = kwargs["messages"][0]["content"]
+        if source.startswith("### Forensic Accountant"):
+            return text_response(source)
+        return translator()(kwargs)
+
+    long_forensic = (
+        "### Forensic Accountant\n\nThe review looked at every annual report, every quarterly report and "
+        "every amended filing; nothing else was found that would change the verdict, and the auditor "
+        "stayed the same throughout the whole period covered by the filings.\n"
+    )
+    fake.create_handler = english_forensic
+    outcome = translate_document(REPORT.replace("### Forensic Accountant\n", long_forensic, 1), "Russian")
+    assert outcome["kept_sections"] == [
+        {"heading": "Forensic Accountant", "reason": "the translator returned the English text, twice"}
+    ]
+    assert "> Kept in English: the translator returned the English text, twice. The English original" in (
+        outcome["text"])
 
 
 def test_glossary_terms_go_only_with_the_sections_that_use_them_and_are_appended(fake):

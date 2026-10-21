@@ -24,6 +24,7 @@ from reporting.wording import (
     path_words,
 )
 from translate.languages import CODES, NATIVE_NAMES
+from translate.translator import kept_sections
 from web.runs import Run
 
 CODE_KEYS = {"verdict", "status", "kind", "key", "check"}
@@ -232,22 +233,25 @@ def _number_check(autopsy: AutopsyRun) -> dict:
 def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
     """A finished translation for the page: the Markdown to show and what happened, in words."""
     path = outcome["path"]
-    kept = outcome.get("untranslated_sections", 0)
+    markdown = path.read_text(encoding="utf-8")
+    # Read back from the copy itself, so a translation made earlier names them too.
+    kept = kept_sections(markdown)
     if outcome["reused"]:
         note = "This translation was made earlier; nothing was paid for it now."
     else:
         note = f"Translated in {outcome['duration_s']:.0f} s, about ${(cost or 0):.2f}."
-        if kept:
-            note += (f" {kept} section{'s' if kept > 1 else ''} stayed in English because the translation "
-                     "did not keep every number or was not in the language; each is marked.")
+    if kept:
+        sections = "; ".join(f"{k['heading']} ({k['reason']})" for k in kept)
+        note += (f" {len(kept)} section{'s' if len(kept) > 1 else ''} stayed in English and "
+                 f"{'are' if len(kept) > 1 else 'is'} marked in the text: {sections}.")
     return {
         "language": language,
         "label": NATIVE_NAMES[language],
         "code": CODES[language],
-        "markdown": path.read_text(encoding="utf-8"),
+        "markdown": markdown,
         "note": note,
         "download_label": f"Save report in {language} (.md)",
-        "kept_in_english": kept,
+        "kept_in_english": len(kept),
         "cost_usd": round(cost or 0.0, 4),
     }
 
