@@ -12,6 +12,7 @@ from translate.numbers import missing_numbers, numbers_in
 from translate.translator import (
     MACHINE_TRANSLATION_NOTE,
     RETRY_NOTE,
+    analyst_heading,
     heading_untranslated,
     kept_sections,
     looks_untranslated,
@@ -436,3 +437,25 @@ def test_a_stub_table_before_the_real_one_is_rejected():
 def test_a_faithful_translation_keeps_the_structure():
     assert structure_changed(TABLE_SECTION, fake_russian(TABLE_SECTION)) is None
     assert section_problem(TABLE_SECTION, fake_russian(TABLE_SECTION), "Russian") is None
+
+
+def test_an_analyst_heading_takes_the_glossary_name_whatever_the_translator_wrote(fake):
+    def free_heading(kwargs):
+        source = kwargs["messages"][0]["content"]
+        answer = russian(source)
+        if source.startswith("### Forensic Accountant"):
+            answer = answer.replace("### Forensic Accountant (RU)", "### Криминалистический аналитик")
+        return text_response(answer)
+
+    fake.create_handler = free_heading
+    outcome = translate_document(REPORT, "Russian", load_glossary("Russian"))
+    headings = [line for line in outcome["text"].splitlines() if line.startswith("#")]
+    assert "### Аналитик-криминалист (Forensic Accountant)" in headings
+    assert "### In plain words (RU)" in headings  # other headings stay as translated
+
+
+def test_an_english_name_with_brackets_goes_in_square_brackets():
+    glossary = load_glossary("Russian")
+    source = "### Valuation Analyst (assumptions)\n\nText."
+    fixed = analyst_heading(source, "### Аналитик оценки, допущения\n\nТекст.", glossary)
+    assert fixed == "### Аналитик оценки (допущения) [Valuation Analyst (assumptions)]\n\nТекст."

@@ -8,6 +8,26 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-21 — live page run on Coca-Cola after C1-C8, and the fixes it led to
+
+Owner's OK for a paid run (0.667 USD) and its Russian translation (0.022 USD), through the page in
+headless Chrome, code 474b12d. Result: weak case, medium confidence (acceptable by the label);
+28 of 34 quoted numbers match, 1 wrong; 20 of 25 calculations reproduced; 3 of 310 prose numbers
+without a source; cache reads 0 (each analyst has its own schema).
+
+Seen on the page: "1 filing event"; "At today's price of $93.49 ... about 4.9% a year"; "Revenue
+growth for five years needed to earn 7.5% a year: 21.5%"; the 10-Q filed 2026-07-29 "still missing
+from SEC company facts 84 days later"; "Save report (.md)"; "Report in Russian"; the metadata table
+header "Параметр | Значение"; no section kept in English.
+
+C4 measured once: the copy uses one Russian name per analyst in the text, but the translator
+headed the forensic section "Криминалистический аналитик" instead of the glossary's
+"Аналитик-криминалист". Fixed in code: the heading of an analyst's own section is now set from the
+glossary after the translation ("### Аналитик-криминалист (Forensic Accountant)"; square brackets
+when the English name has brackets of its own). Also found: report.md wrote the pack path
+derived.valuation.pe as "calculated › Valuation Analyst › P/E", and the copy carried the analyst's
+name into the basis; inside a path an analyst key is now a plain word (6718c25).
+
 ## 2026-10-21 — translation: a section kept in English says why (C7)
 
 Investigation (free, from the logs of 2026-10-17): in the Tesla copy the section "Business Model

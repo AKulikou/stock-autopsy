@@ -322,6 +322,26 @@ def kept_reason(problems: list[str]) -> str:
     return "; then ".join(words)
 
 
+def analyst_heading(source: str, translation: str, glossary: Glossary | None) -> str:
+    """
+    The heading of an analyst's own section, set by code from the glossary: "### <name>
+    (<English name>)". The translator does not always use the term list there (Coca-Cola,
+    2026-10-21: "Криминалистический аналитик" for the glossary's "Аналитик-криминалист").
+    """
+    heading = _heading(source)
+    title = heading.lstrip("#").strip()
+    if glossary is None or title not in ANALYST_NAMES:
+        return translation
+    term = next((e.term for e in glossary.entries if title in e.variants), None)
+    if term is None:
+        return translation
+    first, _, rest = translation.lstrip().partition("\n")
+    if not first.startswith("#"):
+        return translation
+    english = f"[{title}]" if "(" in title else f"({title})"  # no "(... (assumptions))"
+    return f"{heading.split(' ', 1)[0]} {term} {english}\n{rest}"
+
+
 def kept_sections(markdown: str) -> list[dict]:
     """The sections a translated copy kept in English, with the reason: [{heading, reason}]."""
     return [{"heading": m["heading"].strip(), "reason": m["reason"]} for m in _KEPT.finditer(markdown)]
@@ -361,7 +381,9 @@ def translate_document(markdown: str, language: str, glossary: Glossary | None =
     failed = [o for o in outcomes if o["status"] != "success"]
     if failed:
         return {"status": "error", "error": failed[0]["error"], **billed}
-    text = "\n\n".join(o["text"].strip() for o in outcomes) + "\n"
+    texts = [o["text"] if o["untranslated"] else analyst_heading(section, o["text"], glossary)
+             for section, o in zip(sections, outcomes, strict=True)]
+    text = "\n\n".join(t.strip() for t in texts) + "\n"
     appendix = glossary.section(markdown) if glossary else ""
     if appendix:
         text += "\n" + appendix
