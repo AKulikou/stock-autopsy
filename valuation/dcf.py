@@ -38,6 +38,7 @@ class DcfInputs:
     total_debt: float
     cash_and_investments: float
     price: float | None
+    currency: str | None = None
 
 
 def inputs_from_pack(pack: dict) -> tuple[DcfInputs | None, list[str]]:
@@ -57,6 +58,7 @@ def inputs_from_pack(pack: dict) -> tuple[DcfInputs | None, list[str]]:
     if reasons:
         return None, reasons
     price = (pack.get("price") or {}).get("value")
+    currency = (pack.get("price") or {}).get("currency")
     notes = []
     investments = balance.get("short_term_investments")
     if investments is None:
@@ -68,6 +70,7 @@ def inputs_from_pack(pack: dict) -> tuple[DcfInputs | None, list[str]]:
             total_debt=balance["total_debt"],
             cash_and_investments=balance["cash"] + (investments or 0),
             price=price,
+            currency=currency,
         ),
         notes,
     )
@@ -202,26 +205,34 @@ def path_words(name: str, first: float, last: float, unit: str = "") -> str:
     return f"{name} {direction} from {start} to {end}{unit}"
 
 
+def price_words(price: float, currency: str | None) -> str:
+    """"$93.90" for US dollars, "93.90 EUR" for another currency, the bare number when it is unknown."""
+    if currency == "USD":
+        return f"${price:,.2f}"
+    return f"{price:,.2f} {currency}" if currency else f"{price:,.2f}"
+
+
 def price_assumes(base: ScenarioAssumptions, inputs: DcfInputs, implied: dict) -> str | None:
     """One plain sentence on what today's price assumes, filled in by Python, not the model."""
     if inputs.price is None:
         return None
+    price = price_words(inputs.price, inputs.currency)
     growth = path_words("revenue growth", base.revenue_growth[0], base.revenue_growth[-1], " a year")
     margin = path_words("an operating margin", base.operating_margin[0], base.operating_margin[-1])
     case = f"{growth} and {margin} over five years"
     rate = implied.get("implied_annual_return")
     if rate is not None:
         return (
-            f"At today's price of {inputs.price:,.2f}, if the base case comes true ({case}), "
+            f"At today's price of {price}, if the base case comes true ({case}), "
             f"a buyer earns about {rate:.1%} a year."
         )
     if "below" in implied:
         return (
-            f"At today's price of {inputs.price:,.2f}, the base case ({case}) does not pay back the price "
+            f"At today's price of {price}, the base case ({case}) does not pay back the price "
             f"even at a return of {implied['below']:.1%} a year: the price assumes more than the base case."
         )
     return (
-        f"At today's price of {inputs.price:,.2f}, the base case ({case}) would pay more than "
+        f"At today's price of {price}, the base case ({case}) would pay more than "
         f"{IMPLIED_RETURN_MAX:.0%} a year: the price assumes much less than the base case."
     )
 

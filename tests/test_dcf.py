@@ -174,3 +174,23 @@ def test_reverse_dcf_states_the_return_and_the_years_it_solves_for():
     result = reverse_dcf(flat(margin=0.3, r=0.08), INPUTS)
     assert result["implied_revenue_growth"] is not None
     assert result["discount_rate"] == 0.08 and result["years"] == 5
+
+
+@pytest.mark.parametrize(
+    "currency, shown", [("USD", "$1,234.50"), ("EUR", "1,234.50 EUR"), (None, "1,234.50")]
+)
+def test_the_price_sentence_writes_the_price_with_its_currency(currency, shown):
+    inputs = DcfInputs(**{**INPUTS.__dict__, "price": 1234.5, "currency": currency})
+    sentence = price_assumes(flat(), inputs, {"implied_annual_return": 0.07})
+    assert sentence.startswith(f"At today's price of {shown}, if the base case comes true")
+
+
+def test_the_pack_gives_the_dcf_its_price_currency():
+    pack = {
+        "ttm": {"revenue": 100},
+        "shares_outstanding": {"value": 10},
+        "balance_sheet_latest": {"total_debt": 20, "cash": 5, "short_term_investments": None},
+        "price": {"value": 50, "currency": "USD"},
+    }
+    inputs, _ = inputs_from_pack(pack)
+    assert inputs.currency == "USD"

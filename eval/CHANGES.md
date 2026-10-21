@@ -8,6 +8,15 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-21 — "what the price assumes" writes the price with its currency (C3)
+
+What changed: the Python sentence `valuation_math.price_assumes` said "At today's price of 93.90";
+it now says "At today's price of $93.90" (the pack's price currency; another currency is written
+after the number, an unknown one leaves the bare number). `valuation_math.inputs` gains `currency`.
+
+Effect on the model: the committee and valuation step B read this sentence and the inputs as data;
+the change is formatting only, no number changes, no prompt changes. No paid eval was run.
+
 ## 2026-10-21 — reverse DCF names the return its growth is needed for (C2)
 
 What changed: `valuation_math.reverse_dcf` gains `discount_rate` (the base-case rate the model
