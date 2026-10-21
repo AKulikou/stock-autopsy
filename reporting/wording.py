@@ -152,6 +152,9 @@ def path_words(path: str) -> str:
             words.append(part)
         elif part.isdigit():
             words.append(f"item {int(part) + 1}")
+        elif part in EVALUATORS:
+            # Inside a path "valuation" is a group of numbers, not the Valuation Analyst.
+            words.append(part.replace("_", " "))
         else:
             words.append(field(part))
     return " › ".join(words)

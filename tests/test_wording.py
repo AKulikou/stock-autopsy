@@ -109,3 +109,8 @@ def test_urls_file_names_and_hashes_are_left_as_they_are():
         "Source: https://www.sec.gov/files/company_tickers.json and data_cache/KO/pack.json, "
         "hash `0a1b2c3d4e5f60718293a4b5c6d7e8f9`; field total debt."
     )
+
+
+def test_a_pack_path_through_valuation_does_not_name_the_analyst():
+    assert path_words("derived.valuation.pe") == "calculated › valuation › P/E"
+    assert path_words("valuation_math.value_per_share.base") == "valuation math › value per share › base"
