@@ -205,7 +205,7 @@ Each milestone ends green (`pytest`, `ruff check .`) and committed.
 | M3 | Evaluators 1, 3, 5, 8 and the synthesis, offline with the fake client | done |
 | M4 | First real run on one golden ticker (owner's OK first): report with `as_of`, sources, disclaimer, pack hash; `[DATA]` numbers checked against the pack | done: KHC, 0.61 USD, 40 of 48 DATA claims match, no invented number (eval/CHANGES.md) |
 | M5 | Eval on the golden tickers: forensic red flags and the synthesis verdict (budget 4 USD; prompts, schemas and model frozen during the runs) | baseline done and regraded (eval/CHANGES.md): acceptable 6/6, must_find 6/6, no must_not 6/6, 0 invented numbers, committee verdict stable but WEAK_CASE everywhere (no better than a constant on 3 tickers); judge by majority of 3. Variant ANALYSIS_EFFORT=medium done (before the prompt change 67404ad): 38% cheaper, acceptable 6/6, but one must_not ("no debt" where the pack says not reported) and a KHC committee verdict change; decision (D7): keep the default effort. M5 spent 3.36 of 4 USD |
-| Manual test | The owner's web test (2026-10-17): foreign filers stopped before a paid run (M7), report translation with a number check and a glossary (M13; Russian glossary of 96 terms in the repo, awaiting the owner's review), dropped event stream and truthful cards (M4, M6), review 2 items 3.1-3.3 and 3.5, presentation M1-M3 and M8-M12 | done 2026-10-17, then M14 (price sentence wording), M15 (calculation check, regrade 195 -> 198 of 211), Node in CI, a live page run on Coca-Cola with a Russian translation (0.68 USD, reviewed 2026-10-21, eval/CHANGES.md); waiting: the owner's manual re-test and glossary review; backlog: M5 (cache), 20-F support, the liquidity item, F5 |
+| Manual test | The owner's web test (2026-10-17): foreign filers stopped before a paid run (M7), report translation with a number check and a glossary (M13; Russian glossary of 96 terms in the repo, awaiting the owner's review), dropped event stream and truthful cards (M4, M6), review 2 items 3.1-3.3 and 3.5, presentation M1-M3 and M8-M12 | done 2026-10-17, then M14 (price sentence wording), M15 (calculation check, regrade 195 -> 198 of 211), Node in CI, a live page run on Coca-Cola with a Russian translation (0.68 USD, reviewed 2026-10-21, eval/CHANGES.md); 2026-10-21 (no paid call): freshness note with the filing's age, implied growth with its return, price currency, Russian analyst names, kept-in-English reasons, page fixes; waiting: the owner's manual re-test and glossary review; backlog: M5 (cache), 20-F support, the liquidity item, F5 |
 | P2 + web | Valuation framing (implied annual return, what the price assumes), plain-language committee fields, golden cases CMCSA and PLUG, local web UI (docs/web_ui.md) | done 2026-10-16: v2_before / v2_after measured (eval/CHANGES.md), live web check on Comcast 0.61 USD; open: Forensic red-flag call on PLUG unstable |
 
 Decisions:
@@ -244,6 +244,15 @@ are not fetched in Phase 1).
   objects, fixtures (including gzipped) and eval checked: no private ticker. Local
   results, logs and caches of personal research deleted. No remote yet.
 
+## Publication
+
+- Only with the owner's OK. The first push goes to a private GitHub repository; it is
+  made public only after CI is green there and the owner has reviewed it.
+- Push `main` only (`git push origin main`), never `--all` or `--mirror`:
+  `refs/agents/*` are Claude Code's local checkpoints and must not leave this machine.
+- Before the first push, scan tracked files and every commit message again for the
+  private tickers (the guard), personal emails, the employer's name, local paths and keys.
+
 ## Later (not scheduled; the owner decides)
 
 - Measure the plain-words / DERIVED prompt change (67404ad) with one eval pass.
@@ -256,11 +265,6 @@ are not fetched in Phase 1).
 - Company extension concepts beyond receivables (interest expense, others).
 - DCF sensitivity grid (Phase 2), remaining evaluators 2, 4, 6, 7.
 - A pack check for definition switches in other line items (as done for receivables growth).
-- Small items from the live page run (2026-10-17, reviewed 2026-10-21): the price sentence says
-  "At today's price of 93.90" without a currency (it reaches the committee: a behavior change,
-  held until 67404ad is measured); analyst names in the Russian translation are inconsistent
-  ("Аналитик оценки" next to "Business Model Analyst (аналитик бизнес-модели)"), a glossary or
-  prompt rule; the button "Save report (report.md)" names a file that downloads under the company name.
 
 ## Known issues
 
