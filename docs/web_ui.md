@@ -70,8 +70,8 @@ the evidence, never "buy" or "sell".
    (.md)" (report.ru.md, named company first like the English report). Every number of a section must come back with the same value and scale
    (`translate/numbers.py`); a section that fails the check twice stays in English, marked with
    the reason in words ("Kept in English: ..."), and the page names it under the translation.
-   A glossary per language (`translate/glossaries/<language>.md`; Russian only so far, 96
-   terms drafted on 2026-10-17 and awaiting the owner's review) gives the translator its
+   A glossary per language (`translate/glossaries/<language>.md`; Russian only so far, 101
+   terms drafted on 2026-10-17, the analyst names added on 2026-10-21, awaiting the owner's review) gives the translator its
    terms and is appended as a final section with the terms the report uses. The English
    report stays the source of truth; report.json and the page cards stay English (variant B,
    translating the cards, is not planned). Reports of earlier runs:
