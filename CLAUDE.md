@@ -256,6 +256,11 @@ are not fetched in Phase 1).
 - Company extension concepts beyond receivables (interest expense, others).
 - DCF sensitivity grid (Phase 2), remaining evaluators 2, 4, 6, 7.
 - A pack check for definition switches in other line items (as done for receivables growth).
+- Small items from the live page run (2026-10-17, reviewed 2026-10-21): the price sentence says
+  "At today's price of 93.90" without a currency (it reaches the committee: a behavior change,
+  held until 67404ad is measured); analyst names in the Russian translation are inconsistent
+  ("Аналитик оценки" next to "Business Model Analyst (аналитик бизнес-модели)"), a glossary or
+  prompt rule; the button "Save report (report.md)" names a file that downloads under the company name.
 
 ## Known issues
 
