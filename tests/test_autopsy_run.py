@@ -277,3 +277,9 @@ def test_the_pack_summary_counts_in_words(ko_pack):
     text = pack_summary_text(pack)
     assert "1 filing event," in text and text.endswith("no price")
     assert "quarters" in text
+
+
+def test_the_implied_growth_names_the_return_it_is_needed_for(fake_claude, raw_ko, ko_pack):
+    run, _ = run_with(fake_claude, raw_ko, ko_pack)
+    rate = f"{run.valuation_math['reverse_dcf']['discount_rate']:.1%}"
+    assert f"Reverse DCF: to earn the base-case discount rate of {rate} a year" in build_report(run)

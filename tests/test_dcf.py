@@ -168,3 +168,9 @@ def test_a_year_path_does_not_pick_a_quarter_row():
 )
 def test_durations_ordinals_and_form_names_are_not_quantities(statement, expected):
     assert [round(q.candidates[0], 6) for q in quantities(statement)] == expected
+
+
+def test_reverse_dcf_states_the_return_and_the_years_it_solves_for():
+    result = reverse_dcf(flat(margin=0.3, r=0.08), INPUTS)
+    assert result["implied_revenue_growth"] is not None
+    assert result["discount_rate"] == 0.08 and result["years"] == 5

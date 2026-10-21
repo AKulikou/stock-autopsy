@@ -236,7 +236,8 @@ def valuation_section(run: AutopsyRun) -> list[str]:
         ]
     lines += [
         "",
-        f"Reverse DCF: the price implies {pct(implied)} revenue growth a year for five years "
+        f"Reverse DCF: to earn the base-case discount rate of {pct(reverse['discount_rate'])} a year, "
+        f"revenue would have to grow about {pct(implied)} a year for five years "
         f"(holding {reverse['holding']})."
         if implied is not None
         else f"Reverse DCF: {reverse['reason']}.",

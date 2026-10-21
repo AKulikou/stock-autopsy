@@ -421,7 +421,7 @@ function renderResult(runId, view) {
   const rows = [...v.multiples.map((m) => [m.label, m.value])];
   if (v.computed) {
     rows.push(["Price", v.price], ...v.per_share.map((p) => [`DCF value per share, ${p.label} case`, p.value]));
-    rows.push(["Revenue growth the price implies", v.implied_growth]);
+    rows.push([v.implied_growth_label, v.implied_growth]);
     if (v.implied_return) rows.push(["Yearly return if the base case comes true", v.implied_return]);
   }
   for (const [label, value] of rows) {

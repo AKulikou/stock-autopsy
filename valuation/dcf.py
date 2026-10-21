@@ -147,6 +147,9 @@ def reverse_dcf(base: ScenarioAssumptions, inputs: DcfInputs) -> dict:
             low, v_low = middle, v_middle
     return {
         "implied_revenue_growth": round((low + high) / 2, 4),
+        # The condition the growth holds under: the return it earns and for how long it must last.
+        "discount_rate": base.discount_rate,
+        "years": 5,
         "holding": "base-case operating margins, tax, reinvestment, discount rate and terminal growth",
     }
 

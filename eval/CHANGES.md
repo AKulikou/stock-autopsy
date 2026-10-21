@@ -8,6 +8,21 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-21 — reverse DCF names the return its growth is needed for (C2)
+
+What changed: `valuation_math.reverse_dcf` gains `discount_rate` (the base-case rate the model
+chose) and `years` (5). report.md says "to earn the base-case discount rate of 8.0% a year,
+revenue would have to grow about 23.6% a year for five years"; the page row reads "Revenue growth
+for five years needed to earn 8.0% a year" instead of "Revenue growth the price implies".
+
+Why: the Coca-Cola result (2026-10-17) put "the price only makes sense if revenue grew about 23.6%
+a year" next to "about 5% a year if things go as expected"; the reader could not see that the
+23.6% is the growth needed to earn the model's 8% discount rate, not to break even.
+
+Effect on the model: valuation step B and the committee read `valuation_math` as data; they now
+see two more numbers. No prompt changed. The committee sentence itself is model text and is not
+touched. No paid run.
+
 ## 2026-10-21 — data pack: the freshness note counts the days since the missing filing (C1)
 
 What changed: the data quality note for a filed quarter that SEC company facts lack said "is not

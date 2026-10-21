@@ -141,8 +141,16 @@ def _valuation(autopsy: AutopsyRun) -> dict:
         "price": number(math["price"]),
         "implied_return": pct(implied) if implied is not None else None,
         "implied_growth": pct(math["reverse_dcf"].get("implied_revenue_growth")),
+        "implied_growth_label": _implied_growth_label(math["reverse_dcf"]),
     })
     return view
+
+
+def _implied_growth_label(reverse: dict) -> str:
+    """The implied growth with its condition: the return it earns (the base-case discount rate)."""
+    if reverse.get("discount_rate") is None:
+        return "Revenue growth the price implies"
+    return f"Revenue growth for five years needed to earn {pct(reverse['discount_rate'])} a year"
 
 
 def _checks_by_statement(autopsy: AutopsyRun) -> dict[str, str]:

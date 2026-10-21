@@ -301,3 +301,11 @@ def test_the_active_run_names_its_company_for_a_page_that_reattaches(tmp_path, f
         assert (active["run_id"], active["ticker"], active["name"]) == (run_id, "KO", "Coca Cola Co")
         release.set()
         follow(waiting, run_id)
+
+
+def test_the_implied_growth_row_names_the_return_it_is_needed_for(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    follow(client, run_id)
+    valuation = client.get(f"/api/runs/{run_id}/result").json()["valuation"]
+    assert re.fullmatch(r"Revenue growth for five years needed to earn [\d.]+% a year",
+                        valuation["implied_growth_label"])
