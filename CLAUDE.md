@@ -50,7 +50,7 @@ The shape of the pipeline:
 python -m venv venv && venv\Scripts\activate   # Windows
 pip install -r requirements-dev.txt            # app + pytest + ruff
 pytest                                         # unit tests, fake Claude client, no API calls, no network
-node --test tests/js/                          # the page's own logic (pytest runs it too when Node 22+ is installed)
+node --test "tests/js/*.test.mjs"              # the page's own logic (pytest runs it too when Node 22+ is installed)
 ruff check .                                   # lint (config in pyproject.toml, target Python 3.10)
 python -m datalayer.fetch KO                   # fetch SEC + price data for one ticker into data_cache/ (free, no LLM)
 python -m datalayer.pack KO                    # build the DATA PACK (+ provenance) into data_cache/ (free, no LLM)
