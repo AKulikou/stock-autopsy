@@ -342,6 +342,19 @@ def analyst_heading(source: str, translation: str, glossary: Glossary | None) ->
     return f"{heading.split(' ', 1)[0]} {term} {english}\n{rest}"
 
 
+def report_title(source: str, translation: str) -> str:
+    """
+    The report's level-1 title ("# Stock Autopsy: Coca Cola Co") is the product's and the
+    company's name, which are not translated; the translator once wrote "Разбор акций"
+    (2026-10-21), so code puts the original back.
+    """
+    title = _heading(source)
+    first, _, rest = translation.lstrip().partition("\n")
+    if not re.match(r"# ", title) or not re.match(r"# ", first):
+        return translation
+    return f"{title}\n{rest}"
+
+
 def kept_sections(markdown: str) -> list[dict]:
     """The sections a translated copy kept in English, with the reason: [{heading, reason}]."""
     return [{"heading": m["heading"].strip(), "reason": m["reason"]} for m in _KEPT.finditer(markdown)]
@@ -383,6 +396,7 @@ def translate_document(markdown: str, language: str, glossary: Glossary | None =
         return {"status": "error", "error": failed[0]["error"], **billed}
     texts = [o["text"] if o["untranslated"] else analyst_heading(section, o["text"], glossary)
              for section, o in zip(sections, outcomes, strict=True)]
+    texts[0] = report_title(sections[0], texts[0])
     text = "\n\n".join(t.strip() for t in texts) + "\n"
     appendix = glossary.section(markdown) if glossary else ""
     if appendix:

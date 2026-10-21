@@ -459,3 +459,14 @@ def test_an_english_name_with_brackets_goes_in_square_brackets():
     source = "### Valuation Analyst (assumptions)\n\nText."
     fixed = analyst_heading(source, "### Аналитик оценки, допущения\n\nТекст.", glossary)
     assert fixed == "### Аналитик оценки (допущения) [Valuation Analyst (assumptions)]\n\nТекст."
+
+
+def test_the_report_title_keeps_the_product_and_company_name(fake):
+    def translated_title(kwargs):
+        answer = russian(kwargs["messages"][0]["content"])
+        title = "# Stock Autopsy: Coca Cola Co (RU)"
+        return text_response(answer.replace(title, "# Разбор акций: Coca Cola Co"))
+
+    fake.create_handler = translated_title
+    outcome = translate_document(REPORT, "Russian")
+    assert outcome["text"].startswith("# Stock Autopsy: Coca Cola Co\n")
