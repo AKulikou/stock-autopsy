@@ -18,7 +18,8 @@ def test_coca_cola_reads_as_four_lines_with_the_freshness_gap_first(ko_pack):
     lines = quality_lines(ko_pack)
     assert len(lines) == 4
     assert lines[0].startswith(
-        "Latest quarter missing: the 10-Q for the quarter ending 2026-07-03 (filed 2026-07-29)"
+        "Latest quarter missing: the 10-Q for the quarter ending 2026-07-03 (filed 2026-07-29) is in the SEC "
+        "filing list but still missing from SEC company facts 78 days later"
     )
     assert lines[0].endswith("the balance sheet end at 2026-04-03.")
     assert lines[1].startswith("FY2017, FY2018: earlier figures were restated (revenue, gross profit")
@@ -31,7 +32,7 @@ def test_coca_cola_reads_as_four_lines_with_the_freshness_gap_first(ko_pack):
 def test_without_the_freshness_note_the_partial_lines_stay(ko_pack):
     pack = copy.deepcopy(ko_pack)
     notes = pack["data_quality"]["period_notes"]
-    pack["data_quality"]["period_notes"] = [n for n in notes if "not yet in SEC company facts" not in n]
+    pack["data_quality"]["period_notes"] = [n for n in notes if "not in SEC company facts" not in n]
     lines = quality_lines(pack)
     assert "last twelve months: periods up to 2026-04-03 only" in lines
     assert "latest balance sheet: periods up to 2026-04-03 only" in lines
@@ -40,7 +41,7 @@ def test_without_the_freshness_note_the_partial_lines_stay(ko_pack):
 
 
 def test_the_statements_date_names_the_missing_filing(ko_pack):
-    assert statements_to(ko_pack) == "2026-04-03 (the latest 10-Q is not yet in SEC company facts)"
+    assert statements_to(ko_pack) == "2026-04-03 (the 10-Q filed 2026-07-29 is not in SEC company facts)"
 
 
 def test_a_conflict_says_which_source_is_used_without_float_noise(ko_pack):

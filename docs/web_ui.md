@@ -54,7 +54,7 @@ the evidence, never "buy" or "sell".
    Then the number check counter, the analysts (each opens with its claims, each claim
    coloured by what code found: matches the data pack, reproduced by code, found only in a
    table, not in the cited data), Python's valuation table, data quality in words (most
-   important first: a filed quarter not yet in SEC company facts, then restatements grouped
+   important first: a filed quarter missing from SEC company facts, then restatements grouped
    by year, conflicts, notes, rounding, one line for what this version never collects; the
    date the statements reach also stands at the top, M2), and
    "Save report" (report.md; the downloaded file is named company first, then the run folder:

@@ -240,4 +240,4 @@ def test_freshness_ignores_extension_facts():
         ]
     )
     pack, _ = build_pack(data)
-    assert any("not yet in SEC company facts" in n for n in pack["data_quality"]["period_notes"])
+    assert any("not in SEC company facts" in n for n in pack["data_quality"]["period_notes"])

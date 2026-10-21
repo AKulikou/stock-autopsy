@@ -5,7 +5,7 @@ Presentation only: the pack's data_quality stays as it is, because the analysts
 read it. For a person the same facts are grouped and ordered by impact (owner's
 manual test, M2, 2026-10-17):
 
-1. freshness first: a quarter that is filed but not yet in SEC company facts means
+1. freshness first: a quarter that is filed but not in SEC company facts means
    the analysis runs a filing behind; its two "periods up to ... only" entries are
    folded into that one line;
 2. restatements (periods with the same restated fields share one line) and source
@@ -32,7 +32,7 @@ ROUNDING_MARK = "smaller differences (under 0.5%)"
 
 
 def freshness(pack: dict) -> dict | None:
-    """{form, period, filed, covers} when the latest filed quarter is not in the facts yet."""
+    """{form, period, filed, days, covers} when the latest filed quarter is not in the facts."""
     for note in pack["data_quality"]["period_notes"]:
         parsed = parse_freshness_note(note)
         if parsed:
@@ -44,7 +44,8 @@ def freshness_line(fresh: dict) -> str:
     quarter = "quarter" if fresh["form"].startswith("10-Q") else "period"
     return (
         f"Latest {quarter} missing: the {fresh['form']} for the {quarter} ending {fresh['period']} "
-        f"(filed {fresh['filed']}) is not yet in SEC company facts, so the last twelve months, the "
+        f"(filed {fresh['filed']}) is in the SEC filing list but still missing from SEC company facts "
+        f"{fresh['days']} {'day' if fresh['days'] == '1' else 'days'} later, so the last twelve months, the "
         f"quarters and the balance sheet end at {fresh['covers']}."
     )
 
@@ -53,7 +54,7 @@ def statements_to(pack: dict) -> str | None:
     """The date the financial statements reach, with the freshness gap if there is one."""
     fresh = freshness(pack)
     if fresh:
-        return f"{fresh['covers']} (the latest {fresh['form']} is not yet in SEC company facts)"
+        return f"{fresh['covers']} (the {fresh['form']} filed {fresh['filed']} is not in SEC company facts)"
     end = (pack.get("ttm") or {}).get("period_end") or (pack.get("balance_sheet_latest") or {}).get("date")
     if end is None and pack["financials_annual"]:
         end = pack["financials_annual"][-1]["period_end"]

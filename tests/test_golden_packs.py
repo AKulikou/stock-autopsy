@@ -69,7 +69,7 @@ def test_ko_recasts_appear_without_restatement_warning_signs(packs):
 
 def test_ko_lagging_company_facts_are_flagged(packs):
     notes = packs["KO"]["data_quality"]["period_notes"]
-    assert any("2026-07-03" in n and "not yet in SEC company facts" in n for n in notes)
+    assert any("2026-07-03" in n and "not in SEC company facts 78 days later" in n for n in notes)
 
 
 def test_snow_convertible_debt_is_found_and_absent_history_is_unknown(packs):

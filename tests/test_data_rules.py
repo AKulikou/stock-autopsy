@@ -3,6 +3,8 @@ The data quality rules of the DATA PACK (docs/stock_autopsy_prompts.md), one
 test or more per rule, on hand-built inputs.
 """
 
+import re
+
 import pytest
 from xbrl_samples import (
     AS_OF,
@@ -19,7 +21,7 @@ from xbrl_samples import (
 
 from core.shared_context import canonical_json
 from datalayer.financials import is_real_split
-from datalayer.pack import build_pack, pack_hash
+from datalayer.pack import FRESHNESS_NOTE, build_pack, pack_hash, parse_freshness_note
 
 
 def pack_of(**kwargs) -> dict:
@@ -145,7 +147,11 @@ def test_company_facts_lagging_the_filings_are_flagged():
     )
     pack = pack_of(subs=subs)
     assert {"field": "ttm", "covers": "periods up to 2025-12-31 only"} in pack["data_quality"]["partial"]
-    assert any("not yet in SEC company facts" in n for n in pack["data_quality"]["period_notes"])
+    assert any(
+        re.search(r"\(filed 2026-07-29\) is in the SEC filing history "
+                  r"but not in SEC company facts \d+ days? later", n)
+        for n in pack["data_quality"]["period_notes"]
+    )
 
 
 # ---- rule 5: a future date is corrupt or not yet knowable ---------------------------
@@ -504,3 +510,12 @@ def test_filing_events_include_non_reliance_and_late_notices():
     assert ("8-K", "5.02") not in events
     timing = {t["period_end"]: t["days_after_period_end"] for t in pack["annual_report_timing"]}
     assert timing["2024-12-31"] == 158
+
+
+def test_the_freshness_note_counts_days_and_reads_back():
+    note = FRESHNESS_NOTE.format(form="10-Q", period="2026-07-03", filed="2026-07-29", days="1 day",
+                                 covers="2026-04-03")
+    assert "not in SEC company facts 1 day later" in note
+    assert parse_freshness_note(note) == {
+        "form": "10-Q", "period": "2026-07-03", "filed": "2026-07-29", "days": "1", "covers": "2026-04-03",
+    }

@@ -126,7 +126,7 @@ Checked against the SEC documentation on 2026-10-15; check again before relying 
 | Data | Source | Notes |
 |------|--------|-------|
 | Ticker → CIK | `https://www.sec.gov/files/company_tickers.json` | CIK is 10 digits with leading zeros |
-| Financial facts | `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` | No API key. SEC says it updates within about a minute of a filing, yet on 2026-10-15 KO's 10-Q filed 2026-07-29 was missing: the pack checks freshness against the filing history |
+| Financial facts | `https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` | No API key. SEC says it updates within about a minute of a filing, yet KO's 10-Q filed 2026-07-29 (inline XBRL) was still missing on 2026-10-21: the pack checks freshness against the filing history and counts the days |
 | Filing history | `https://data.sec.gov/submissions/CIK##########.json` | |
 | Price, market cap | yfinance, version pinned | Unofficial; can break without notice; cache results |
 

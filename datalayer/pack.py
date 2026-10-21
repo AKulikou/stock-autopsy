@@ -163,8 +163,8 @@ def no_growth_across_switch(metrics: list[dict], provenance: dict, quality: Data
 
 
 FRESHNESS_NOTE = (
-    "The {form} for the period ending {period} (filed {filed}) is not yet in SEC company facts: "
-    "TTM, quarters and the latest balance sheet end {covers}"
+    "The {form} for the period ending {period} (filed {filed}) is in the SEC filing history but not in "
+    "SEC company facts {days} later: TTM, quarters and the latest balance sheet end {covers}"
 )
 FRESHNESS_COVERS = "periods up to {covers} only"
 _FRESHNESS = re.compile(
@@ -172,12 +172,13 @@ _FRESHNESS = re.compile(
     .replace(re.escape("{form}"), r"(?P<form>\S+)")
     .replace(re.escape("{period}"), r"(?P<period>\S+)")
     .replace(re.escape("{filed}"), r"(?P<filed>[^)]+)")
+    .replace(re.escape("{days}"), r"(?P<days>\d+) days?")
     .replace(re.escape("{covers}"), r"(?P<covers>\S+)")
 )
 
 
 def parse_freshness_note(note: str) -> dict | None:
-    """The parts of a check_freshness() note ({form, period, filed, covers}), or None for any other note."""
+    """The parts of a check_freshness() note ({form, period, filed, days, covers}), or None otherwise."""
     match = _FRESHNESS.fullmatch(note)
     return match.groupdict() if match else None
 
@@ -185,7 +186,10 @@ def parse_freshness_note(note: str) -> dict | None:
 def check_freshness(rows: list[dict], facts: dict, as_of: date, quality: DataQuality) -> None:
     """
     Company facts can lag the filings: a 10-Q in the filing history whose period
-    is not yet in the facts means the TTM and the balance sheet are a quarter old.
+    is not in the facts means the TTM and the balance sheet are a quarter old. The
+    note counts the days since the filing, because the gap is not always a short lag
+    (Coca-Cola's 10-Q filed 2026-07-29 was still missing on 2026-10-21, although the
+    filing has inline XBRL).
     """
     periodic = [
         r
@@ -204,8 +208,11 @@ def check_freshness(rows: list[dict], facts: dict, as_of: date, quality: DataQua
     covers = FRESHNESS_COVERS.format(covers=latest_fact_end.isoformat())
     quality.add_partial("ttm", covers)
     quality.add_partial("balance_sheet_latest", covers)
-    quality.note(FRESHNESS_NOTE.format(form=newest["form"], period=newest["report_date"],
-                                       filed=newest["filed"], covers=latest_fact_end.isoformat()))
+    days = (as_of - date.fromisoformat(newest["filed"])).days
+    quality.note(FRESHNESS_NOTE.format(
+        form=newest["form"], period=newest["report_date"], filed=newest["filed"],
+        days=f"{days} day" if days == 1 else f"{days} days", covers=latest_fact_end.isoformat(),
+    ))
 
 
 def fiscal_year_end(raw: RawCompanyData, last_period_end: str | None, quality: DataQuality) -> str | None:

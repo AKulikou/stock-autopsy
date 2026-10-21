@@ -8,6 +8,27 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-21 — data pack: the freshness note counts the days since the missing filing (C1)
+
+What changed: the data quality note for a filed quarter that SEC company facts lack said "is not
+yet in SEC company facts"; it now says "is in the SEC filing history but not in SEC company facts
+78 days later". The page and report.md say the same in words. Only the golden Coca-Cola pack
+changes (that one note); the other four golden packs are byte-identical after re-freezing.
+
+Why: a fresh fetch on 2026-10-21 (no cache) showed the gap is not our filter. Coca-Cola's 10-Q for
+the quarter ending 2026-07-03 (filed 2026-07-29, inline XBRL) is absent from company facts: none of
+its facts carry that filing's accession number, and the latest period end of any us-gaap fact is
+2026-04-03. Snowflake, Kraft Heinz, Comcast, Plug Power and Tesla have their latest 10-Q in
+company facts within days. "Not yet" suggested a short lag; the day count says how old the gap is.
+
+Effect on the model: the note is pack data the analysts read; wording only, no number changes.
+No paid run. Regrade of v3_release before and after: identical (198 of 211 calculations
+reproduced, 7 wrong numbers on exact paths in 379 data claims).
+
+Left for the owner: reading the missing quarter from the filing's own XBRL instance (as
+`datalayer/extensions.py` already does for receivables) would close the gap; that is a data-layer
+feature, not done.
+
 ## 2026-10-17 — live run through the page: Coca-Cola, then a Russian translation (reviewed 2026-10-21)
 
 No behavior change; a check of the page after M1-M15 on code 922c655. Headless Chrome typed
