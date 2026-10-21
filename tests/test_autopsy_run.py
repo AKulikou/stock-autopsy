@@ -283,3 +283,11 @@ def test_the_implied_growth_names_the_return_it_is_needed_for(fake_claude, raw_k
     run, _ = run_with(fake_claude, raw_ko, ko_pack)
     rate = f"{run.valuation_math['reverse_dcf']['discount_rate']:.1%}"
     assert f"Reverse DCF: to earn the base-case discount rate of {rate} a year" in build_report(run)
+
+
+def test_every_report_table_has_a_header_with_words(fake_claude, raw_ko, ko_pack):
+    run, _ = run_with(fake_claude, raw_ko, ko_pack)
+    lines = build_report(run).splitlines()
+    headers = [lines[i - 1] for i, line in enumerate(lines) if re.fullmatch(r"\|(?:-+\|)+", line)]
+    assert headers and all(re.search(r"\w", cell) for h in headers for cell in h.strip("|").split("|"))
+    assert "| Detail | Value |" in lines

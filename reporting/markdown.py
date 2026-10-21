@@ -78,7 +78,7 @@ def header(run: AutopsyRun) -> list[str]:
         "",
         f"> {DISCLAIMER}",
         "",
-        "| | |",
+        "| Detail | Value |",
         "|---|---|",
         f"| Data as of | {pack['as_of']} |",
         f"| Price | {price_text} |",
