@@ -38,8 +38,10 @@ Translate the Markdown text below, a part of a stock analysis report, into {lang
 Translate all of its text, including headings, table headers, labels and bold lead-ins;
 keep the Markdown markup and structure unchanged (heading levels, lists, tables,
 emphasis, links). Do not translate link targets, code spans, hashes, file names, or the
-names of companies, products, laws, regulators and filing forms (10-K, 10-Q, 8-K). Keep
-the analyst names ({analysts}) in English.
+names of companies, products, laws, regulators and filing forms (10-K, 10-Q, 8-K).
+Translate the analyst names ({analysts}) into {language}, with the names the term list
+gives when it gives them, the same name every time; add the English name in brackets
+only in the heading of that analyst's own section, nowhere else.
 Keep every number with its exact value and scale: you may write the decimal and
 thousands separators and the scale words the way {language} writes them (for example
 "1.5 billion" may become "1,5 млрд" in Russian), but never round, convert or drop a
@@ -98,8 +100,9 @@ FOREIGN_LETTER_SHARE = 0.02
 MIN_FOREIGN_LETTERS = 10
 HEADING_LEFT = "heading left in English"
 NUMBERS_CHANGED = "numbers changed"
-# Headings that stay English on purpose: the analysts' names.
-KEPT_NAMES = tuple(EVALUATORS.values())
+# The analysts' names, listed for the translator; a glossary gives each one a
+# translated name (owner's review of the first Russian copies, 2026-10-21).
+ANALYST_NAMES = tuple(EVALUATORS.values())
 
 # Put above every translated copy, in English, so a reader of any language sees
 # which file is the source of truth.
@@ -111,7 +114,7 @@ MACHINE_TRANSLATION_NOTE = (
 
 
 def system_prompt(language: str, section: str, glossary: Glossary | None, retry: bool) -> str:
-    prompt = TRANSLATION_PROMPT.format(language=language, analysts=", ".join(KEPT_NAMES))
+    prompt = TRANSLATION_PROMPT.format(language=language, analysts=", ".join(ANALYST_NAMES))
     terms = glossary.prompt_lines(section) if glossary else ""
     if terms:
         prompt += GLOSSARY_NOTE.format(language=language, terms=terms)
@@ -205,10 +208,9 @@ def _heading(text: str) -> str:
 
 
 def heading_untranslated(source: str, translation: str) -> bool:
-    """True when a section heading of two or more words comes back unchanged (analyst names may)."""
+    """True when a section heading of two or more words comes back unchanged (analyst names too)."""
     heading = _heading(source)
-    title = heading.lstrip("#").strip()
-    if not re.match(r"#{2,3} ", heading) or len(_words(heading)) < 2 or title.startswith(KEPT_NAMES):
+    if not re.match(r"#{2,3} ", heading) or len(_words(heading)) < 2:
         return False
     return _heading(translation).lower() == heading.lower()
 

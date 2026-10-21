@@ -226,7 +226,7 @@ def test_sections_are_translated_in_order_with_the_cheap_model(fake):
     calls = translation_calls(fake)
     assert len(calls) == 6 and {c["model"] for c in calls} == {"claude-haiku-5-5"}
     assert all(c["output_config"] == {"effort": "low"} for c in calls)
-    assert all("Forensic Accountant" in c["system"] for c in calls)  # analyst names stay English
+    assert all("Forensic Accountant" in c["system"] for c in calls)  # the names to translate are listed
 
 
 def test_a_section_whose_numbers_changed_is_asked_again(fake):
@@ -263,9 +263,36 @@ def test_glossary_terms_go_only_with_the_sections_that_use_them_and_are_appended
     assert "## Словарь" in outcome["text"] and "going concern" not in outcome["text"]
 
 
-def test_an_analyst_name_heading_is_not_a_heading_left_in_english():
-    assert not heading_untranslated("### Forensic Accountant\n\nText.", "### Forensic Accountant\n\nТекст.")
+def test_an_analyst_name_heading_left_in_english_is_a_heading_left_in_english():
+    assert heading_untranslated("### Forensic Accountant\n\nText.", "### Forensic Accountant\n\nТекст.")
+    assert not heading_untranslated("### Forensic Accountant\n\nText.",
+                                    "### Аналитик-криминалист (Forensic Accountant)\n\nТекст.")
     assert heading_untranslated("### In plain words\n\nText.", "### In plain words\n\nТекст.")
+
+
+ALL_ANALYSTS = (
+    "Business Model Analyst", "Earnings Analyst", "Forensic Accountant", "Moat Analyst", "Valuation Analyst",
+    "Valuation Analyst (assumptions)", "Management & Capital Allocation Reviewer", "Catalyst & Risk Mapper",
+    "Pre-Mortem Analyst", "Investment Committee",
+)
+
+
+def test_the_russian_glossary_gives_each_analyst_one_russian_name():
+    by_name = {v: e for e in load_glossary("Russian").entries for v in e.variants}
+    for name in ALL_ANALYSTS:
+        assert name in by_name, name
+        assert not re.search(r"[A-Za-z]", by_name[name].term), by_name[name].term
+    names = [by_name[name].term for name in ALL_ANALYSTS]
+    assert len(set(names)) == len(names)
+
+
+def test_the_russian_analyst_names_and_the_rule_reach_the_translator(fake):
+    fake.create_handler = translator()
+    translate_document(REPORT, "Russian", load_glossary("Russian"))
+    by_heading = {c["messages"][0]["content"].splitlines()[0]: c["system"] for c in translation_calls(fake)}
+    forensic = by_heading["### Forensic Accountant"]
+    assert "Forensic Accountant → Аналитик-криминалист" in forensic
+    assert "the same name every time" in forensic and "Keep the analyst names" not in forensic
 
 
 def test_one_failed_section_fails_the_whole_translation(fake):

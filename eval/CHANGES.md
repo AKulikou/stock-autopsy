@@ -8,6 +8,22 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-21 — translation: one translated name per analyst (C4)
+
+What changed: the translation prompt (our translation code, not an analyst prompt) said "Keep the
+analyst names in English"; it now asks for the names the term list gives, the same name every
+time, with the English name in brackets only in the heading of the analyst's own section. The
+Russian glossary has a last section with ten names (the eight analysts of the source of truth, the
+valuation assumptions step, the committee), marked "added/changed 2026-10-21, owner review". The
+heading check no longer lets an analyst's heading come back in English.
+
+Why: the 2026-10-17 Russian copy of the Coca-Cola report mixed "Аналитик оценки" with "Business
+Model Analyst (аналитик бизнес-модели)".
+
+Risk to watch: a heading kept in English is now rejected, asked again and, if it fails twice, the
+section stays in English and is marked. Not measured: no paid call in this session; one Russian
+translation of a saved report (about 0.03 USD) shows it.
+
 ## 2026-10-21 — "what the price assumes" writes the price with its currency (C3)
 
 What changed: the Python sentence `valuation_math.price_assumes` said "At today's price of 93.90";
