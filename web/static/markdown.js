@@ -1,8 +1,11 @@
 // A small Markdown renderer for the lens analyses and the translated report:
 // headings, paragraphs, bullet and numbered lists, tables, horizontal rules,
-// quotes, bold, italic, inline code and links. Raw HTML is never rendered.
-// Every piece of text is HTML-escaped before any markup is added, so model
-// output can never inject HTML into the page.
+// quotes, bold, italic, inline code and links. Raw HTML is never rendered, with
+// one exact exception: a report's collapsible block, a line
+// "<details><summary>text</summary>" and a line "</details>", becomes a details
+// element whose summary text is escaped like any other. Every piece of text is
+// HTML-escaped before any markup is added, so model output can never inject HTML
+// into the page.
 //
 // Links: a web address (http or https) opens in a new tab; any other target is a
 // file next to the report on disk (for example lenses/reality_auditor.md), which
@@ -47,6 +50,8 @@ const PATTERNS = {
   tableRow: /^\s*\|.*\|\s*$/,
   // Extra trailing pipes ("|---|---||") occur in model output; accept them.
   tableDivider: /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|*\s*$/,
+  detailsOpen: /^\s*<details><summary>(.*)<\/summary>\s*$/,
+  detailsClose: /^\s*<\/details>\s*$/,
 };
 
 function cells(row) {
@@ -104,10 +109,21 @@ export function renderMarkdown(markdown) {
   };
 
   let i = 0;
+  let openDetails = 0;
   while (i < lines.length) {
     const line = lines[i];
     if (!line.trim()) {
       flush();
+      i += 1;
+    } else if (PATTERNS.detailsOpen.test(line)) {
+      flush();
+      out.push(`<details><summary>${inline(line.match(PATTERNS.detailsOpen)[1])}</summary>`);
+      openDetails += 1;
+      i += 1;
+    } else if (PATTERNS.detailsClose.test(line) && openDetails > 0) {
+      flush();
+      out.push("</details>");
+      openDetails -= 1;
       i += 1;
     } else if (PATTERNS.heading.test(line)) {
       flush();
@@ -143,5 +159,6 @@ export function renderMarkdown(markdown) {
     }
   }
   flush();
+  out.push(...Array(openDetails).fill("</details>"));
   return out.join("\n");
 }
