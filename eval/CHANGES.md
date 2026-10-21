@@ -28,6 +28,17 @@ when the English name has brackets of its own). Also found: report.md wrote the 
 derived.valuation.pe as "calculated › Valuation Analyst › P/E", and the copy carried the analyst's
 name into the basis; inside a path an analyst key is now a plain word (6718c25).
 
+The 5 calculations not reproduced in that run, read one by one: 4 quote a number their basis does
+not cite (a 32-34% range, the 3.1% yield, about 2% growth, a 15.8% ratio of two cited
+differences), which the check is right to flag. One was the check's fault: the basis
+"derived.valuation.pe x 0.5 = 29.36 x 0.5" used the letter x for multiplication, so the stated
+50% (0.5) went unexplained. "x" and "×" now multiply. Mutation test unchanged (correct 318/318,
+wrong factors caught 1256/1272 = 98.7%, flipped growth 132/133); v3_release regrade unchanged
+(198 of 211).
+
+The report's title "Stock Autopsy: <company>" is also put back by code after the translation
+(the copy had "Разбор акций").
+
 ## 2026-10-21 — translation: a section kept in English says why (C7)
 
 Investigation (free, from the logs of 2026-10-17): in the Tesla copy the section "Business Model

@@ -306,3 +306,11 @@ def test_a_flipped_direction_of_a_growth_rate_is_caught():
     # A difference of two data terms has no sign of its own, so "rose by" and "fell by"
     # both fit it: a flipped direction is caught for growth rates only (measured in M15).
     assert 1 - reproduced_share(flip=True, kinds={"growth"}) >= 0.9
+
+
+@pytest.mark.parametrize("sign", [" x ", " × ", "×"])
+def test_x_or_a_times_sign_multiplies_and_its_constant_is_stated(sign):
+    # Live run 2026-10-21: "derived.valuation.pe x 0.5 = 29.36 x 0.5" left 0.5 (the 50%) unexplained.
+    claim = derived("A 50% fall at unchanged earnings would take the P/E to about 14.4.",
+                    f"derived.valuation.pe{sign}0.5")
+    assert claim["status"] == "reproduced", claim

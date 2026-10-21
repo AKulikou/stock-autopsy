@@ -82,6 +82,12 @@ _OPERAND = re.compile(
 # Constants of a formula's shape (a / b - 1, x * 100), not amounts a statement would state.
 CONVENTION_CONSTANTS = (0, 1, 100)
 _ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+# Models also multiply with a letter x or a times sign ("pe x 0.5 = 29.36 x 0.5", live run 2026-10-21).
+_TIMES = re.compile(r"\s*×\s*|(?<=\S)\s+x\s+(?=\S)")
+
+
+def _times_as_star(text: str) -> str:
+    return _TIMES.sub(" * ", text)
 
 
 def _formulas(basis: str, roots: dict) -> list[tuple[ast.AST, dict[str, float]]]:
@@ -105,7 +111,7 @@ def _formulas(basis: str, roots: dict) -> list[tuple[ast.AST, dict[str, float]]]
             name = f"__p{len(names)}"
             names[name] = float(value)
             text = text.replace(token, f" {name} ", 1)
-        text = _THOUSANDS.sub("", text).replace("^", "**").strip()
+        text = _times_as_star(_THOUSANDS.sub("", text).replace("^", "**")).strip()
         if not ok or not text:
             continue
         try:
@@ -161,7 +167,7 @@ def formula_parts(basis: str, roots: dict) -> list[float]:
 
 def operand_constants(basis: str) -> list[float]:
     """Small literals the basis uses as operands ("0.5 * pe"), not values it quotes in brackets."""
-    text = _ISO_DATE.sub(" ", _PATH_TOKEN.sub(" P ", basis))
+    text = _times_as_star(_ISO_DATE.sub(" ", _PATH_TOKEN.sub(" P ", basis)))
     found = []
     for match in _OPERAND.finditer(text):
         number = float(match.group(1) or match.group(2))
