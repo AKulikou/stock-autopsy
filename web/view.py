@@ -89,9 +89,9 @@ def run_view(run: Run) -> dict:
         "number_check": _number_check(autopsy),
         "downloads": [{"kind": k, "label": DOWNLOAD_LABELS[k]} for k in download_paths(run)],
         # Copies translated earlier (this session or before): their tabs come back for free.
-        "translations": [{"language": name, "label": native, "code": code}
-                         for name, native, code in LANGUAGES
-                         if run.out_dir and translated_path(run.out_dir, name).exists()],
+        "translations": [{"language": lang.name, "label": lang.native, "code": lang.code}
+                         for lang in LANGUAGES
+                         if run.out_dir and translated_path(run.out_dir, lang.name).exists()],
         "cost_usd": round(run.cost_usd(), 4),
         "duration_s": round(autopsy.duration_s),
     }

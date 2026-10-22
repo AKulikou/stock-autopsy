@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description="Translate the report of a saved run (paid, cheap).")
     parser.add_argument("run_dir", type=Path, help="a run folder in results/ holding report.md")
-    offered = ", ".join(name for name, _, _ in LANGUAGES)
+    offered = ", ".join(lang.name for lang in LANGUAGES)
     parser.add_argument("--language", default=DEFAULT_LANGUAGE,
                         help=f"one of: {offered} (default {DEFAULT_LANGUAGE})")
     args = parser.parse_args(argv)

@@ -12,7 +12,10 @@ financial terms:
 - a number check per section (translate/numbers.py): a section whose numbers do not
   come back with the same value and scale is asked again, then kept in English;
 - a glossary per language (translate/glossary.py): the terms of a section go to the
-  translator with it, and the terms of the report are appended as one section.
+  translator with it, and the terms of the report are appended as one section;
+- numbers in the language's format (translate/number_format.py): code writes the number
+  cells of tables, and a number left in the English thousands form ("10,803" reads as a
+  decimal in a language with a decimal comma) is asked again once, then rewritten by code.
 """
 
 import logging
@@ -26,7 +29,8 @@ from config import MAX_TOKENS, TRANSLATION_EFFORT, TRANSLATION_MODEL, TRANSLATIO
 from core.claude_client import get_client
 from reporting.wording import EVALUATORS
 from translate.glossary import Glossary, load_glossary, split_glossary
-from translate.languages import CODES
+from translate.languages import CODES, number_format
+from translate.number_format import english_thousands, localize, localize_tables, rewrite_english_thousands
 from translate.numbers import missing_numbers
 
 logger = logging.getLogger(__name__)
@@ -113,6 +117,7 @@ FOREIGN_LETTER_SHARE = 0.02
 MIN_FOREIGN_LETTERS = 10
 HEADING_LEFT = "heading left in English"
 NUMBERS_CHANGED = "numbers changed"
+ENGLISH_FORM = "numbers in the English thousands form"
 # The analysts' names, listed for the translator; a glossary gives each one a
 # translated name (the first Russian copies used several names for one analyst).
 ANALYST_NAMES = tuple(EVALUATORS.values())
@@ -283,8 +288,18 @@ def _mixed_words(problem: str) -> list[str]:
     return words
 
 
-def retry_detail(problem: str) -> str:
-    """What exactly was wrong, for the retry: each mixed word and its letters from the other alphabet."""
+def retry_detail(problem: str, language: str = "") -> str:
+    """
+    What exactly was wrong, for the retry: each mixed word and its letters from the other
+    alphabet, or the numbers written in the English thousands form and how to write them.
+    """
+    if problem.startswith(ENGLISH_FORM):
+        numbers = problem.partition(": ")[2].split(", ")
+        fmt = number_format(language)
+        written = ", ".join(f"{n} as {localize(n, fmt)}" for n in numbers)
+        return (f"In your previous answer {', '.join(numbers)} keep the English thousands separator; "
+                f"in {language} a comma is the decimal mark, so they read as decimals. "
+                f"Write {written}, with a space between the groups of thousands.")
     lines = []
     for word in _mixed_words(problem):
         scripts = [_script(c) for c in word if c.isalpha()]
@@ -351,6 +366,9 @@ def section_problem(source: str, translation: str, language: str) -> str | None:
     changed = structure_changed(source, translation)
     if changed:
         return f"structure changed: {changed}"
+    english = english_thousands(source, translation, language)
+    if english:
+        return f"{ENGLISH_FORM}: {', '.join(english[:5])}"
     if heading_untranslated(source, translation):
         return HEADING_LEFT
     return None
@@ -362,9 +380,7 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
     Never raises. A translation whose only fault is an English heading beats the
     English original; anything worse keeps the English section, marked.
     """
-    first = translate_markdown(section, language, glossary)
-    if first["status"] == "success":
-        first["text"] = fix_look_alikes(first["text"], language)
+    first = _tidied(section, translate_markdown(section, language, glossary), language)
     if first["status"] != "success":
         return {**first, "calls": 1, "untranslated": False, "number_rejections": 0}
     first_problem = section_problem(section, first["text"], language)
@@ -372,9 +388,8 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
         return {**first, "calls": 1, "untranslated": False, "number_rejections": 0}
     heading = _heading(section)
     _log_rejected(heading, first_problem, first["text"])
-    second = translate_markdown(section, language, glossary, retry=True, detail=retry_detail(first_problem))
-    if second["status"] == "success":
-        second["text"] = fix_look_alikes(second["text"], language)
+    second = _tidied(section, translate_markdown(section, language, glossary, retry=True,
+                                                 detail=retry_detail(first_problem, language)), language)
     billed = {key: first.get(key, 0) + second.get(key, 0) for key in ("input_tokens", "output_tokens")}
     attempts = [(first, first_problem)]
     if second["status"] == "success":
@@ -385,6 +400,15 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
         _log_rejected(heading, second_problem, second["text"])
         attempts.append((second, second_problem))
     rejections = _number_rejections(attempts)
+    # Numbers left in the English form after the retry: their values are the English section's,
+    # so code writes them in the language's format (the later answer first).
+    for attempt, problem in reversed(attempts):
+        if problem.startswith(ENGLISH_FORM):
+            fixed = rewrite_english_thousands(section, attempt["text"], language)
+            if section_problem(section, fixed, language) in (None, HEADING_LEFT):
+                logger.info(f"[Translation] '{heading}': numbers in the English form rewritten by code")
+                return {**attempt, "text": fixed, **billed, "calls": 2, "untranslated": False,
+                        "number_rejections": rejections}
     for attempt, problem in attempts:
         if problem == HEADING_LEFT:
             logger.warning(f"[Translation] '{heading}': the heading stayed English after a retry")
@@ -399,6 +423,14 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
             "number_rejections": rejections}
 
 
+def _tidied(section: str, outcome: dict, language: str) -> dict:
+    """What code puts right in an answer before it is checked: look-alike letters, number cells of tables."""
+    if outcome["status"] == "success":
+        text = fix_look_alikes(outcome["text"], language)
+        outcome["text"] = localize_tables(section, text, language)
+    return outcome
+
+
 def _problem_words(problem: str) -> tuple[str, list[str]]:
     """A rejected answer's problem as a short phrase and its details (numbers, words)."""
     head, _, rest = problem.partition(": ")
@@ -408,6 +440,8 @@ def _problem_words(problem: str) -> tuple[str, list[str]]:
         return "the heading stayed in English", []
     if problem.startswith(NUMBERS_CHANGED):
         return "a number came back changed", [x for x in rest.split(", ") if x]
+    if problem.startswith(ENGLISH_FORM):
+        return "numbers kept the English thousands separator", [x for x in rest.split(", ") if x]
     if problem.startswith("structure changed"):
         return "headings, table rows or list items came back changed", [rest] if rest else []
     if "words mixing alphabets" in problem:

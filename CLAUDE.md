@@ -89,7 +89,8 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
   quality for a person), `wording.py` (codes to words, company names; `humanize()` is the
   last pass), `save.py`
 - `translate/` — translated copies of report.md: one call per section, number check,
-  glossaries in `translate/glossaries/` (`english.md` is report.md's own), languages, CLI
+  glossaries in `translate/glossaries/` (`english.md` is report.md's own), languages with
+  their number format, numbers written in that format by code (`number_format.py`), CLI
 - `web/` — FastAPI app (`app.py`), one run at a time (`runs.py`), name or brand to ticker
   (`resolve.py`), the result in words (`view.py`); `static/` holds the page (shell shared
   with Startup Autopsy plus `live.js`, `lookup.js`, `prefs.js`, `reporttabs.js`,

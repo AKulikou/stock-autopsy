@@ -8,6 +8,29 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — translation: numbers in the target language's format
+
+What changed: every offered language writes a decimal comma (translate/languages.py now says so
+per language), and the English thousands form read wrongly there: a Russian copy's cost table
+showed "11,080" (read: 11.08) and a Lithuanian one "10,797"; the number check let both through
+because it accepts either reading. Now (translate/number_format.py):
+- a table cell that is only a number in the English section (cost, valuation, restated values) is
+  written by code in the language's format after the translator answers ("11 080" with a no-break
+  space, "$402,24B", "±1,0%");
+- a section that still writes a number of the English section in the thousands form ("10,803")
+  is asked once more, with a note naming the numbers and how to write them (new text the
+  translator sees on that retry only); what the retry leaves is rewritten by code. A number the
+  English section also has as a decimal ("10.803") is not touched, so "17,79 %" stays.
+
+The first translation prompt is unchanged; analysts, committee and their schemas are untouched.
+Expected effect: no English thousands form in a translated copy; table numbers in one format
+with the prose. Risk: an extra retry for a section whose calculations quote large numbers
+("= 8,779,000,000 - 5,296,000,000" in a calculated claim's basis): replaying the stored Russian
+copy of the Coca-Cola run of 2026-10-21 through the new code (no API call) asked one section of
+19 again and code rewrote its 13 numbers; the 42 numbers written with a no-break space all pass
+the number check, and the decimals with a comma ("49,284 млрд" for $49.284 billion) were left
+alone. Not yet measured on a live translation.
+
 ## 2026-10-22 — release eval `v4_release`: 5 golden cases x 2 reps on the code of 2026-10-22 (measured)
 
 Setup: --reps 2 --batch, default configuration (shared output schema off: the API refuses it),

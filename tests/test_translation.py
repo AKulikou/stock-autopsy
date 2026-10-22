@@ -14,7 +14,15 @@ from translate.glossary import (
     parse_glossary,
     split_glossary,
 )
-from translate.languages import LANGUAGES, language_name
+from translate.languages import (
+    DECIMAL_COMMA,
+    ENGLISH_NUMBERS,
+    LANGUAGES,
+    NumberFormat,
+    language_name,
+    number_format,
+)
+from translate.number_format import english_thousands, localize_tables, rewrite_english_thousands
 from translate.numbers import missing_numbers, numbers_in
 from translate.translator import (
     MACHINE_TRANSLATION_NOTE,
@@ -473,7 +481,7 @@ def test_the_cli_translates_a_saved_run(fake, tmp_path, monkeypatch):
 
 
 def test_languages_are_named_by_their_english_name_or_code():
-    assert LANGUAGES[0][0] == "Lithuanian"  # the default
+    assert LANGUAGES[0].name == "Lithuanian"  # the default
     assert language_name("RU") == language_name(" russian ") == "Russian"
     assert language_name("LT") == language_name("lithuanian") == "Lithuanian"
     assert language_name("Chinese") is None
@@ -632,3 +640,130 @@ def test_a_section_kept_in_english_says_why_in_one_short_sentence():
     assert kept_reason(mixed_then_number) == (
         "the translation mixed Latin and Cyrillic letters (закončившийся), then a number came back changed "
         "(4 billion)")
+
+
+# ---- numbers in the target language's format -----------------------------------
+
+NBSP = " "
+COST = """## Cost
+
+| Call | Status | Input | Cache write | Cache read | Output |
+|---|---|---|---|---|---|
+| Valuation Analyst (assumptions) | done | 325 | 11,080 | 0 | 6,337 |
+| Investment Committee | done | 29,176 | 0 | 27,821 | 4,596 |
+
+Total: est. cost $0.6673, 193 s.
+"""
+VALUATION = """## Valuation math (calculated by Stock Autopsy, not by the AI)
+
+| Market cap | Enterprise value | P/E | FCF yield |
+|---|---|---|---|
+| $402.24B | $434.96B | 29.36 | 3.1% |
+
+| Assumption moved (base case) | Step | Value down | Value up |
+|---|---|---|---|
+| discount rate | ±1.0% | 52.33 | 32.32 |
+| shares | ±2.0% | 1,234,567 | -3.45 |
+"""
+
+
+def test_every_offered_language_says_how_it_writes_numbers():
+    assert all(lang.numbers == DECIMAL_COMMA for lang in LANGUAGES)  # all ten write a decimal comma
+    assert number_format("Russian") == NumberFormat(",", NBSP)
+    assert number_format("English") == ENGLISH_NUMBERS == NumberFormat(".", ",")
+
+
+@pytest.mark.parametrize(("language", "translate"),
+                         [("Russian", fake_russian), ("Lithuanian", fake_lithuanian)])
+def test_the_cost_table_is_written_by_code_in_the_language_s_format(language, translate):
+    # The translator kept "11,080" (it reads as 11.08 with a decimal comma) or wrote it its own way.
+    copy = localize_tables(COST, translate(COST), language)
+    rows = [line for line in copy.splitlines() if line.startswith("|")]
+    assert f"| 325 | 11{NBSP}080 | 0 | 6{NBSP}337 |" in rows[2]
+    assert f"| 29{NBSP}176 | 0 | 27{NBSP}821 | 4{NBSP}596 |" in rows[3]
+    assert not re.search(r"\d,\d{3}\b", copy) and missing_numbers(COST, copy) == []
+
+
+def test_number_cells_of_the_valuation_tables_take_the_decimal_comma():
+    copy = localize_tables(VALUATION, fake_russian(VALUATION), "Lithuanian")
+    assert "| $402,24B | $434,96B | 29,36 | 3,1% |" in copy
+    assert "| ±1,0% | 52,33 | 32,32 |" in copy and f"| ±2,0% | 1{NBSP}234{NBSP}567 | -3,45 |" in copy
+    assert missing_numbers(VALUATION, copy) == []
+
+
+def test_english_and_a_changed_table_are_left_as_they_are():
+    assert localize_tables(COST, COST, "English") == COST
+    assert english_thousands("Output was 10,803 tokens.", "Output was 10,803 tokens.", "English") == []
+    # Another number of rows: the structure check rejects it, code does not guess the pairs.
+    short = "\n".join(line for line in fake_russian(COST).splitlines() if "29,176" not in line)
+    assert localize_tables(COST, short, "Russian") == short
+
+
+def test_a_number_in_the_english_thousands_form_in_prose_is_found_and_rewritten():
+    source = "### In plain words\n\nOutput was 10,803 tokens, input 1,234,567, a margin of 17.79%.\n"
+    copy = "### Простыми словами\n\nНа выходе 10,803 токена, на входе 1 234 567, маржа 17,79 %.\n"
+    assert english_thousands(source, copy, "Russian") == ["10,803"]
+    assert section_problem(source, copy, "Russian") == "numbers in the English thousands form: 10,803"
+    fixed = rewrite_english_thousands(source, copy, "Russian")
+    assert f"На выходе 10{NBSP}803 токена" in fixed and "17,79 %" in fixed
+    assert section_problem(source, fixed, "Russian") is None and missing_numbers(source, fixed) == []
+
+
+def test_a_real_decimal_comma_is_left_alone():
+    # "17,79 %" in Lithuanian is 17.79%: no group of three digits, nothing to do.
+    source = "The margin was 17.79% and the rate 10.803."
+    copy = "Marža buvo 17,79 % ir norma 10,803."
+    assert english_thousands(source, copy, "Lithuanian") == []
+    assert rewrite_english_thousands(source, copy, "Lithuanian") == copy
+    # A code span is copied as it is.
+    assert english_thousands("Rows `11,080` and 11,080.", "Eilutės `11,080` ir 11 080.", "Lithuanian") == []
+
+
+def test_the_retry_names_the_numbers_and_how_to_write_them():
+    note = retry_detail("numbers in the English thousands form: 10,803, 1,234", "Russian")
+    assert "10,803, 1,234 keep the English thousands separator" in note
+    assert f"10,803 as 10{NBSP}803" in note and f"1,234 as 1{NBSP}234" in note
+    assert "a comma is the decimal mark" in note
+
+
+def thousands_left(times: int):
+    """A Russian 'translation' that keeps "10,803" in the English form the first `times` answers."""
+    left = {"n": times}
+
+    def handler(kwargs):
+        source = kwargs["messages"][0]["content"]
+        text = fake_russian(source)
+        if "10,803" in source and left["n"] > 0:
+            left["n"] -= 1
+            return text_response(text)
+        return text_response(text.replace("10,803", f"10{NBSP}803"))
+
+    return handler
+
+
+PROSE = "### In plain words\n\nThe committee read 10,803 tokens of analysis and 4.5 points of margin.\n"
+
+
+def test_numbers_fixed_on_the_retry_need_no_rewrite(fake):
+    fake.create_handler = thousands_left(1)
+    outcome = translate_document(PROSE, "Russian")
+    calls = translation_calls(fake)
+    assert len(calls) == 2 and f"10,803 as 10{NBSP}803" in calls[1]["system"]
+    assert f"10{NBSP}803" in outcome["text"] and "10,803" not in outcome["text"]
+    assert (outcome["untranslated_sections"], outcome["number_rejections"]) == (0, 0)
+
+
+def test_numbers_left_in_the_english_form_twice_are_rewritten_by_code(fake):
+    fake.create_handler = thousands_left(2)
+    outcome = translate_document(PROSE, "Russian")
+    assert len(translation_calls(fake)) == 2  # asked once more, never a third time
+    assert f"10{NBSP}803" in outcome["text"] and "10,803" not in outcome["text"]
+    assert outcome["untranslated_sections"] == 0 and outcome["kept_sections"] == []
+
+
+def test_a_cost_table_translates_in_one_call_per_section(fake):
+    fake.create_handler = lambda kwargs: text_response(fake_russian(kwargs["messages"][0]["content"]))
+    outcome = translate_document(COST + "\n" + VALUATION, "Russian")
+    assert len(translation_calls(fake)) == 2 and outcome["untranslated_sections"] == 0
+    assert f"11{NBSP}080" in outcome["text"] and "$402,24B" in outcome["text"]
+    assert not re.search(r"\d,\d{3}(?!\d)", outcome["text"])
