@@ -200,3 +200,11 @@ def test_lookup_cards_show_the_name_without_the_edgar_suffix(lookup):
     costco = {"0": {"cik_str": 909832, "ticker": "COST", "title": "COSTCO WHOLESALE CORP /NEW"}}
     (card,) = resolve("COST", costco, filer_check)["candidates"]
     assert card["name"] == "Costco Wholesale Corp"
+
+
+def test_a_bank_gets_a_calm_note_and_can_still_be_analyzed(lookup):
+    from datalayer.sector import FINANCIAL_NOTE
+    lookup(answer("unused", []))
+    gs = {"0": {"cik_str": 886982, "ticker": "GS", "title": "GOLDMAN SACHS GROUP INC"}}
+    (card,) = resolve("GS", gs, filer_check, lambda ticker, cik: FINANCIAL_NOTE)["candidates"]
+    assert card["financial_note"] == FINANCIAL_NOTE and card["unsupported"] is None

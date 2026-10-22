@@ -42,6 +42,7 @@ from core.token_summary import call_cost, format_cost
 from datalayer.cache import DailyCache
 from datalayer.filings import unsupported_filer
 from datalayer.sec import SecClient, format_cik, normalize_ticker
+from datalayer.sector import FINANCIAL_NOTE, financial_kind
 from reporting.wording import company_display
 from translate.languages import DEFAULT_LANGUAGE, language_name, languages_for_page
 from translate.translator import translate_report, translated_path
@@ -76,12 +77,8 @@ def load_ticker_map() -> dict:
     return ticker_map
 
 
-def check_filer_live(ticker: str, cik: int) -> str | None:
-    """
-    Why the company cannot be analyzed, from its SEC filing history (free; cached
-    under the same name an analysis uses). None when it can, or when the history
-    is not reachable: then the data pack check still stops an empty run.
-    """
+def _submissions(ticker: str, cik: int) -> dict | None:
+    """The company's SEC filing history (free; cached under the same name an analysis uses)."""
     symbol = normalize_ticker(ticker)
     try:
         sec = SecClient(os.getenv("SEC_USER_AGENT"))
@@ -91,7 +88,22 @@ def check_filer_live(ticker: str, cik: int) -> str | None:
     except Exception as e:
         logger.warning(f"Filing history of {symbol} not checked: {type(e).__name__}: {e}")
         return None
-    return unsupported_filer(submissions)
+    return submissions
+
+
+def check_filer_live(ticker: str, cik: int) -> str | None:
+    """
+    Why the company cannot be analyzed, from its SEC filing history. None when it can, or
+    when the history is not reachable: then the data pack check still stops an empty run.
+    """
+    submissions = _submissions(ticker, cik)
+    return unsupported_filer(submissions) if submissions else None
+
+
+def check_sector_live(ticker: str, cik: int) -> str | None:
+    """The note for a bank or other financial company (SIC code), or None."""
+    submissions = _submissions(ticker, cik)
+    return FINANCIAL_NOTE if submissions and financial_kind(submissions.get("sic")) else None
 
 
 class ResolveRequest(BaseModel):
@@ -117,6 +129,7 @@ def create_app(
     fetch: Callable = fetch_live,
     ticker_map: Callable[[], dict] = load_ticker_map,
     filer_check: FilerCheck = check_filer_live,
+    sector_check: FilerCheck = check_sector_live,
     translate: Callable[[Path, str], dict] = translate_report,
 ) -> FastAPI:
     app = FastAPI(title="Stock Autopsy", docs_url=None, redoc_url=None, openapi_url=None)
@@ -157,7 +170,7 @@ def create_app(
         except Exception as e:
             logger.warning(f"Ticker map unavailable: {type(e).__name__}: {e}")
             raise HTTPException(503, "The SEC ticker list is not reachable right now.") from None
-        return resolve(body.query, known, filer_check)
+        return resolve(body.query, known, filer_check, sector_check)
 
     @app.post("/api/runs", status_code=202)
     def start_run(body: RunRequest):

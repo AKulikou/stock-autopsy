@@ -47,6 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     from datalayer.fetch import DataUnavailableError, fetch_company
     from datalayer.pack import HORIZONS, RISK_TOLERANCES
     from datalayer.sec import SecAccessError, SecClient, UnknownTickerError
+    from datalayer.sector import FINANCIAL_NOTE, financial_kind
     from reporting.save import save_run
     from reporting.wording import COMMITTEE_VERDICTS, CONFIDENCE, company_display
 
@@ -61,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
     log_path = setup_logging(stamp)
     try:
         raw = fetch_company(args.ticker, as_of, SecClient(os.getenv("SEC_USER_AGENT")), DailyCache(as_of))
+        if financial_kind((raw.submissions or {}).get("sic")):
+            print(FINANCIAL_NOTE)  # said before the paid calls; the run goes on (owner's decision)
         run = run_autopsy(raw, {"horizon": args.horizon, "risk_tolerance": args.risk})
     except (UnknownTickerError, DataUnavailableError, SecAccessError) as e:
         print(f"\nNo analysis: {e}")

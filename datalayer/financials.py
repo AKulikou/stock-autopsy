@@ -113,6 +113,16 @@ class Financials:
     # Company extension concepts per line item key, used after the us-gaap concepts
     # (datalayer/extensions.py); their facts are keyed 'ext:<concept>'.
     extension_concepts: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    # REVENUE_FINANCIAL for a bank or other financial company (datalayer/sector.py).
+    revenue_item: li.LineItem = li.REVENUE
+
+    @property
+    def flow_items(self) -> tuple[li.LineItem, ...]:
+        return tuple(self.revenue_item if item is li.REVENUE else item for item in li.FLOW_ITEMS)
+
+    @property
+    def quarterly_items(self) -> tuple[li.LineItem, ...]:
+        return tuple(self.revenue_item if item is li.REVENUE else item for item in li.QUARTERLY_ITEMS)
 
     # ---- facts and values -------------------------------------------------
 
@@ -228,7 +238,7 @@ class Financials:
     def fiscal_years(self) -> list[Period]:
         """Fiscal years with a reported annual net income or revenue, oldest first, last MAX_ANNUAL_YEARS."""
         starts: dict[date, Fact] = {}
-        for item in (li.REVENUE, li.NET_INCOME):  # net income last: its period wins when both exist
+        for item in (self.revenue_item, li.NET_INCOME):  # net income last: its period wins when both exist
             best: dict[date, Fact] = {}
             for f in self._facts(item, lambda f: f.is_annual and f.form not in QUARTERLY_FORMS):
                 if f.end not in best or preference(f, item.concepts) > preference(best[f.end], item.concepts):
@@ -261,7 +271,7 @@ class Financials:
         )
 
     def annual_rows(self, periods: list[Period]) -> list[dict]:
-        ever = {item.key: self._ever_reported(item) for item in (*li.FLOW_ITEMS, *li.INSTANT_ITEMS)}
+        ever = {item.key: self._ever_reported(item) for item in (*self.flow_items, *li.INSTANT_ITEMS)}
         rows = []
         for period in periods:
             label = period.label
@@ -272,9 +282,9 @@ class Financials:
             }
             if (period.end - period.start).days >= FIFTY_THREE_WEEK_MIN_DAYS:
                 self.quality.note(f"{label} has 53 weeks: about 2% more revenue than a 52-week year")
-            revenue = self._annual_flow(li.REVENUE, period)
-            for item in li.FLOW_ITEMS:
-                if item is li.REVENUE:
+            revenue = self._annual_flow(self.revenue_item, period)
+            for item in self.flow_items:
+                if item is self.revenue_item:
                     picked = revenue
                 elif item is li.GROSS_PROFIT:
                     picked = self.gross_profit(
@@ -383,7 +393,7 @@ class Financials:
         """End dates of Q1-Q3 of the fiscal year starting on fiscal_start, from year-to-date facts."""
         ends: dict[int, date] = {}
         for quarter, days in ((1, QUARTER_DAYS), (2, HALF_DAYS), (3, NINE_MONTH_DAYS)):
-            for item in (li.NET_INCOME, li.REVENUE):
+            for item in (li.NET_INCOME, self.revenue_item):
                 facts = self._facts(
                     item,
                     lambda f, d=days: (
@@ -446,7 +456,7 @@ class Financials:
                     "period_end": end.isoformat(),
                 }
                 derived = []
-                for item in li.QUARTERLY_ITEMS:
+                for item in self.quarterly_items:
                     value, is_derived = self._discrete(item, fiscal_start, ends, quarter, annual)
                     row[item.key] = value
                     if value is not None and is_derived:
@@ -468,7 +478,7 @@ class Financials:
                 "basis": "last fiscal year (no later quarter reported)",
                 "period_end": last.end.isoformat(),
             }
-            for item in li.FLOW_ITEMS:
+            for item in self.flow_items:
                 row[item.key] = self._annual_flow(item, last, check=False).value
                 if row[item.key] is None:
                     self.quality.missing(item.key, "TTM", NOT_REPORTED)
@@ -482,7 +492,7 @@ class Financials:
             f"- the same {'quarter' if quarter == 1 else 'quarters'} a year earlier",
             "period_end": end.isoformat(),
         }
-        for item in li.FLOW_ITEMS:
+        for item in self.flow_items:
             if item is li.SHARES_DILUTED:
                 # Share counts are averages, not sums: TTM uses the latest year-to-date average.
                 value = self._ytd(item, current_start, end, days).value

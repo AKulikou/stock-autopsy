@@ -13,6 +13,7 @@ from sample_outputs import handler_for
 
 from datalayer.pack import build_pack
 from datalayer.sec import UnknownTickerError
+from datalayer.sector import FINANCIAL_NOTE
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
 from web import app as app_module
 from web import resolve as resolve_module
@@ -40,6 +41,10 @@ def fake_fetch(ticker, as_of):
     return raw_from_fixture(FIXTURES / "KO")
 
 
+def fake_sector_check(ticker, cik):
+    return FINANCIAL_NOTE if ticker == "GS" else None
+
+
 def fake_filer_check(ticker, cik):
     return "Files Form 20-F (a foreign company): no financial data." if ticker == "BABA" else None
 
@@ -52,7 +57,7 @@ def ko_pack():
 @pytest.fixture
 def client(tmp_path):
     app = create_app(tmp_path / "results", fetch=fake_fetch, ticker_map=lambda: TICKER_MAP,
-                     filer_check=fake_filer_check)
+                     filer_check=fake_filer_check, sector_check=fake_sector_check)
     with TestClient(app, base_url=BASE_URL) as test_client:
         yield test_client
 
@@ -107,6 +112,7 @@ def test_a_ticker_in_capitals_resolves_without_a_model_call(client, fake):
     assert found["candidates"] == [
         {"ticker": "KO", "name": "Coca Cola Co",
          "note": "The ticker KO belongs to Coca Cola Co in the SEC list.", "unsupported": None,
+         "financial_note": None,
          "match_type": "exact", "relation": None, "share_class": None}
     ]
     assert found["suggested"] is False and fake.requests == []

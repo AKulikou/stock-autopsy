@@ -135,7 +135,8 @@ def _order(candidate: dict) -> int:
     return 0 if candidate["match_type"] == "exact" else 1
 
 
-def resolve(query: str, ticker_map: dict, filer_check: FilerCheck = lambda ticker, cik: None) -> dict:
+def resolve(query: str, ticker_map: dict, filer_check: FilerCheck = lambda ticker, cik: None,
+            sector_check: FilerCheck = lambda ticker, cik: None) -> dict:
     """
     {"candidates": [{"ticker", "name", "note", "unsupported", "match_type", "relation",
     "share_class"}], "suggested": bool, "query_name": str | None (the model's name for what
@@ -157,6 +158,8 @@ def resolve(query: str, ticker_map: dict, filer_check: FilerCheck = lambda ticke
         return {"ticker": entry["ticker"], "name": company_display(entry["title"]),
                 "note": suggestion.note if suggestion else None,
                 "unsupported": filer_check(entry["ticker"], int(entry["cik_str"])),
+                # A bank or other financial company: a calm note, the run is not blocked.
+                "financial_note": sector_check(entry["ticker"], int(entry["cik_str"])),
                 "match_type": "related" if related else "exact",
                 "relation": (suggestion.relation or suggestion.note) if related else None,
                 "share_class": suggestion.share_class if suggestion else None}

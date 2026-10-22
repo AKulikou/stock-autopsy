@@ -15,9 +15,11 @@ export function candidateCard(c) {
   let label = related ? `Related: ${c.relation || "a related company"}` : "Exact match";
   if (c.share_class) label += ` · ${c.share_class}`;
   if (c.unsupported) {
-    return { kind: "unavailable", icon, label: `${label} · ${shortReason(c.unsupported)}`, canRun: false };
+    return { kind: "unavailable", icon, label: `${label} · ${shortReason(c.unsupported)}`, canRun: false,
+      financialNote: null };
   }
-  return { kind: related ? "related" : "exact", icon, label, canRun: true };
+  // A bank or other financial company: a calm note, and the run stays possible (owner's decision).
+  return { kind: related ? "related" : "exact", icon, label, canRun: true, financialNote: c.financial_note || null };
 }
 
 // Exact matches first, then related companies, then those that cannot be analyzed.

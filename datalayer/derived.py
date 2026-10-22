@@ -8,6 +8,8 @@ zero or negative is not meaningful (a P/E on a loss): None with a note saying wh
 Multiples use TTM flows only, so fiscal-year and TTM figures never mix.
 """
 
+from datalayer.sector import NOT_MEANINGFUL
+
 RATIO_DIGITS = 4
 
 FORMULAS = {
@@ -103,7 +105,13 @@ def revenue_cagr(rows: list[dict], years: int) -> float | None:
     return round((now / then) ** (1 / years) - 1, RATIO_DIGITS)
 
 
-def valuation(price: dict | None, shares: dict | None, ttm: dict | None, balance: dict | None) -> dict:
+def valuation(price: dict | None, shares: dict | None, ttm: dict | None, balance: dict | None,
+              financial: bool = False) -> dict:
+    """
+    Multiples on TTM figures. For a bank or other financial company (datalayer/sector.py) the
+    EV- and free-cash-flow-based ones are left out with a reason: debt is its raw material and
+    operating cash flow swings with trading and lending, so they would mislead.
+    """
     notes: list[str] = []
     market_cap = None
     if price is not None and shares is not None:
@@ -134,7 +142,7 @@ def valuation(price: dict | None, shares: dict | None, ttm: dict | None, balance
             return None
         return round(value / denominator, 2)
 
-    return {
+    result = {
         "basis": ttm.get("basis"),
         "ttm_period_end": ttm.get("period_end"),
         "price_date": price["date"] if price else None,
@@ -148,3 +156,10 @@ def valuation(price: dict | None, shares: dict | None, ttm: dict | None, balance
         "fcf_yield": ratio(fcf, market_cap) if market_cap else None,
         "notes": notes,
     }
+    if financial:
+        names = ("enterprise_value", "ev_revenue", "ev_ebit", "ev_ebitda", "p_fcf", "fcf_yield")
+        notes[:] = [n for n in notes if n.split(":")[0] not in names]
+        for name in names:
+            result[name] = None
+            notes.append(f"{name}: {NOT_MEANINGFUL}")
+    return result

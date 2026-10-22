@@ -26,9 +26,16 @@ from datalayer.extensions import EXTENSION_MATCHERS, EXTENSION_TAXONOMY, matchin
 from datalayer.fetch import OK, DataUnavailableError, RawCompanyData, fetch_company
 from datalayer.filings import annual_report_timing, coverage_start, filing_events, filing_rows
 from datalayer.financials import STALE_SHARES_DAYS, Financials, Split, real_splits
-from datalayer.line_items import ALL_CONCEPTS, SHARES_OUTSTANDING_CONCEPT
+from datalayer.line_items import (
+    ALL_CONCEPTS,
+    FINANCIAL_REVENUE_CONCEPT,
+    REVENUE,
+    REVENUE_FINANCIAL,
+    SHARES_OUTSTANDING_CONCEPT,
+)
 from datalayer.quality import NOT_FETCHED, PROVIDER_ERROR, DataQuality
 from datalayer.sec import SecClient
+from datalayer.sector import FINANCIAL_NOTE, financial_kind
 from datalayer.xbrl import load_facts
 
 logger = logging.getLogger(__name__)
@@ -268,7 +275,15 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
         )
         logger.info(f"{raw.ticker}: dropped {dropped + dropped_dei} facts dated after {as_of}")
     extension_concepts = use_extensions(raw, facts, quality)
-    fin = Financials(facts, as_of, quality, splits, extension_concepts=extension_concepts)
+    # A bank or other financial company (SEC SIC code): its net revenues come from a concept read
+    # for it alone, so every other company's pack stays exactly as before.
+    financial = financial_kind((raw.submissions or {}).get("sic"))
+    if financial:
+        extra, _ = load_facts(raw.company_facts, as_of, {FINANCIAL_REVENUE_CONCEPT})
+        facts.update(extra)
+        quality.note(FINANCIAL_NOTE)
+    fin = Financials(facts, as_of, quality, splits, extension_concepts=extension_concepts,
+                     revenue_item=REVENUE_FINANCIAL if financial else REVENUE)
     periods = fin.fiscal_years()
     annual = fin.annual_rows(periods)
     quarterly = fin.quarterly_rows(periods)
@@ -298,7 +313,7 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
                     "source": f"{raw.price['source']} (reported share count); the SEC count dated "
                     f"{shares['date']} is stale",
                 }
-    valuation = derived.valuation(price, shares, ttm, balance)
+    valuation = derived.valuation(price, shares, ttm, balance, financial=bool(financial))
     if raw.price:
         compare_sources(
             "market_cap",
@@ -369,6 +384,8 @@ def build_pack(raw: RawCompanyData, user_context: dict | None = None) -> tuple[d
         "user_context": check_user_context(user_context or DEFAULT_USER_CONTEXT),
         "data_quality": quality.as_dict(),
     }
+    if financial:
+        pack["financial_company"] = {"kind": financial, "note": FINANCIAL_NOTE}
     return pack, fin.provenance
 
 

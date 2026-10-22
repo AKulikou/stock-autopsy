@@ -8,6 +8,21 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — banks and other financial companies flagged by SIC code (E7; data pack change for them only)
+
+The owner's run on Goldman Sachs (SIC 6211) gave "insufficient data": revenue, total debt, EV and
+the DCF were missing and a free cash flow yield of -15.8% meant nothing for a broker-dealer.
+Goldman reports net revenues under RevenuesNetOfInterestExpense (58.283 billion for FY2025),
+which the pack did not read. Now a company whose SIC code is in the SEC list's bank, credit,
+broker-dealer and insurance ranges (6021-6099, 6111-6199, 6200-6282, 6311-6411; the SEC SIC
+code list, checked 2026-10-22) gets: that concept as revenue after the general ones; a
+`financial_company` block and a data quality note; enterprise value, EV multiples, P/FCF and the
+FCF yield left out as "not meaningful for a bank or other financial company"; no DCF, with that
+reason. A calm note on the lookup card and in the CLI says so before the run, which is not
+blocked. For every other company nothing changes: the five golden packs are byte for byte the
+same (tests/test_golden_packs.py). The analysts of a bank now see the flag and net revenues;
+the effect needs a paid run on a bank (about 0.6 USD), not made.
+
 ## 2026-10-22 — translation: look-alike letters fixed by code, the retry names the word, one-sentence reason (E4, E5)
 
 The owner's Lithuanian copy of Costco kept "Forensic Accountant" in English: both answers wrote

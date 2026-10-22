@@ -161,6 +161,18 @@ What the eval showed:
   not yet name liquidity as a red flag and the data pack does not compute a cash runway;
   that gap between the label and the definitions is one reason the verdict flips.
 
+## Known limitations
+
+- **Banks, brokers and insurers** are flagged by their SEC SIC code (banks 6021-6099, credit
+  companies 6111-6199, brokers and investment advisers 6200-6282, insurers 6311-6411, from the
+  SEC SIC code list) before a run, on the lookup card and in the CLI, and in the report's data
+  quality section. They are still valued with the general model: their net revenues are read,
+  but enterprise value, the DCF and cash-flow multiples are marked "not meaningful for a bank".
+  What fits them (price to book, return on equity, capital ratios) is not implemented.
+- Only companies that file 10-K and 10-Q reports are read; foreign filers on Form 20-F or 40-F
+  and funds are stopped before any paid call.
+- Insider transactions, peers, news and earnings call transcripts are not collected.
+
 ## Roadmap
 
 | Phase | Scope |

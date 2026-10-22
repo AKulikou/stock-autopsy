@@ -7,6 +7,7 @@ fixed set of evaluators: sections come from the results.
 
 from analysis.runner import AutopsyRun
 from core.token_summary import format_cost
+from datalayer.sector import NOT_MEANINGFUL
 from reporting.data_quality import freshness, freshness_line, quality_lines, statements_to
 from reporting.number_check import number_words
 from reporting.wording import (
@@ -52,6 +53,16 @@ def pct(value) -> str:
 
 def number(value, digits: int = 2) -> str:
     return "n/m" if value is None else f"{value:,.{digits}f}"
+
+
+BANK_NOT_MEANINGFUL = "not meaningful for a bank"
+
+
+def multiple_text(multiples: dict, name: str, fmt) -> str:
+    """A multiple as shown; one left out for a bank says so instead of 'unknown' (E7)."""
+    if multiples[name] is None and f"{name}: {NOT_MEANINGFUL}" in multiples.get("notes", []):
+        return BANK_NOT_MEANINGFUL
+    return fmt(multiples[name])
 
 
 def bullets(items) -> list[str]:
@@ -195,9 +206,10 @@ def valuation_section(run: AutopsyRun) -> list[str]:
         "|---|---|---|---|---|---|---|---|",
         table_row(
             money(multiples["market_cap"]),
-            money(multiples["enterprise_value"]),
-            *(number(multiples[name]) for name in ("pe", "ev_revenue", "ev_ebit", "ev_ebitda", "p_fcf")),
-            pct(multiples["fcf_yield"]),
+            multiple_text(multiples, "enterprise_value", money),
+            *(multiple_text(multiples, name, number)
+              for name in ("pe", "ev_revenue", "ev_ebit", "ev_ebitda", "p_fcf")),
+            multiple_text(multiples, "fcf_yield", pct),
         ),
     ]
     lines += ["", *bullets(multiples["notes"])] if multiples["notes"] else []

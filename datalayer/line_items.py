@@ -40,6 +40,13 @@ REVENUE = LineItem(
     ),
     concept_migrates=True,
 )
+# Banks and broker-dealers report "net revenues" (revenue after interest expense) under this
+# concept (Goldman Sachs, company facts 2026-10-22). Read only for a company flagged by its SIC
+# code as financial (datalayer/sector.py), after the general revenue concepts.
+FINANCIAL_REVENUE_CONCEPT = "RevenuesNetOfInterestExpense"
+REVENUE_FINANCIAL = LineItem(
+    "revenue", REVENUE.concepts + (FINANCIAL_REVENUE_CONCEPT,), concept_migrates=True
+)
 COST_OF_REVENUE = LineItem(
     "cost_of_revenue",
     ("CostOfRevenue", "CostOfGoodsAndServicesSold", "CostOfGoodsSold"),

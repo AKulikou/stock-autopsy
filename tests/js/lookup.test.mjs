@@ -12,17 +12,19 @@ const relatedForeign = { name: "Stellantis N.V.", match_type: "related", relatio
   share_class: null, unsupported: FOREIGN };
 
 test("an exact match is green with a check mark and can be analyzed", () => {
-  assert.deepEqual(candidateCard(exact), { kind: "exact", icon: "✓", label: "Exact match", canRun: true });
+  assert.deepEqual(candidateCard(exact), { kind: "exact", icon: "✓", label: "Exact match", canRun: true, financialNote: null });
 });
 
 test("a related company says how it is related", () => {
   assert.deepEqual(candidateCard(related),
-    { kind: "related", icon: "↔", label: "Related: major investor in OpenAI", canRun: true });
+    { kind: "related", icon: "↔", label: "Related: major investor in OpenAI", canRun: true,
+      financialNote: null });
 });
 
 test("a company that cannot be analyzed is grey and keeps its label and the short reason", () => {
   assert.deepEqual(candidateCard(relatedForeign), {
     kind: "unavailable", icon: "↔", label: "Related: parent of Chrysler · Files Form 20-F", canRun: false,
+    financialNote: null,
   });
   assert.equal(candidateCard({ ...exact, unsupported: FOREIGN }).label, "Exact match · Files Form 20-F");
   assert.equal(shortReason("A fund (files fund reports such as N-CSR, not a 10-K): no data."), "A fund");
@@ -34,6 +36,14 @@ test("share classes of one company are both exact matches, each with its class",
   assert.equal(a.kind, "exact");
   assert.equal(a.label, "Exact match · Class A");
   assert.equal(c.label, "Exact match · Class C");
+});
+
+test("a bank keeps its Analyze button and gets a calm note", () => {
+  const note = "Bank or financial company: EV, DCF and cash-flow multiples do not fit how banks report; the analysis will say so.";
+  const card = candidateCard({ ...exact, name: "Goldman Sachs Group Inc", financial_note: note });
+  assert.equal(card.canRun, true);
+  assert.equal(card.financialNote, note);
+  assert.equal(candidateCard(exact).financialNote, null);
 });
 
 test("cards come green, then amber, then grey, keeping the order within each", () => {

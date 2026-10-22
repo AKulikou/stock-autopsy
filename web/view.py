@@ -11,7 +11,7 @@ from pathlib import Path
 
 from analysis.runner import VERDICT_KEYS, AutopsyRun
 from reporting.data_quality import quality_lines, statements_to
-from reporting.markdown import build_report, money, number, pct
+from reporting.markdown import build_report, money, multiple_text, number, pct
 from reporting.wording import (
     CLAIM_TAGS,
     COMMITTEE_VERDICTS,
@@ -184,8 +184,8 @@ def _valuation(autopsy: AutopsyRun) -> dict:
     rows = [
         ("Market value", money(multiples["market_cap"])),
         ("Price to earnings", number(multiples["pe"])),
-        ("Enterprise value to revenue", number(multiples["ev_revenue"])),
-        ("Free cash flow yield", pct(multiples["fcf_yield"])),
+        ("Enterprise value to revenue", multiple_text(multiples, "ev_revenue", number)),
+        ("Free cash flow yield", multiple_text(multiples, "fcf_yield", pct)),
     ]
     view = {"multiples": [{"label": label, "value": value} for label, value in rows], "computed": False}
     if not math.get("computed"):

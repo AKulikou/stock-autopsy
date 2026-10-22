@@ -346,6 +346,7 @@ select {
 .candidate.is-unavailable { cursor: not-allowed; opacity: 1; border-style: dashed; border-left-style: solid; }
 .candidate.is-unavailable strong { color: var(--text-muted); }
 .unsupported-note { color: var(--text); }
+.sector-note { color: var(--text-muted); font-size: 0.92rem; }
 .notice-calm, .notice-hint, .notice-banner { border-color: var(--border); background: var(--surface-muted); }
 .notice-banner { border-left: 6px solid var(--verdict-unclear); font-weight: 600; }
 .price-assumes {

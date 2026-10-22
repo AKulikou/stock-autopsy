@@ -80,6 +80,7 @@ function candidateButton(c, relatedTo) {
   label.firstChild.setAttribute("aria-hidden", "true");
   button.append(label, el("strong", null, c.name));
   if (c.note && c.note !== c.relation) button.append(el("span", "muted", c.note));
+  if (look.financialNote) button.append(el("span", "sector-note", look.financialNote));
   if (!look.canRun) {
     // No 10-K or 10-Q reports: a run would only pay for an empty data pack.
     button.disabled = true;
