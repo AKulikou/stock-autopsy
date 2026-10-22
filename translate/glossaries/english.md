@@ -36,6 +36,8 @@ group the rows for review and are ignored by the code.
 | gross profit / gross margin | gross profit / gross margin | Revenue minus the cost of what was sold. The margin is its share of revenue: how much is left of each dollar of sales before other costs. |
 | operating income / operating margin | operating income / operating margin | Profit from the main business after all operating costs, before interest and taxes. The margin is its share of revenue. |
 | net income / net margin | net income / net margin | Profit after all costs, interest and taxes. The margin is its share of revenue. |
+| break-even (draft, review pending) | break-even | Operating income of zero: revenue just covers the operating costs, with neither an operating profit nor an operating loss. |
+| operating loss (draft, review pending) | operating loss | Operating income below zero. "An operating loss of 100% of revenue" means operating costs are twice the revenue: the company loses a dollar of operating income on each dollar of sales. |
 | EBIT | EBIT (earnings before interest and taxes) | Close to operating income. Used in the EV/EBIT multiple. |
 | EBITDA | EBITDA (earnings before interest, taxes, depreciation and amortization) | Operating income plus depreciation and amortization. A rough measure of the cash from the main business; it ignores the cost of replacing equipment, so it can flatter the picture. |
 | EPS / earnings per share | earnings per share (EPS) | Net income divided by the number of shares. |

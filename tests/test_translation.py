@@ -565,12 +565,12 @@ def test_the_report_title_keeps_the_product_and_company_name(fake):
 
 def test_the_lithuanian_and_english_glossaries_have_the_same_terms_as_the_russian_one():
     lithuanian, russian = load_glossary("Lithuanian"), load_glossary("Russian")
-    assert lithuanian.title == "Terminų žodynas" and len(lithuanian.entries) == len(russian.entries) == 102
+    assert lithuanian.title == "Terminų žodynas" and len(lithuanian.entries) == len(russian.entries) == 104
     assert [e.variants for e in lithuanian.entries] == [e.variants for e in russian.entries]
     assert all(len(e.explanation) > 20 for e in lithuanian.entries)
     text = (GLOSSARY_DIR / "lithuanian.md").read_text(encoding="utf-8")
     rows = [line for line in text.splitlines() if line.startswith("| ") and not line.startswith("| English")]
-    assert len(rows) == 102 and all("draft, review pending" in row.split(" | ")[0] for row in rows)
+    assert len(rows) == 104 and all("draft, review pending" in row.split(" | ")[0] for row in rows)
     by_name = {e.english: e.term for e in lithuanian.entries}
     assert by_name["Forensic Accountant"] == "Apskaitos tyrėjas"
     assert by_name["Valuation Analyst (assumptions)"] == "Vertinimo analitikas (prielaidos)"

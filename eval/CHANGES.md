@@ -8,6 +8,27 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — the price sentence writes a negative operating margin as a loss (committee input)
+
+What changed: the sentence Python writes on what the price assumes (valuation/dcf.py,
+margin_words) described a base case of a loss-making company as "an operating margin rising
+from -100% to 0% over five years": correct, but hard to read. A negative margin is now a loss in
+% of revenue and zero is break-even: "an operating loss of 100% of revenue narrowing to
+break-even", "an operating margin rising from a loss of 5% of revenue to 12%", "... rising from
+break-even to 10%". Positive to positive is unchanged ("an operating margin falling from 20% to
+12%"). The one sentence feeds the
+page, report.md and the progress event, and it reaches the committee through
+valuation_math.price_assumes: its wording changed for negative or zero margins only. The
+glossaries gain "break-even" and "operating loss" (draft, review pending).
+
+Golden cases it touches: Snowflake only. Its base case starts loss-making in every stored eval
+trace (v4_release: "an operating margin rising from -17% to 8%" and "... from -15% to 10%"), which
+now reads "an operating margin rising from a loss of 17% of revenue to 8%". The other four cases
+have positive margins and an unchanged sentence. No paid eval was run, so the effect on the
+Snowflake committee verdict is not measured. Checked by the tests (-100 -> 0, -5 -> 12, 0 -> 10,
+10 -> 10, 20 -> 12 and the other sign changes) and by recomputing the sentence of a stored run
+whose base case starts at -100%.
+
 ## 2026-10-22 — translation: tables checked against the English ones, repaired by code
 
 What changed: a Russian copy of 2026-10-22 lost the closing "|" of the third row of the conflict

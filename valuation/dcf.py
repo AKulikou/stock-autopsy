@@ -206,6 +206,38 @@ def path_words(name: str, first: float, last: float, unit: str = "") -> str:
     return f"{name} {direction} from {start} to {end}{unit}"
 
 
+def margin_words(first: float, last: float) -> str:
+    """
+    The base-case operating margin in words. A positive margin reads as path_words() does; a
+    negative one is a loss in % of revenue and zero is break-even, since "an operating margin
+    rising from -100% to 0%" is correct but hard to read:
+
+        -100% -> 0%   an operating loss of 100% of revenue narrowing to break-even
+          -5% -> 12%  an operating margin rising from a loss of 5% of revenue to 12%
+           0% -> 10%  an operating margin rising from break-even to 10%
+          20% -> 12%  an operating margin falling from 20% to 12%
+    """
+    start, end = round(first * 100), round(last * 100)
+    if start > 0 and end > 0:
+        return path_words("an operating margin", first, last)
+
+    def level(percent: int) -> str:
+        if percent == 0:
+            return "break-even"
+        return f"a loss of {-percent}% of revenue" if percent < 0 else f"{percent}%"
+
+    if start == end == 0:
+        return "operating results at break-even"
+    if start == end:
+        return f"an operating loss of {-start}% of revenue"
+    if start < 0 and end <= 0:
+        change = "narrowing" if end > start else "widening"
+        target = "break-even" if end == 0 else f"{-end}% of revenue"
+        return f"an operating loss of {-start}% of revenue {change} to {target}"
+    direction = "rising" if end > start else "falling"
+    return f"an operating margin {direction} from {level(start)} to {level(end)}"
+
+
 def price_words(price: float, currency: str | None) -> str:
     """"$93.90" for US dollars, "93.90 EUR" for another currency, the bare number when it is unknown."""
     if currency == "USD":
@@ -219,7 +251,7 @@ def price_assumes(base: ScenarioAssumptions, inputs: DcfInputs, implied: dict) -
         return None
     price = price_words(inputs.price, inputs.currency)
     growth = path_words("revenue growth", base.revenue_growth[0], base.revenue_growth[-1], " a year")
-    margin = path_words("an operating margin", base.operating_margin[0], base.operating_margin[-1])
+    margin = margin_words(base.operating_margin[0], base.operating_margin[-1])
     case = f"{growth} and {margin} over five years"
     rate = implied.get("implied_annual_return")
     if rate is not None:

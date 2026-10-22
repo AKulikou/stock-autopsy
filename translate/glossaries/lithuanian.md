@@ -36,6 +36,8 @@ before it is relied on. The numbered headings group the rows for review and are 
 | gross profit / gross margin (draft, review pending) | bendrasis pelnas / bendrojo pelno marža | Pajamos minus parduotų prekių savikaina. Marža – bendrojo pelno dalis pajamose: rodo, kiek lieka iš kiekvieno pardavimų dolerio prieš kitas išlaidas. |
 | operating income / operating margin (draft, review pending) | veiklos pelnas / veiklos pelno marža | Pagrindinės veiklos pelnas po visų veiklos išlaidų, prieš palūkanas ir mokesčius. Marža – jo dalis pajamose. |
 | net income / net margin (draft, review pending) | grynasis pelnas / grynojo pelno marža | Pelnas po visų išlaidų, palūkanų ir mokesčių. Marža – jo dalis pajamose. |
+| break-even (draft, review pending) | lūžio taškas | Veiklos pelnas lygus nuliui: pajamos tik padengia veiklos išlaidas, nėra nei veiklos pelno, nei veiklos nuostolio. |
+| operating loss (draft, review pending) | veiklos nuostolis | Veiklos pelnas mažesnis už nulį. „Veiklos nuostolis, lygus 100 % pajamų“ reiškia, kad veiklos išlaidos dvigubai viršija pajamas: iš kiekvieno pardavimų dolerio bendrovė praranda dolerį veiklos pelno. |
 | EBIT (draft, review pending) | EBIT (pelnas prieš palūkanas ir mokesčius) | Artimas veiklos pelnui. Naudojamas EV/EBIT daugiklyje. |
 | EBITDA (draft, review pending) | EBITDA (pelnas prieš palūkanas, mokesčius, nusidėvėjimą ir amortizaciją) | Veiklos pelnas plius nusidėvėjimas ir amortizacija. Apytikris pagrindinės veiklos pinigų įvertis. Neįskaito įrangos atnaujinimo išlaidų, todėl gali pagražinti vaizdą. |
 | EPS / earnings per share (draft, review pending) | pelnas vienai akcijai (EPS) | Grynasis pelnas, padalytas iš akcijų skaičiaus. |

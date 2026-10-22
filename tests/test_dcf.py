@@ -7,6 +7,7 @@ from valuation.dcf import (
     DcfInputs,
     implied_annual_return,
     inputs_from_pack,
+    margin_words,
     price_assumes,
     project,
     reverse_dcf,
@@ -93,6 +94,31 @@ def test_a_changing_growth_or_margin_says_which_way_it_moves():
     sentence = price_assumes(rising, INPUTS, {"implied_annual_return": 0.07})
     assert ("revenue growth rising from 2% to 6% a year "
             "and an operating margin falling from 30% to 20%") in sentence
+
+
+@pytest.mark.parametrize(("first", "last", "words"), [
+    (-1.0, 0.0, "an operating loss of 100% of revenue narrowing to break-even"),
+    (-0.05, 0.12, "an operating margin rising from a loss of 5% of revenue to 12%"),
+    (0.0, 0.10, "an operating margin rising from break-even to 10%"),
+    (0.10, 0.10, "an operating margin of 10%"),
+    (0.20, 0.12, "an operating margin falling from 20% to 12%"),
+    (-0.30, -0.10, "an operating loss of 30% of revenue narrowing to 10% of revenue"),
+    (-0.05, -0.05, "an operating loss of 5% of revenue"),
+    (0.10, 0.0, "an operating margin falling from 10% to break-even"),
+    (0.10, -0.05, "an operating margin falling from 10% to a loss of 5% of revenue"),
+    (0.0, 0.0, "operating results at break-even"),
+])
+def test_a_negative_margin_is_a_loss_and_zero_is_break_even(first, last, words):
+    assert margin_words(first, last) == words
+
+
+def test_the_price_sentence_reads_a_loss_in_words():
+    base = flat().model_copy(update={"revenue_growth": [0.2, 0.18, 0.16, 0.14, 0.12],
+                                     "operating_margin": [-1.0, -0.75, -0.5, -0.25, 0.0]})
+    sentence = price_assumes(base, INPUTS, {"implied_annual_return": 0.07})
+    assert ("(revenue growth slowing from 20% to 12% a year and an operating loss of 100% of revenue "
+            "narrowing to break-even over five years)") in sentence
+    assert "-100%" not in sentence and "0% over" not in sentence
 
 
 def test_sensitivities_are_sorted_by_effect():
