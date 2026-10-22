@@ -70,10 +70,10 @@ A finished report can be translated on demand (Lithuanian by default, and the pa
 the last choice; the same languages as Startup Autopsy), on the page or with
 `python -m translate results/<run> --language Lithuanian`:
 one cheap call per section, and a section whose numbers do not come back with the same value
-and scale stays in English. A glossary per language fixes the terms and is appended to the
-copy (Russian, and a Lithuanian draft that a fluent reader still has to review). The English
-report remains the source
-of truth.
+and scale stays in English. A glossary per language fixes the terms (Russian, and a Lithuanian
+draft that a fluent reader still has to review). report.md and every copy end with a collapsed
+glossary of the terms that report uses, inserted by code and never translated by the model. The
+English report remains the source of truth.
 
 Only companies that file 10-K and 10-Q reports can be analyzed. Foreign companies filing
 Form 20-F or 40-F are not read today, whatever their accounting standard, and neither are

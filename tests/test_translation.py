@@ -6,7 +6,14 @@ from pathlib import Path
 import pytest
 from conftest import fake_lithuanian, fake_russian, text_response
 
-from translate.glossary import GLOSSARY_DIR, GlossaryError, load_glossary, parse_glossary
+from translate.glossary import (
+    GLOSSARY_DIR,
+    GlossaryError,
+    english_section,
+    load_glossary,
+    parse_glossary,
+    split_glossary,
+)
 from translate.languages import LANGUAGES, language_name
 from translate.numbers import missing_numbers, numbers_in
 from translate.translator import (
@@ -146,7 +153,8 @@ def test_the_test_glossary_reads_with_its_title_and_three_fields():
 @pytest.mark.parametrize("path", sorted(GLOSSARY_DIR.glob("*.md")), ids=lambda p: p.name)
 def test_every_glossary_in_the_repository_has_all_three_fields(path):
     glossary = parse_glossary(path.read_text(encoding="utf-8"), str(path))
-    assert language_name(path.stem.replace("_", " ")), f"{path.name} is not an offered language"
+    language = path.stem.replace("_", " ")
+    assert language == "english" or language_name(language), f"{path.name} is not an offered language"
     assert all(e.variants and e.term and e.explanation for e in glossary.entries)
 
 
@@ -171,7 +179,9 @@ def test_terms_match_whole_words_in_any_case_and_only_used_terms_are_listed():
     assert glossary.used_in("FCFA and restatementary") == []  # whole words (or plurals) only
     assert len(glossary.used_in("two restatements")) == 1
     section = glossary.section("The FY2018 figures were restated.")
-    assert section.startswith("## Словарь\n\n- **пересчёт отчётности** (restatement / restated): ")
+    assert section.startswith(
+        "<details><summary>Словарь</summary>\n\n- **пересчёт отчётности** (restatement / restated): ")
+    assert section.endswith("\n\n</details>\n")
     assert "свободный" not in section
     assert glossary.section("Nothing from the glossary.") == ""
 
@@ -330,8 +340,9 @@ def test_glossary_terms_go_only_with_the_sections_that_use_them_and_are_appended
     assert "пересчёт" not in by_heading["## Data quality"]
     assert outcome["text"].rstrip().endswith(
         "- **пересчёт отчётности** (restatement / restated): Компания исправляет ранее опубликованные цифры."
+        + chr(10) * 2 + "</details>"
     )
-    assert "## Словарь" in outcome["text"] and "going concern" not in outcome["text"]
+    assert "<details><summary>Словарь</summary>" in outcome["text"] and "going concern" not in outcome["text"]
 
 
 def test_an_analyst_name_heading_left_in_english_is_a_heading_left_in_english():
@@ -409,7 +420,7 @@ def test_the_translation_is_written_next_to_the_report_and_reused(fake, tmp_path
     assert outcome["path"] == target == translated_path(run_dir, "Russian")
     text = target.read_text(encoding="utf-8")
     assert text.startswith(MACHINE_TRANSLATION_NOTE.format(language="Russian", original="report.md"))
-    assert "## Словарь" in text
+    assert "<details><summary>Словарь</summary>" in text
     assert (run_dir / "report.md").read_text(encoding="utf-8") == REPORT
     calls = len(translation_calls(fake))
     again = translate_report(run_dir, "Russian", TEST_GLOSSARIES)
@@ -518,15 +529,51 @@ def test_the_report_title_keeps_the_product_and_company_name(fake):
     assert outcome["text"].startswith("# Stock Autopsy: Coca Cola Co\n")
 
 
-def test_the_lithuanian_glossary_drafts_the_same_terms_as_the_russian_one():
+def test_the_lithuanian_and_english_glossaries_have_the_same_terms_as_the_russian_one():
     lithuanian, russian = load_glossary("Lithuanian"), load_glossary("Russian")
-    assert lithuanian.title == "Terminų žodynas" and len(lithuanian.entries) == 101
+    assert lithuanian.title == "Terminų žodynas" and len(lithuanian.entries) == len(russian.entries) == 102
     assert [e.variants for e in lithuanian.entries] == [e.variants for e in russian.entries]
     assert all(len(e.explanation) > 20 for e in lithuanian.entries)
     text = (GLOSSARY_DIR / "lithuanian.md").read_text(encoding="utf-8")
     rows = [line for line in text.splitlines() if line.startswith("| ") and not line.startswith("| English")]
-    assert len(rows) == 101 and all("draft 2026-10-22, owner review" in row.split(" | ")[0] for row in rows)
+    assert len(rows) == 102 and all("draft 2026-10-22, owner review" in row.split(" | ")[0] for row in rows)
     by_name = {e.english: e.term for e in lithuanian.entries}
     assert by_name["Forensic Accountant"] == "Apskaitos tyrėjas"
     assert by_name["Valuation Analyst (assumptions)"] == "Vertinimo analitikas (prielaidos)"
     assert by_name["Weak case"] == "Silpni argumentai"
+    english = load_glossary("English")
+    assert english.title == "Glossary"
+    assert [e.variants for e in english.entries] == [e.variants for e in russian.entries]
+
+
+# ---- the glossary at the end of report.md and of its translations (D5) -----------------
+
+
+def test_the_english_glossary_lists_only_the_terms_the_report_uses():
+    block = english_section(REPORT)
+    assert block.startswith("<details><summary>Glossary</summary>")
+    assert "- **free cash flow (FCF)**: " in block and "going concern" not in block
+    english = load_glossary("English")
+    listed = [e for e in english.entries if f"- **{e.term}**: " in block]
+    assert listed and all(e.occurs_in(REPORT) for e in listed)
+    assert split_glossary(REPORT + "\n" + block) == (REPORT, block)
+
+
+def test_the_translation_puts_the_target_glossary_in_place_of_the_english_one(fake):
+    fake.create_handler = translator()
+    source = REPORT + "\n" + english_section(REPORT)
+    outcome = translate_document(source, "Russian", load_glossary("Russian"))
+    sent = [c["messages"][0]["content"] for c in translation_calls(fake)]
+    assert all("<summary>Glossary</summary>" not in text for text in sent)
+    text = outcome["text"]
+    assert "<summary>Glossary</summary>" not in text
+    assert text.rstrip().endswith("</details>") and "<details><summary>Словарь</summary>" in text
+    assert "- **свободный денежный поток (FCF)** (free cash flow / FCF): " in text
+
+
+def test_a_language_without_a_glossary_keeps_the_english_one_and_says_so(fake):
+    fake.create_handler = translator()
+    block = english_section(REPORT)
+    outcome = translate_document(REPORT + "\n" + block, "Russian", None)
+    assert outcome["text"].endswith(
+        "> There is no Russian glossary yet; the English glossary follows.\n\n" + block)

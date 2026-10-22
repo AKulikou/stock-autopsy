@@ -11,7 +11,7 @@ from pathlib import Path
 
 from analysis.runner import VERDICT_KEYS, AutopsyRun
 from reporting.data_quality import quality_lines, statements_to
-from reporting.markdown import money, number, pct
+from reporting.markdown import build_report, money, number, pct
 from reporting.wording import (
     CLAIM_TAGS,
     COMMITTEE_VERDICTS,
@@ -24,8 +24,9 @@ from reporting.wording import (
     humanize,
     path_words,
 )
+from translate.glossary import ENGLISH, load_glossary, split_glossary
 from translate.languages import CODES, LANGUAGES, NATIVE_NAMES
-from translate.translator import kept_sections, translated_path
+from translate.translator import REPORT_FILENAME, kept_sections, translated_path
 from web.runs import Run
 
 CODE_KEYS = {"verdict", "status", "kind", "key", "check"}
@@ -94,7 +95,56 @@ def run_view(run: Run) -> dict:
         "cost_usd": round(run.cost_usd(), 4),
         "duration_s": round(autopsy.duration_s),
     }
-    return _words(view, pack["ticker"], company)
+    # Static text the page shows collapsed (D5): the glossary of report.md and the cost table.
+    return {**_words(view, pack["ticker"], company), "glossary": _glossary(run), "cost": _cost(autopsy)}
+
+
+def _english_report(run: Run) -> str:
+    saved = run.out_dir / REPORT_FILENAME if run.out_dir else None
+    return saved.read_text(encoding="utf-8") if saved and saved.exists() else build_report(run.autopsy)
+
+
+def _glossary(run: Run) -> dict:
+    """The terms report.md uses, with their explanations (the block at its end)."""
+    glossary = load_glossary(ENGLISH)
+    if glossary is None:
+        return {"title": "Glossary", "entries": []}
+    body, _ = split_glossary(_english_report(run))
+    return {"title": glossary.title,
+            "entries": [{"term": e.term, "explanation": e.explanation} for e in glossary.used_in(body)]}
+
+
+def _cost(autopsy: AutopsyRun) -> dict:
+    """The cost table of report.md: one row per call, in words and numbers."""
+    rows = [
+        [call["label"], "done" if call["status"] == "success" else "failed",
+         *(f"{call[name]:,}" for name in ("input_tokens", "cache_creation_input_tokens",
+                                          "cache_read_input_tokens", "output_tokens"))]
+        for call in autopsy.calls if "input_tokens" in call
+    ]
+    return {"columns": ["Call", "Status", "Input", "Cache write", "Cache read", "Output"], "rows": rows}
+
+
+def collapse_cost(translated: str, english: str) -> str:
+    """
+    The translated copy with its cost section as a collapsed block, for the page (the file
+    keeps it as written). The section is found by position: the translation keeps every
+    level-2 heading, so the n-th one is the English report's "## Cost". Unchanged when the
+    headings do not line up (a copy made before the glossary became a block, for example).
+    """
+    english_heads = [line for line in split_glossary(english)[0].splitlines() if line.startswith("## ")]
+    if "## Cost" not in english_heads:
+        return translated
+    lines = translated.splitlines()
+    heads = [i for i, line in enumerate(lines) if line.startswith("## ")]
+    if len(heads) != len(english_heads):
+        return translated
+    start = heads[english_heads.index("## Cost")]
+    end = next((i for i in range(start + 1, len(lines))
+                if lines[i].startswith(("## ", "---", "<details>", "> "))), len(lines))
+    body = "\n".join(lines[start + 1:end]).strip("\n")
+    block = [f"<details><summary>{lines[start][3:].strip()}</summary>", "", body, "", "</details>", ""]
+    return "\n".join(lines[:start] + block + lines[end:]) + ("\n" if translated.endswith("\n") else "")
 
 
 def _price(pack: dict) -> str | None:
@@ -240,6 +290,7 @@ def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
     """A finished translation for the page: the Markdown to show and what happened, in words."""
     path = outcome["path"]
     markdown = path.read_text(encoding="utf-8")
+    english = path.parent / REPORT_FILENAME
     # Read back from the copy itself, so a translation made earlier names them too.
     kept = kept_sections(markdown)
     if outcome["reused"]:
@@ -254,7 +305,9 @@ def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
         "language": language,
         "label": NATIVE_NAMES[language],
         "code": CODES[language],
-        "markdown": markdown,
+        # As in the file, but with the cost section collapsed (D5): the page shows it on demand.
+        "markdown": (collapse_cost(markdown, english.read_text(encoding="utf-8"))
+                     if english.exists() else markdown),
         "note": note,
         "download_label": f"Save report in {language} (.md)",
         "kept_in_english": len(kept),

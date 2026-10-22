@@ -1,8 +1,8 @@
 """
 report.md: the committee's conclusion first, then the valuation math Python
 computed, the evaluator reports as an appendix, data quality, the number check
-and the cost. Nothing here depends on a fixed set of evaluators: sections come
-from the results.
+and the cost, then a collapsed glossary of the terms used. Nothing here depends on a
+fixed set of evaluators: sections come from the results.
 """
 
 from analysis.runner import AutopsyRun
@@ -26,6 +26,7 @@ from reporting.wording import (
     field,
     humanize,
 )
+from translate.glossary import english_section
 
 DISCLAIMER = (
     "Not investment advice. Stock Autopsy is a research-structuring and learning tool: it "
@@ -475,7 +476,8 @@ def cost_section(run: AutopsyRun) -> list[str]:
         if "input_tokens" not in call:
             continue
         tokens = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
-        lines.append(table_row(call["label"], call["status"], *(f"{call[name]:,}" for name in tokens)))
+        status = "done" if call["status"] == "success" else "failed"  # words the glossary defines
+        lines.append(table_row(call["label"], status, *(f"{call[name]:,}" for name in tokens)))
     lines += ["", f"Total: {format_cost(run.total_cost)}, {run.duration_s:.0f} s.", ""]
     return lines
 
@@ -488,4 +490,7 @@ def build_report(run: AutopsyRun) -> str:
     lines += data_quality_section(run) + number_check_section(run) + cost_section(run)
     lines += ["---", "", DISCLAIMER, ""]
     pack = run.pack
-    return humanize("\n".join(lines), pack["ticker"], company_display(pack["company_name"]))
+    report = humanize("\n".join(lines), pack["ticker"], company_display(pack["company_name"]))
+    # The glossary of the terms this report uses, collapsed; static text after the last pass.
+    glossary = english_section(report)
+    return f"{report}\n{glossary}" if glossary else report

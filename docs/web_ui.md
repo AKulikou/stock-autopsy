@@ -78,7 +78,13 @@ the evidence, never "buy" or "sell".
    A glossary per language (`translate/glossaries/<language>.md`; Russian: 101 terms drafted on
    2026-10-17, the analyst names added on 2026-10-21; Lithuanian: the same 101 terms drafted on
    2026-10-22; both awaiting review, Lithuanian by a fluent reader) gives the translator its
-   terms and is appended as a final section with the terms the report uses. The English
+   terms and is appended as a final section with the terms the report uses. Since 2026-10-22 (D5)
+   report.md ends with the English glossary (`translate/glossaries/english.md`) as a collapsed
+   `<details>` block of the terms it uses; the translator takes it off and code puts the target
+   language's block in its place (the English block and a one-line note when the language has no
+   file). The page shows the glossary and the cost table collapsed, in the English view and in
+   the translation tab; the files keep the cost table as written. The cost table says "done" or
+   "failed", words the glossaries define, instead of a status code. The English
    report stays the source of truth; report.json and the page cards stay English (variant B,
    translating the cards, is not planned). Reports of earlier runs:
    `python -m translate results/<run> --language Lithuanian` (the default).

@@ -361,3 +361,9 @@ select {
 .kv td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .detail-label { font-weight: 600; margin: var(--space-3) 0 var(--space-1); }
 .disclaimer { font-weight: 600; }
+/* Collapsed blocks inside rendered Markdown (D5): the cost table, the glossary, claims. */
+.markdown details { margin: var(--space-3) 0; padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.markdown details > summary { cursor: pointer; font-weight: 600; }
+.markdown details[open] > summary { margin-bottom: var(--space-2); }
+.collapsed-blocks { margin-top: var(--space-4); max-width: none; }

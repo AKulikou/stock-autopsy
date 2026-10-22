@@ -8,6 +8,20 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — reports end with a collapsed glossary; the translator no longer sees it (D5)
+
+What changed (no analyst, committee or translation prompt text changed): report.md ends with a
+collapsed glossary of the terms it uses (translate/glossaries/english.md, the same 101 terms plus
+"done / failed"). A translation takes that block off before sending sections to the model and
+appends the target language's block (or keeps the English one with a one-line note when the
+language has no glossary file). The cost table says "done" / "failed" instead of "success" /
+"error"; the Russian and Lithuanian glossaries define these words, so the translator gets them
+as terms for the cost section. The page shows the glossary and the cost table collapsed.
+
+Expected effect: the copy's status column comes back translated (it stayed "success" in the
+NVDA copy of 2026-10-22); the glossary is never paid for or altered by the model. Checked with
+the fake client only.
+
 ## 2026-10-22 — translation: Lithuanian by default, its number formats, a draft Lithuanian glossary (D3)
 
 What changed: Lithuanian is the default language on the page and in `python -m translate`; the

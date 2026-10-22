@@ -136,6 +136,7 @@ before it is relied on. The numbered headings group the rows for review and are 
 | number check (draft 2026-10-22, owner review) | skaičių patikra | Kodas (ne modelis) sutikrina teiginių skaičius su duomenimis ir perskaičiuoja formules. Sutapimas įrodo atitiktį duomenų paketui, o ne pačių duomenų teisingumą. |
 | data pack (draft 2026-10-22, owner review) | duomenų paketas | Visi skaičiai apie bendrovę, kuriuos Python surinko iš SEC ir Yahoo vienai datai. Visi analitikai gauna tą patį paketą. |
 | red flag / severity (draft 2026-10-22, owner review) | raudona vėliavėlė / rimtumas (1–5) | Įtartina vieta ataskaitose ar bendrovės valdyme. Kiekviena vėliavėlė turi ir nekaltą paaiškinimą, o rimtumas 5 – aukščiausias. |
+| done / failed (call status in the cost table; draft 2026-10-22, owner review) | atlikta / nepavyko | Ar modelio iškvietimas baigėsi tinkamu atsakymu. Nepavykęs iškvietimas irgi nurodomas su kaina: atmestas atsakymas taip pat apmokamas. |
 
 ## Analitikai ir komitetas
 

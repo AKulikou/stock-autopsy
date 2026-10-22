@@ -17,6 +17,7 @@ from reporting.json_export import build_json
 from reporting.markdown import DISCLAIMER, build_report
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
 from synthesis.committee import SynthesisResult
+from translate.glossary import load_glossary, split_glossary
 from valuation.dcf import run_valuation
 
 
@@ -371,3 +372,17 @@ def test_every_report_table_has_a_header_with_words(fake_claude, raw_ko, ko_pack
     headers = [lines[i - 1] for i, line in enumerate(lines) if re.fullmatch(r"\|(?:-+\|)+", line)]
     assert headers and all(re.search(r"\w", cell) for h in headers for cell in h.strip("|").split("|"))
     assert "| Detail | Value |" in lines
+
+
+def test_report_md_ends_with_a_collapsed_glossary_of_the_terms_it_uses(fake_claude, raw_ko, ko_pack):
+    run, _ = run_with(fake_claude, raw_ko, ko_pack)
+    report = build_report(run)
+    body, block = split_glossary(report)
+    assert block.startswith("<details><summary>Glossary</summary>") and report.rstrip().endswith("</details>")
+    english = load_glossary("English")
+    listed = [e for e in english.entries if f"- **{e.term}**: " in block]
+    assert listed and all(e.occurs_in(body) for e in listed)
+    assert [e for e in english.entries if e.occurs_in(body)] == listed  # every used term, nothing else
+    # The cost table says "done", a word the glossary defines, not the status code.
+    assert "| done |" in body and "| success |" not in body
+    assert any(e.term == "done / failed" for e in listed)

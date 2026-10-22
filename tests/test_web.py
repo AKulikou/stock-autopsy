@@ -18,7 +18,7 @@ from web import app as app_module
 from web import resolve as resolve_module
 from web.app import create_app
 from web.resolve import Suggestion, Suggestions
-from web.view import file_name_part
+from web.view import collapse_cost, file_name_part
 
 BASE_URL = "http://127.0.0.1:8001"
 TICKER_MAP = {
@@ -93,7 +93,8 @@ def shown_texts(value, key=None):
 
 def test_the_page_and_its_scripts_are_served(client):
     assert "<title>Stock Autopsy</title>" in client.get("/").text
-    for asset in ("app.js", "events.js", "cards.js", "lookup.js", "prefs.js", "reporttabs.js", "markdown.js",
+    for asset in ("app.js", "events.js", "cards.js", "collapsed.js", "lookup.js", "prefs.js", "reporttabs.js",
+                  "markdown.js",
                   "tokens.css", "app.css"):
         assert client.get(f"/static/{asset}").status_code == 200, asset
 
@@ -187,7 +188,11 @@ def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client,
     assert done["markdown"].startswith("> Machine translation into Russian") and done["kept_in_english"] == 0
     calls = len(fake.requests)
     file = client.get(f"/api/runs/{run_id}/translations/ru")
-    assert file.status_code == 200 and file.text.replace("\r\n", "\n") == done["markdown"]
+    saved = file.text.replace("\r\n", "\n")
+    # The file keeps the cost section as written; the page gets it collapsed (D5).
+    english = client.get(f"/api/runs/{run_id}/files/report").text.replace("\r\n", "\n")
+    assert file.status_code == 200 and collapse_cost(saved, english) == done["markdown"] != saved
+    assert "<details><summary>Словарь</summary>" in saved and "<summary>Glossary</summary>" not in saved
     # The result now lists the copy, so its tab comes back when the result is opened again.
     listed = client.get(f"/api/runs/{run_id}/result").json()["translations"]
     assert listed == [{"language": "Russian", "label": "Русский", "code": "ru"}]
@@ -346,3 +351,26 @@ def test_a_run_from_a_related_card_says_how_the_company_was_found(client, fake):
     plain = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
     follow(client, plain)
     assert client.get(f"/api/runs/{plain}/result").json()["company_heading"] == "Coca Cola Co"
+
+
+def test_the_result_carries_the_glossary_and_the_cost_table_for_collapsed_blocks(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    follow(client, run_id)
+    view = client.get(f"/api/runs/{run_id}/result").json()
+    report = client.get(f"/api/runs/{run_id}/files/report").text
+    assert view["glossary"]["title"] == "Glossary" and view["glossary"]["entries"]
+    assert all(f"- **{e['term']}**: {e['explanation']}" in report for e in view["glossary"]["entries"])
+    assert view["cost"]["columns"][:2] == ["Call", "Status"]
+    assert {row[1] for row in view["cost"]["rows"]} == {"done"} and len(view["cost"]["rows"]) == 6
+
+
+def test_the_cost_section_of_a_translation_is_collapsed_for_the_page():
+    english = ("# T\n\n## Verdict\n\ntext\n\n## Cost\n\n| Call | Status |\n|---|---|\n| A | done |\n\n---\n\n"
+               "Disclaimer\n")
+    translated = "> Note\n\n# T\n\n## Вердикт\n\nтекст\n\n## Стоимость\n\n| Вызов | Статус |\n|---|---|\n" \
+                 "| A | выполнено |\n\n---\n\nОговорка\n"
+    collapsed = collapse_cost(translated, english)
+    assert "<details><summary>Стоимость</summary>\n\n| Вызов | Статус |" in collapsed
+    assert "| A | выполнено |\n\n</details>\n\n---\n\nОговорка" in collapsed and "## Вердикт" in collapsed
+    assert collapse_cost(translated.replace("## Вердикт", "Вердикт"), english) == translated.replace(
+        "## Вердикт", "Вердикт")  # headings do not line up: left as it is

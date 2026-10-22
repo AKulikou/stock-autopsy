@@ -25,7 +25,7 @@ from pathlib import Path
 from config import MAX_TOKENS, TRANSLATION_EFFORT, TRANSLATION_MODEL, TRANSLATION_RETRY_EFFORT
 from core.claude_client import get_client
 from reporting.wording import EVALUATORS
-from translate.glossary import Glossary, load_glossary
+from translate.glossary import Glossary, load_glossary, split_glossary
 from translate.languages import CODES
 from translate.numbers import missing_numbers
 
@@ -108,6 +108,9 @@ NUMBERS_CHANGED = "numbers changed"
 # The analysts' names, listed for the translator; a glossary gives each one a
 # translated name (owner's review of the first Russian copies, 2026-10-21).
 ANALYST_NAMES = tuple(EVALUATORS.values())
+
+# Put above the English glossary block in a copy whose language has no glossary file yet.
+NO_GLOSSARY_NOTE = "> There is no {language} glossary yet; the English glossary follows.\n\n"
 
 # Put above every translated copy, in English, so a reader of any language sees
 # which file is the source of truth.
@@ -373,7 +376,8 @@ def _log_rejected(heading: str, problem: str, text: str) -> None:
 def translate_document(markdown: str, language: str, glossary: Glossary | None = None) -> dict:
     """
     Translate a report section by section, put it back together and append the
-    glossary section. Never raises.
+    target language's glossary block in place of the English one (the English block
+    and a note when the language has no glossary file). Never raises.
 
     Returns the fields of translate_markdown with tokens summed over every call, plus
     "calls", "untranslated_sections" (kept in English after a retry) and
@@ -381,6 +385,8 @@ def translate_document(markdown: str, language: str, glossary: Glossary | None =
     fails the whole document: a translation with holes is not offered.
     """
     started = time.monotonic()
+    # The English glossary is not sent to the model: code puts the target language's in its place.
+    markdown, english_glossary = split_glossary(markdown)
     sections = split_sections(markdown)
     with ThreadPoolExecutor(max_workers=max(1, min(SECTION_WORKERS, len(sections)))) as pool:
         outcomes = list(pool.map(lambda section: _translate_section(section, language, glossary), sections))
@@ -398,7 +404,10 @@ def translate_document(markdown: str, language: str, glossary: Glossary | None =
              for section, o in zip(sections, outcomes, strict=True)]
     texts[0] = report_title(sections[0], texts[0])
     text = "\n\n".join(t.strip() for t in texts) + "\n"
-    appendix = glossary.section(markdown) if glossary else ""
+    if glossary:
+        appendix = glossary.section(markdown)
+    else:
+        appendix = NO_GLOSSARY_NOTE.format(language=language) + english_glossary if english_glossary else ""
     if appendix:
         text += "\n" + appendix
     return {
