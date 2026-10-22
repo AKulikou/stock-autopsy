@@ -160,8 +160,19 @@ def path_words(path: str) -> str:
     return " › ".join(words)
 
 
+# EDGAR adds a marker after a slash at the end of many names: a state or country code ("/DE/",
+# "/MD", "/ CAN"), "/NEW", "/ADR", a place ("/Cayman Islands/"). Measured on the SEC list of
+# 2026-10-22: 586 of 10,443 titles; a slash inside a name ("A/S", "M/I", "I/O", "Quad/Graphics")
+# is followed by one letter or more name and is not touched. The data pack keeps the full name.
+_EDGAR_SUFFIX = re.compile(r"\s*/\s*(?:[A-Za-z]{2,6}|[A-Z][a-z]+(?:\s[A-Z][a-z]+)*)?\s*/?\s*$")
+
+
 def company_display(name: str) -> str:
-    """SEC names are often in capitals (COCA COLA CO): show them in title case."""
+    """
+    A company name as a person reads it: the EDGAR suffix removed ("COSTCO WHOLESALE CORP /NEW"
+    -> "Costco Wholesale Corp"), names in capitals in title case.
+    """
+    name = _EDGAR_SUFFIX.sub("", name).strip() or name
     return name.title() if name.isupper() else name
 
 

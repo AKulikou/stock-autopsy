@@ -42,6 +42,7 @@ from core.token_summary import call_cost, format_cost
 from datalayer.cache import DailyCache
 from datalayer.filings import unsupported_filer
 from datalayer.sec import SecClient, format_cik, normalize_ticker
+from reporting.wording import company_display
 from translate.languages import DEFAULT_LANGUAGE, language_name, languages_for_page
 from translate.translator import translate_report, translated_path
 from web.resolve import FilerCheck, resolve
@@ -176,7 +177,8 @@ def create_app(
         if run is None:
             return {"run_id": None, "elapsed_s": None, "ticker": None, "name": None}
         return {"run_id": run.id, "elapsed_s": round((datetime.now() - run.started_at).total_seconds()),
-                "ticker": run.ticker, "name": run.name or run.company, "related_to": run.related_to}
+                "ticker": run.ticker, "related_to": run.related_to,
+                "name": run.name or (company_display(run.company) if run.company else None)}
 
     @app.get("/api/runs/recent")
     def recent_runs():

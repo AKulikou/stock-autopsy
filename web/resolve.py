@@ -27,6 +27,7 @@ from core.claude_client import get_client
 from core.structured_call import request_structured
 from core.token_summary import call_cost
 from datalayer.sec import normalize_ticker
+from reporting.wording import company_display
 
 logger = logging.getLogger(__name__)
 
@@ -115,10 +116,6 @@ def same_company(model_name: str, sec_title: str) -> bool:
     return shorter <= longer
 
 
-def _title_case(name: str) -> str:
-    return name.title() if name.isupper() else name
-
-
 def _by_ticker(ticker_map: dict) -> dict[str, dict]:
     return {str(e.get("ticker", "")).upper(): e for e in ticker_map.values()}
 
@@ -157,7 +154,7 @@ def resolve(query: str, ticker_map: dict, filer_check: FilerCheck = lambda ticke
 
     def candidate(entry: dict, suggestion: Suggestion | None) -> dict:
         related = suggestion is not None and suggestion.match_type == "related"
-        return {"ticker": entry["ticker"], "name": _title_case(entry["title"]),
+        return {"ticker": entry["ticker"], "name": company_display(entry["title"]),
                 "note": suggestion.note if suggestion else None,
                 "unsupported": filer_check(entry["ticker"], int(entry["cik_str"])),
                 "match_type": "related" if related else "exact",

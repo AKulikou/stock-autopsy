@@ -193,3 +193,10 @@ def test_a_typed_ticker_says_which_company_holds_it_now(lookup):
     assert card["name"] == "Banzai International, Inc."
     assert card["note"] == "The ticker PARA belongs to Banzai International, Inc. in the SEC list."
     assert fake.requests == []  # no model call for a ticker
+
+
+def test_lookup_cards_show_the_name_without_the_edgar_suffix(lookup):
+    lookup(answer("unused", []))
+    costco = {"0": {"cik_str": 909832, "ticker": "COST", "title": "COSTCO WHOLESALE CORP /NEW"}}
+    (card,) = resolve("COST", costco, filer_check)["candidates"]
+    assert card["name"] == "Costco Wholesale Corp"

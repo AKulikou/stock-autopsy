@@ -114,3 +114,24 @@ def test_urls_file_names_and_hashes_are_left_as_they_are():
 def test_a_pack_path_through_valuation_does_not_name_the_analyst():
     assert path_words("derived.valuation.pe") == "calculated › valuation › P/E"
     assert path_words("valuation_math.value_per_share.base") == "valuation math › value per share › base"
+
+
+@pytest.mark.parametrize(("sec_title", "shown"), [
+    ("COSTCO WHOLESALE CORP /NEW", "Costco Wholesale Corp"),
+    ("APPLE INC", "Apple Inc"),
+    ("8X8 INC /DE/", "8X8 Inc"),
+    ("APPLIED MATERIALS INC /DE", "Applied Materials Inc"),
+    ("AIB Group plc/ADR", "AIB Group plc"),
+    ("FAIRFAX FINANCIAL HOLDINGS LTD/ CAN", "Fairfax Financial Holdings Ltd"),
+    ("Troops, Inc. /Cayman Islands/", "Troops, Inc."),
+    ("Core Scientific, Inc./tx", "Core Scientific, Inc."),
+    ("AMETEK INC/", "Ametek Inc"),
+    # A slash that is part of the name stays (real titles in the SEC list of 2026-10-22).
+    ("VESTAS WIND SYSTEMS A/S", "Vestas Wind Systems A/S"),
+    ("M/I HOMES, INC.", "M/I Homes, Inc."),
+    ("DATA I/O CORP", "Data I/O Corp"),
+    ("Quad/Graphics, Inc.", "Quad/Graphics, Inc."),
+    ("CULLEN/FROST BANKERS, INC.", "Cullen/Frost Bankers, Inc."),
+])
+def test_company_names_lose_the_edgar_suffix_but_keep_a_slash_in_the_name(sec_title, shown):
+    assert company_display(sec_title) == shown
