@@ -21,8 +21,8 @@ FINANCIAL_SIC = (
 )
 NOT_MEANINGFUL = "not meaningful for a bank or other financial company"
 FINANCIAL_NOTE = (
-    "Bank or financial company: EV, DCF and cash-flow multiples do not fit how banks report; "
-    "the analysis will say so."
+    "Financial company (bank, insurer or broker): EV, DCF and cash-flow multiples do not fit how "
+    "these companies report; the analysis will say so."
 )
 
 

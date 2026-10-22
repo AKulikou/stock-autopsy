@@ -8,6 +8,16 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — wording: the financial company note names banks, insurers and brokers
+
+The note in the pack of a financial company (data_quality.period_notes and financial_company.note,
+so the analysts read it) now says "Financial company (bank, insurer or broker): EV, DCF and
+cash-flow multiples do not fit how these companies report; the analysis will say so." instead of
+"Bank or financial company: ... how banks report ...": the flag covers insurers and brokers too.
+The same sentence stands on the lookup card, in the CLI and in the data quality list. Only packs
+of companies with a financial SIC code change; no golden case is one, so no eval sees it; no paid
+call was made.
+
 ## 2026-10-22 — translation: an English source word written with Cyrillic letters is put back by code
 
 Why a data quality section stayed in English in a Russian copy of 2026-10-22: not by design and

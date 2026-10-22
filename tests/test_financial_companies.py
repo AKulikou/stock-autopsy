@@ -7,6 +7,7 @@ from xbrl_samples import FY2024, FY2025, annual, base_gaap, instant, raw, submis
 
 from datalayer.pack import build_pack
 from datalayer.sector import FINANCIAL_NOTE, NOT_MEANINGFUL, financial_kind
+from reporting.data_quality import quality_lines
 from valuation.dcf import ScenarioAssumptions, run_valuation
 
 
@@ -44,6 +45,10 @@ def test_a_bank_gets_its_net_revenues_and_the_flag():
     kind = "broker-dealer or investment adviser"
     assert pack["financial_company"] == {"kind": kind, "note": FINANCIAL_NOTE}
     assert FINANCIAL_NOTE in pack["data_quality"]["period_notes"]
+    # One sentence on the card, in the command line and in the data quality list.
+    assert FINANCIAL_NOTE == ("Financial company (bank, insurer or broker): EV, DCF and cash-flow multiples "
+                              "do not fit how these companies report; the analysis will say so.")
+    assert FINANCIAL_NOTE in quality_lines(pack)
 
 
 def test_the_same_tag_is_not_read_for_a_company_that_is_not_financial():

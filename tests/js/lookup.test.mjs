@@ -48,7 +48,8 @@ test("share classes of one company are both exact matches, each with its class",
 });
 
 test("a bank keeps its Analyze button and gets a calm note", () => {
-  const note = "Bank or financial company: EV, DCF and cash-flow multiples do not fit how banks report; the analysis will say so.";
+  const note = "Financial company (bank, insurer or broker): EV, DCF and cash-flow multiples do not fit how "
+    + "these companies report; the analysis will say so.";
   const card = candidateCard({ ...exact, name: "Goldman Sachs Group Inc", financial_note: note });
   assert.equal(card.canRun, true);
   assert.equal(card.financialNote, note);
