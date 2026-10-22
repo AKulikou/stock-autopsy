@@ -5,6 +5,7 @@ not meaningful. Nothing changes for any other company: the golden packs stay byt
 import pytest
 from xbrl_samples import FY2024, FY2025, annual, base_gaap, instant, raw, submissions
 
+from analysis.runner import dcf_event
 from datalayer.pack import build_pack
 from datalayer.sector import FINANCIAL_NOTE, NOT_MEANINGFUL, financial_kind
 from reporting.data_quality import quality_lines
@@ -72,6 +73,10 @@ def test_the_dcf_is_not_computed_for_a_bank():
                                discount_rate=0.09, terminal_growth=0.025)
     math = run_valuation({"bear": base, "base": base, "bull": base}, pack)
     assert math["computed"] is False and any(NOT_MEANINGFUL in r for r in math["reasons"])
+    # Every place that shows it puts "DCF not computed:" in front: the word DCF once.
+    stage = dcf_event(math, assumptions_ok=True).text
+    assert stage.startswith(f"DCF not computed: {NOT_MEANINGFUL}: debt is the raw material")
+    assert stage.count("DCF") == 1
 
 
 def test_the_report_says_not_meaningful_for_a_bank_instead_of_unknown():

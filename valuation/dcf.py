@@ -302,7 +302,7 @@ def run_valuation(scenarios: dict[str, ScenarioAssumptions], pack: dict) -> dict
     """Everything the valuation step B and the report need; None values carry a reason."""
     if pack.get("financial_company"):
         return {"computed": False, "reasons": [
-            f"DCF {NOT_MEANINGFUL}: debt is the raw material of the business and its cash flows are "
+            f"{NOT_MEANINGFUL}: debt is the raw material of the business and its cash flows are "
             "not free cash flows in the usual sense"]}
     inputs, notes = inputs_from_pack(pack)
     if inputs is None:

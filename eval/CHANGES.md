@@ -16,7 +16,10 @@ cash-flow multiples do not fit how these companies report; the analysis will say
 "Bank or financial company: ... how banks report ...": the flag covers insurers and brokers too.
 The same sentence stands on the lookup card, in the CLI and in the data quality list. Only packs
 of companies with a financial SIC code change; no golden case is one, so no eval sees it; no paid
-call was made.
+call was made. The reason the DCF is not computed for such a company (valuation_math.reasons,
+read by valuation step B) no longer starts with "DCF", since every place that shows it puts
+"DCF not computed:" in front: "DCF not computed: not meaningful for a bank or other financial
+company: debt is the raw material of the business ...".
 
 ## 2026-10-22 — translation: an English source word written with Cyrillic letters is put back by code
 
