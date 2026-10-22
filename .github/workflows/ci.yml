@@ -18,6 +18,8 @@ jobs:
       REQUIRE_NODE_TESTS: "1"
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # full history: the eval regrade test reads earlier versions of a golden pack
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
