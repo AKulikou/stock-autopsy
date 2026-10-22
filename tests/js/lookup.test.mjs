@@ -5,29 +5,38 @@ import { test } from "node:test";
 import { candidateCard, lookupNotice, orderCandidates, shortReason } from "../../web/static/lookup.js";
 
 const FOREIGN = "Files Form 20-F (a foreign company): this version reads 10-K and 10-Q reports only.";
-const exact = { name: "Coca Cola Co", match_type: "exact", relation: null, share_class: null, unsupported: null };
-const related = { name: "Microsoft Corp", match_type: "related", relation: "major investor in OpenAI",
+const exact = { name: "Coca Cola Co", ticker: "KO", match_type: "exact", relation: null, share_class: null,
+  unsupported: null };
+const related = { name: "Microsoft Corp", ticker: "MSFT", match_type: "related", relation: "major investor in OpenAI",
   share_class: null, unsupported: null };
-const relatedForeign = { name: "Stellantis N.V.", match_type: "related", relation: "parent of Chrysler",
+const relatedForeign = { name: "Stellantis N.V.", ticker: "STLA", match_type: "related", relation: "parent of Chrysler",
   share_class: null, unsupported: FOREIGN };
 
 test("an exact match is green with a check mark and can be analyzed", () => {
-  assert.deepEqual(candidateCard(exact), { kind: "exact", icon: "✓", label: "Exact match", canRun: true, financialNote: null });
+  assert.deepEqual(candidateCard(exact), { kind: "exact", icon: "✓", label: "Exact match", title: "Coca Cola Co (KO)",
+    canRun: true, financialNote: null });
 });
 
 test("a related company says how it is related", () => {
   assert.deepEqual(candidateCard(related),
-    { kind: "related", icon: "↔", label: "Related: major investor in OpenAI", canRun: true,
-      financialNote: null });
+    { kind: "related", icon: "↔", label: "Related: major investor in OpenAI", title: "Microsoft Corp (MSFT)",
+      canRun: true, financialNote: null });
 });
 
 test("a company that cannot be analyzed is grey and keeps its label and the short reason", () => {
   assert.deepEqual(candidateCard(relatedForeign), {
-    kind: "unavailable", icon: "↔", label: "Related: parent of Chrysler · Files Form 20-F", canRun: false,
-    financialNote: null,
+    kind: "unavailable", icon: "↔", label: "Related: parent of Chrysler · Files Form 20-F",
+    title: "Stellantis N.V. (STLA)", canRun: false, financialNote: null,
   });
   assert.equal(candidateCard({ ...exact, unsupported: FOREIGN }).label, "Exact match · Files Form 20-F");
   assert.equal(shortReason("A fund (files fund reports such as N-CSR, not a 10-K): no data."), "A fund");
+});
+
+test("share classes and same-name companies are told apart by the ticker in the title", () => {
+  const berkshire = { ...exact, name: "Berkshire Hathaway Inc" };
+  assert.equal(candidateCard({ ...berkshire, ticker: "BRK-B" }).title, "Berkshire Hathaway Inc (BRK-B)");
+  assert.equal(candidateCard({ ...berkshire, ticker: "BRK-A" }).title, "Berkshire Hathaway Inc (BRK-A)");
+  assert.equal(candidateCard({ ...exact, ticker: undefined }).title, "Coca Cola Co"); // never "(undefined)"
 });
 
 test("share classes of one company are both exact matches, each with its class", () => {

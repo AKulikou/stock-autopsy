@@ -77,7 +77,7 @@ function candidateButton(c, relatedTo) {
   const label = el("span", "match-label");
   label.append(el("span", "match-icon", look.icon), document.createTextNode(` ${look.label}`));
   label.firstChild.setAttribute("aria-hidden", "true");
-  button.append(label, el("strong", null, c.name));
+  button.append(label, el("strong", null, look.title));
   if (c.note && c.note !== c.relation) button.append(el("span", "muted", c.note));
   if (look.financialNote) button.append(el("span", "sector-note", look.financialNote));
   if (!look.canRun) {

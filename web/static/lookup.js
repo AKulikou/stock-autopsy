@@ -10,16 +10,19 @@ export function shortReason(reason) {
 
 // The look of one candidate: kind (exact / related / unavailable), icon, label, and whether it can run.
 export function candidateCard(c) {
+  // The ticker after the name tells share classes and same-name companies apart.
+  const title = c.ticker ? `${c.name} (${c.ticker})` : c.name;
   const related = c.match_type === "related";
   const icon = related ? "↔" : "✓";
   let label = related ? `Related: ${c.relation || "a related company"}` : "Exact match";
   if (c.share_class) label += ` · ${c.share_class}`;
   if (c.unsupported) {
-    return { kind: "unavailable", icon, label: `${label} · ${shortReason(c.unsupported)}`, canRun: false,
+    return { kind: "unavailable", icon, label: `${label} · ${shortReason(c.unsupported)}`, title, canRun: false,
       financialNote: null };
   }
   // A bank or other financial company: a calm note; the run stays possible, the analysis can still be useful.
-  return { kind: related ? "related" : "exact", icon, label, canRun: true, financialNote: c.financial_note || null };
+  return { kind: related ? "related" : "exact", icon, label, title, canRun: true,
+    financialNote: c.financial_note || null };
 }
 
 // Exact matches first, then related companies, then those that cannot be analyzed.
