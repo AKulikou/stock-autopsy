@@ -8,6 +8,24 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — pre-release P5 fixes: lookup names the company, short banner; translation rejects mixed alphabets
+
+Found on the real page (lookups 2026-10-22, about 0.0002 USD each):
+- "paramount": the model offered PSKY (Paramount Skydance) and PARA, "former Paramount Global
+  ticker"; the SEC list now gives PARA to Banzai International, Inc., and the page showed that
+  company as a green exact match. The lookup schema now asks for each candidate's own
+  company_name, and code drops a candidate whose SEC title does not name the same company
+  (every word of the shorter name in the longer, so "Skydance Corp" fits "Paramount Skydance
+  Corporation" and "General Mills" does not fit "General Motors"); the log says why.
+- "chrysler": the model's reason ran to sixteen words ("is a subsidiary of Stellantis, which is
+  listed in the US and not separately by Chrysler"); the prompt asks for at most ten words and
+  code replaces a reason over twelve words with "is not listed in the US on its own".
+Found in the real translations of the Microsoft report: words mixing two alphabets
+("Vердикt", "Komitето", "krītа" in Lithuanian, "ИT", "капex" in Russian; older copies have
+"заkладывает", "бottлеров", "típично"). Such a word now sends the section back once with the
+stricter note. Checked with the fake client only; the lookup change needs one live lookup of
+"paramount" and "chrysler" (under 0.001 USD) to confirm.
+
 ## 2026-10-22 — pre-release P1: the shared output schema is refused by the API (no change in behaviour)
 
 The paid check of `SHARED_OUTPUT_SCHEMA=on` on NVDA (the same pack as the morning run,

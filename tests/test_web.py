@@ -61,9 +61,10 @@ def client(tmp_path):
 def fake(fake_claude, ko_pack, monkeypatch):
     suggestions = Suggestions(query_name="KFC", is_private_or_not_listed=False, not_listed_reason=None,
                               candidates=[
-        Suggestion(ticker="YUM", match_type="exact", relation=None, share_class=None,
-                   note="KFC belongs to Yum! Brands."),
-        Suggestion(ticker=None, match_type="related", relation="separate company in China", share_class=None,
+        Suggestion(ticker="YUM", company_name="Yum! Brands, Inc.", match_type="exact", relation=None,
+                   share_class=None, note="KFC belongs to Yum! Brands."),
+        Suggestion(ticker=None, company_name="Yum China Holdings", match_type="related",
+                   relation="separate company in China", share_class=None,
                    note="KFC in China is Yum China, a separate company."),
     ])
     installed = fake_claude(handler_for(ko_pack, {Suggestions: lambda pack: suggestions}))

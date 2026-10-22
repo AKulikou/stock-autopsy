@@ -6,7 +6,7 @@ import pytest
 from conftest import response
 
 from web import resolve as resolve_module
-from web.resolve import LOOKUP_FAILED, NOT_FOUND, Suggestion, Suggestions, resolve
+from web.resolve import LOOKUP_FAILED, NOT_FOUND, Suggestion, Suggestions, resolve, same_company
 
 TICKER_MAP = {
     "0": {"cik_str": 21344, "ticker": "KO", "title": "COCA COLA CO"},
@@ -15,6 +15,8 @@ TICKER_MAP = {
     "3": {"cik_str": 1605484, "ticker": "STLA", "title": "Stellantis N.V."},
     "4": {"cik_str": 1652044, "ticker": "GOOGL", "title": "Alphabet Inc."},
     "5": {"cik_str": 1652044, "ticker": "GOOG", "title": "Alphabet Inc."},
+    "6": {"cik_str": 1826011, "ticker": "PARA", "title": "Banzai International, Inc."},
+    "7": {"cik_str": 2041610, "ticker": "PSKY", "title": "Skydance Corp"},
 }
 
 
@@ -22,12 +24,20 @@ def filer_check(ticker, cik):
     return "Files Form 20-F (a foreign company): no financial data." if ticker == "STLA" else None
 
 
-def exact(ticker, note="The company itself.", share_class=None):
-    return Suggestion(ticker=ticker, match_type="exact", relation=None, share_class=share_class, note=note)
+def listed_name(ticker):
+    """The company name the model gives: the SEC title here, unless a test says otherwise."""
+    entry = next((e for e in TICKER_MAP.values() if e["ticker"] == ticker.upper()), None)
+    return entry["title"] if entry else "Unknown Company"
+
+
+def exact(ticker, note="The company itself.", share_class=None, company_name=None):
+    return Suggestion(ticker=ticker, company_name=company_name or listed_name(ticker), match_type="exact",
+                      relation=None, share_class=share_class, note=note)
 
 
 def related(ticker, relation):
-    return Suggestion(ticker=ticker, match_type="related", relation=relation, share_class=None,
+    return Suggestion(ticker=ticker, company_name=listed_name(ticker), match_type="related",
+                      relation=relation, share_class=None,
                       note=f"{relation[0].upper()}{relation[1:]}.")
 
 
@@ -136,3 +146,40 @@ def test_a_duplicate_candidate_is_dropped_and_logged(lookup, caplog):
         found = resolve("microsoft", TICKER_MAP, filer_check)
     assert [c["ticker"] for c in found["candidates"]] == ["MSFT"]
     assert "msft exact: dropped, duplicate" in caplog.text
+
+
+def test_a_ticker_the_sec_list_gives_to_another_company_is_dropped(lookup, caplog):
+    # Real lookup of "paramount", 2026-10-22: PARA was Paramount Global's ticker; the SEC list now
+    # gives it to Banzai International, and the page showed that company as an exact match.
+    lookup(answer("Paramount", [exact("PSKY", company_name="Paramount Skydance Corporation"),
+                                exact("PARA", company_name="Paramount Global")]))
+    with caplog.at_level(logging.INFO, logger="web.resolve"):
+        found = resolve("paramount", TICKER_MAP, filer_check)
+    assert [c["ticker"] for c in found["candidates"]] == ["PSKY"]
+    assert "PARA exact: dropped, the SEC list gives this ticker to Banzai International, Inc." in caplog.text
+
+
+@pytest.mark.parametrize(("model_name", "sec_title"), [
+    ("Microsoft Corporation", "MICROSOFT CORP"), ("The Coca-Cola Company", "COCA COLA CO"),
+    ("Amazon.com, Inc.", "AMAZON COM INC"), ("Yum! Brands", "YUM BRANDS INC"),
+    ("Paramount Skydance Corporation", "Skydance Corp"), ("3M Company", "3M CO"),
+])
+def test_the_same_company_under_two_spellings_is_kept(model_name, sec_title):
+    assert same_company(model_name, sec_title)
+
+
+def test_different_companies_are_told_apart():
+    assert not same_company("Paramount Global", "Banzai International, Inc.")
+    assert not same_company("General Motors Company", "General Mills, Inc.")  # one shared word is not enough
+    assert same_company("General Motors Company", "GENERAL MOTORS CO")
+    assert same_company("Bank of America Corporation", "BANK OF AMERICA CORP /DE/")
+    assert same_company("Alphabet Inc. (Google)", "Alphabet Inc.")
+
+
+def test_a_long_not_listed_reason_gives_a_short_banner(lookup):
+    # Real lookup of "chrysler", 2026-10-22: the model's reason ran to sixteen words.
+    long_reason = "is a subsidiary of Stellantis, which is listed in the US and not separately by Chrysler"
+    lookup(answer("Chrysler", [related("STLA", "parent of Chrysler")], reason=long_reason))
+    found = resolve("chrysler", TICKER_MAP, filer_check)
+    assert found["banner"] == ("Chrysler is not listed in the US on its own and files no reports with "
+                               "the SEC. Related public companies:")
