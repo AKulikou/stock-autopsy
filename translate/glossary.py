@@ -47,11 +47,20 @@ class Entry:
         return " / ".join(self.variants)
 
     def occurs_in(self, text: str) -> bool:
-        """Any variant as a whole word, ignoring case; an English plural counts ("restatements")."""
+        """
+        Any variant as a whole word, ignoring case; an English plural counts ("restatements"),
+        and a hyphen and a space are the same: the report writes the field "stock based
+        compensation", the glossary "stock-based compensation".
+        """
         return any(
-            re.search(rf"(?<!\w){re.escape(variant)}(?:e?s)?(?!\w)", text, re.IGNORECASE)
+            re.search(rf"(?<!\w){_spelled(variant)}(?:e?s)?(?!\w)", text, re.IGNORECASE)
             for variant in self.variants
         )
+
+
+def _spelled(variant: str) -> str:
+    """The variant as a pattern in which "-" and " " between its words match each other."""
+    return r"[-\s]+".join(re.escape(part) for part in re.split(r"[-\s]+", variant))
 
 
 @dataclass(frozen=True)

@@ -8,6 +8,16 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — translation: glossary terms match with a space for a hyphen
+
+The glossaries already had "stock-based compensation" (вознаграждение акциями, atlygis akcijomis)
+and "stock split" (дробление акций, akcijų skaidymas), yet the first never reached the translator:
+report.md writes the field "stock based compensation", without the hyphen, and a term had to match
+exactly. A hyphen and a space between the words of a term now match each other, so the term goes
+to the translator with every section that names the field (the data quality table that came back
+twice as "стock"). More terms reach the translator for such sections; the prompt text is
+unchanged; no paid call was made.
+
 ## 2026-10-22 — wording: the financial company note names banks, insurers and brokers
 
 The note in the pack of a financial company (data_quality.period_notes and financial_company.note,

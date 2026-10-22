@@ -941,3 +941,13 @@ def test_data_quality_list_items_start_with_a_capital_letter_in_a_translation(fa
     # Other sections keep the translator's case.
     other = "### Next research steps\n\n- check the debt schedule in the filings\n"
     assert capital_list_items(other, "- проверить график долга") == "- проверить график долга"
+
+
+def test_a_glossary_term_matches_with_a_space_for_its_hyphen():
+    # report.md writes the field "stock based compensation"; the glossary "stock-based compensation".
+    section = "| stock based compensation | FY2021 |\n\nThe entry is not treated as a stock split."
+    for language, wanted in (("Russian", {"вознаграждение акциями", "дробление акций / консолидация акций"}),
+                             ("Lithuanian", {"atlygis akcijomis", "akcijų skaidymas / akcijų sujungimas"})):
+        used = {entry.term for entry in load_glossary(language).used_in(section)}
+        assert wanted <= used, language
+    assert not load_glossary("Russian").used_in("stockbased compensation")  # still whole words
