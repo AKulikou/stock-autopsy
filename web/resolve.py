@@ -1,5 +1,5 @@
 """
-From what a person types to a ticker (decision D5).
+From what a person types to a ticker.
 
 A ticker in capitals that the SEC ticker map knows goes straight through (free).
 Anything else (a name, a brand, a ticker in lower case) goes to one cheap call that

@@ -1,7 +1,6 @@
 """
 Languages offered for a translated copy of the report: the same list as Startup
-Autopsy's web page (decision D8: no Chinese), Lithuanian first as the default
-(owner, 2026-10-22).
+Autopsy's web page (no Chinese), Lithuanian first as the default.
 
 The page shows each language by its own name; the English name goes to the
 translator (prompt, glossary file) and the code into the file name

@@ -1,4 +1,4 @@
-// The remembered translation language (web/static/prefs.js, D3).
+// The remembered translation language (web/static/prefs.js).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

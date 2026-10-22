@@ -460,7 +460,7 @@ function renderResult(runId, view) {
   english.append(view.data_quality.length ? list(view.data_quality) : el("p", "muted", "No issues recorded."));
   const total = `Estimated API cost of this run: $${view.cost_usd.toFixed(2)}, ${Math.round(view.duration_s / 60)} minutes.`;
   english.append(el("p", "muted", total));
-  // Collapsed, as at the end of report.md (D5): the cost per call and the glossary of the terms used.
+  // Collapsed, as at the end of report.md: the cost per call and the glossary of the terms used.
   const blocks = el("div", "markdown collapsed-blocks");
   blocks.innerHTML = renderMarkdown([costMarkdown(view.cost, total), glossaryMarkdown(view.glossary)]
     .filter(Boolean).join("\n\n")); // escapes all text; raw HTML is never rendered
@@ -473,7 +473,7 @@ function renderResult(runId, view) {
   }
 }
 
-// ---------- 5. Report tabs: the English report and its translations (D4) ----------
+// ---------- 5. Report tabs: the English report and its translations ----------
 
 function tabButton(key, text, controls) {
   const tab = el("button", "tab", text);

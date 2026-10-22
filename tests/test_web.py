@@ -199,7 +199,7 @@ def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client,
     calls = len(fake.requests)
     file = client.get(f"/api/runs/{run_id}/translations/ru")
     saved = file.text.replace("\r\n", "\n")
-    # The file keeps the cost section as written; the page gets it collapsed (D5).
+    # The file keeps the cost section as written; the page gets it collapsed.
     english = client.get(f"/api/runs/{run_id}/files/report").text.replace("\r\n", "\n")
     assert file.status_code == 200 and collapse_cost(saved, english) == done["markdown"] != saved
     assert "<details><summary>Словарь</summary>" in saved and "<summary>Glossary</summary>" not in saved

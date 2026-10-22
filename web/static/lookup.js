@@ -1,4 +1,4 @@
-// What the company lookup shows (decision D5): a card per candidate and the notice above them.
+// What the company lookup shows: a card per candidate and the notice above them.
 // Colour is never the only signal: every card has an icon and a text label.
 
 const ORDER = { exact: 0, related: 1, unavailable: 2 };
@@ -18,7 +18,7 @@ export function candidateCard(c) {
     return { kind: "unavailable", icon, label: `${label} · ${shortReason(c.unsupported)}`, canRun: false,
       financialNote: null };
   }
-  // A bank or other financial company: a calm note, and the run stays possible (owner's decision).
+  // A bank or other financial company: a calm note; the run stays possible, the analysis can still be useful.
   return { kind: related ? "related" : "exact", icon, label, canRun: true, financialNote: c.financial_note || null };
 }
 

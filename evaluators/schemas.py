@@ -1,5 +1,5 @@
 """
-Structured outputs of the evaluators (decision D3: the VERDICT block of the
+Structured outputs of the evaluators (the VERDICT block of the
 source of truth as schema fields; confidence as LOW / MEDIUM / HIGH with a
 reason instead of 0-100, which a model cannot calibrate).
 

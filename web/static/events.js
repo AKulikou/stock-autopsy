@@ -5,7 +5,7 @@
 // The server replays every event from the start, so following again after a
 // page reload rebuilds the same picture.
 //
-// A dropped stream is not a failed run (M4, 2026-10-17: the page said "stopped
+// A dropped stream is not a failed run (2026-10-17: the page said "stopped
 // unexpectedly" while the server finished the analysis). On an error the stream is
 // reopened from the next event (?since=N, no replay) after growing pauses; when
 // that keeps failing, the result is asked for until the server stops answering

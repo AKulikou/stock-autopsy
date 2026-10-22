@@ -1,4 +1,4 @@
-// The report's tabs (D4, the pattern of Startup Autopsy): "English report" and one tab per
+// The report's tabs (the pattern of Startup Autopsy): "English report" and one tab per
 // translated language; Save saves the copy on screen. Pure logic, tested in tests/js.
 
 export const ORIGINAL = "original";

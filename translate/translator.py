@@ -1,5 +1,5 @@
 """
-A translated copy of a finished report, as a reading aid (decision D8, M13).
+A translated copy of a finished report, as a reading aid.
 
 The analysis always runs in English and report.md stays the source of truth: the
 translation is a separate step over a saved run folder, asked for on a finished
@@ -77,7 +77,7 @@ UNTRANSLATED_SHARE = 0.6
 MIN_WORDS_TO_CHECK = 25
 # Put above a section kept in English, with the reason in words, so a reader of the
 # copy (and the page, which reads it back with kept_sections()) sees why.
-# The same sentence stands in the copy, on the page and in the CLI (E5): kept_sentence().
+# The same sentence stands in the copy, on the page and in the CLI: kept_sentence().
 UNTRANSLATED_NOTE = "> {sentence} The English original follows.\n\n"
 # Copies made before 2026-10-22 say "Kept in English: <reason>." instead; both are read back.
 _KEPT = re.compile(
@@ -114,7 +114,7 @@ MIN_FOREIGN_LETTERS = 10
 HEADING_LEFT = "heading left in English"
 NUMBERS_CHANGED = "numbers changed"
 # The analysts' names, listed for the translator; a glossary gives each one a
-# translated name (owner's review of the first Russian copies, 2026-10-21).
+# translated name (the first Russian copies used several names for one analyst).
 ANALYST_NAMES = tuple(EVALUATORS.values())
 
 # Put above the English glossary block in a copy whose language has no glossary file yet.
@@ -419,7 +419,7 @@ def _problem_words(problem: str) -> tuple[str, list[str]]:
 def kept_reason(problems: list[str]) -> str:
     """
     Why a section stayed in English, in one short phrase: the reason once, "twice" when both
-    answers failed the same way, details in one pair of brackets, each word once (E5).
+    answers failed the same way, details in one pair of brackets, each word once.
     """
     def phrase(text: str, details: list[str]) -> str:
         unique = list({d.casefold(): d for d in reversed(details)}.values())[::-1]

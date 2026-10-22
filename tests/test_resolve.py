@@ -1,4 +1,4 @@
-"""Company lookup (decision D5): exact matches, related companies, private companies, failures."""
+"""Company lookup: exact matches, related companies, private companies, failures."""
 
 import logging
 

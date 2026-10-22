@@ -1,4 +1,4 @@
-// The report toolbar looks and behaves like tabs (E2) and stays on one row on a desktop (E3):
+// The report toolbar looks and behaves like tabs and stays on one row on a desktop:
 // checked on the stylesheet the page loads, since the page tests run without a browser.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

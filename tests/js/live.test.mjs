@@ -1,4 +1,4 @@
-// The live view's states after a lost connection or a failed run (web/static/live.js, M6).
+// The live view's states after a lost connection or a failed run (web/static/live.js).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

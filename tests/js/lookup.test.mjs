@@ -1,4 +1,4 @@
-// The company lookup's cards and notices (web/static/lookup.js, D2).
+// The company lookup's cards and notices (web/static/lookup.js).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

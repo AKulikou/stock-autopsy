@@ -95,7 +95,7 @@ def run_view(run: Run) -> dict:
         "cost_usd": round(run.cost_usd(), 4),
         "duration_s": round(autopsy.duration_s),
     }
-    # Static text the page shows collapsed (D5): the glossary of report.md and the cost table.
+    # Static text the page shows collapsed: the glossary of report.md and the cost table.
     return {**_words(view, pack["ticker"], company), "glossary": _glossary(run), "cost": _cost(autopsy)}
 
 
@@ -303,7 +303,7 @@ def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
         "language": language,
         "label": NATIVE_NAMES[language],
         "code": CODES[language],
-        # As in the file, but with the cost section collapsed (D5): the page shows it on demand.
+        # As in the file, but with the cost section collapsed: the page shows it on demand.
         "markdown": (collapse_cost(markdown, english.read_text(encoding="utf-8"))
                      if english.exists() else markdown),
         "note": note,

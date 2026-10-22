@@ -63,7 +63,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         raw = fetch_company(args.ticker, as_of, SecClient(os.getenv("SEC_USER_AGENT")), DailyCache(as_of))
         if financial_kind((raw.submissions or {}).get("sic")):
-            print(FINANCIAL_NOTE)  # said before the paid calls; the run goes on (owner's decision)
+            # Said before the paid calls; the run goes on: the analysis can still be useful.
+            print(FINANCIAL_NOTE)
         run = run_autopsy(raw, {"horizon": args.horizon, "risk_tolerance": args.risk})
     except (UnknownTickerError, DataUnavailableError, SecAccessError) as e:
         print(f"\nNo analysis: {e}")

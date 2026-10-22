@@ -2,8 +2,7 @@
 The data_quality block of a pack, for a person to read (the page and report.md).
 
 Presentation only: the pack's data_quality stays as it is, because the analysts
-read it. For a person the same facts are grouped and ordered by impact (owner's
-manual test, M2, 2026-10-17):
+read it. For a person the same facts are grouped and ordered by impact:
 
 1. freshness first: a quarter that is filed but not in SEC company facts means
    the analysis runs a filing behind; its two "periods up to ... only" entries are

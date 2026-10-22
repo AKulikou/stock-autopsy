@@ -1,5 +1,5 @@
 // followRun (web/static/events.js) with a fake EventSource and a fake fetch:
-// a dropped stream is followed again, never reported as a failed run (M4).
+// a dropped stream is followed again, never reported as a failed run.
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

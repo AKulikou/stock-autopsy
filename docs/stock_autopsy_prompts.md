@@ -9,7 +9,7 @@ The synthesis agent (Investment Committee) is the main product — it reconciles
 **What this is NOT:** a buy/sell signal generator or investment advice.
 
 **Changelog**
-- 2026-10-15 — Added "Deviations in the implementation (Phase 1)": owner decisions D3/D4 and the data pack extensions the code uses.
+- 2026-10-15 — Added "Deviations in the implementation (Phase 1)": the verdict block, the valuation scope and the data pack extensions the code uses.
 - 2026-10-15 — Data sources checked against SEC documentation (rate limit, User-Agent, CIK format, ticker map); Phase 1 starts from the core shared with Startup Autopsy.
 - 2026-10-14 — Data quality rules: "absent is not zero", period and denominator checks. Added the `data_quality` block to the DATA PACK, shared rules 7–8, hooks in Evaluators 2, 3, 4, 5, and data layer tests in the usage notes.
 
@@ -18,18 +18,18 @@ The synthesis agent (Investment Committee) is the main product — it reconciles
 ## DEVIATIONS IN THE IMPLEMENTATION (PHASE 1, AS OF 2026-10-15)
 
 The sections below stay the design. Where the Phase 1 code differs, this list is
-what the code does; each item was decided by the owner or forced by the data.
+what the code does; each item was decided by the author or forced by the data.
 
 | Area | This document | Implementation | Why |
 |------|---------------|----------------|-----|
-| VERDICT block (every evaluator) and committee confidence | `CONFIDENCE: 0-100`, free-text block at the end | Structured-output fields `verdict`, `confidence` LOW / MEDIUM / HIGH, `confidence_reason`, `key_finding`, `biggest_unknown`, `summary` (`evaluators/schemas.py`, `synthesis/committee.py`) | Decision D3: a 0-100 number suggests precision the model does not have; structured output instead of parsing text |
+| VERDICT block (every evaluator) and committee confidence | `CONFIDENCE: 0-100`, free-text block at the end | Structured-output fields `verdict`, `confidence` LOW / MEDIUM / HIGH, `confidence_reason`, `key_finding`, `biggest_unknown`, `summary` (`evaluators/schemas.py`, `synthesis/committee.py`) | A 0-100 number suggests precision the model does not have; structured output instead of parsing text |
 | Claims | Tags in the text | Each evaluator returns a list of `Claim` objects (statement, tag, basis); a DATA claim's basis names pack paths such as `financials_annual.FY2025.revenue`, several separated by `;` | Lets Python check every quoted number against the pack |
-| Valuation scope | Peer multiples, sensitivity grid | Python multiples on TTM figures; DCF for bear / base / bull from step A; reverse DCF (implied revenue growth at base-case margins, or a reason it cannot be solved); one-at-a-time sensitivities; no peers, no grid | Decision D4; peers and the grid are Phase 2 |
+| Valuation scope | Peer multiples, sensitivity grid | Python multiples on TTM figures; DCF for bear / base / bull from step A; reverse DCF (implied revenue growth at base-case margins, or a reason it cannot be solved); one-at-a-time sensitivities; no peers, no grid | Phase 1 scope; peers and the grid are Phase 2 |
 | Evaluators run | 8 | 4 (Business Model, Forensic, Valuation in two steps, Pre-Mortem); questions that need peers, Form 4 or transcripts answer INSUFFICIENT DATA | Phase 1 scope |
 | Committee input | "8 reports + data pack summary" | The four evaluator results, Python's valuation math and a pack summary (company, as_of, price, user context, multiples, `data_quality`); code lowers confidence when the unverified share is high or a perspective is missing | Phase 1 scope; the committee still adds no new facts |
 | DATA PACK | Minimal schema above | Extra blocks: `shares_outstanding`, `ttm`, `balance_sheet_latest`, `derived` (Python math with its formulas), `filing_events` (amended reports, late notices, 8-K 4.01 / 4.02), `annual_report_timing`, `sources`, `units`, `schema_version` | Phase 1 evaluators need them; Python does the math |
 | `data_quality.missing` | One entry per field and period | One entry per field and reason with a list of periods; extra reason `not_fetched` for insider transactions, peers, news and transcripts (never an empty list) | Shorter pack; "not fetched" is not "none" |
-| Report | Not specified | `report.md` in plain words (no codes, tickers or field names) with a number-check section; `report.json` keeps the codes | Owner rule: people read meanings, programs read codes |
+| Report | Not specified | `report.md` in plain words (no codes, tickers or field names) with a number-check section; `report.json` keeps the codes | Author's rule: people read meanings, programs read codes |
 
 ---
 

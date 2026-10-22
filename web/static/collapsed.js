@@ -1,4 +1,4 @@
-// Blocks the English view shows collapsed (D5), written as the Markdown report.md uses, so the
+// Blocks the English view shows collapsed, written as the Markdown report.md uses, so the
 // page renders them like the translation tab does: closed <details>, text escaped by markdown.js.
 
 function cell(text) {

@@ -3,7 +3,7 @@
 English glossary for report.md and the English page (translate/glossary.py): the term as reports
 write it, the term as the glossary shows it, and a plain explanation. The same terms as the Russian
 and Lithuanian glossaries; written by Claude Code on 2026-10-22 from the Russian explanations,
-for the owner's review. Only the terms a report uses are shown with it. The numbered headings
+for review. Only the terms a report uses are shown with it. The numbered headings
 group the rows for review and are ignored by the code.
 
 ## 1. Filings and sources
@@ -136,7 +136,7 @@ group the rows for review and are ignored by the code.
 | number check | number check | Code, not the model, compares the numbers in the claims with the data and recalculates the formulas. A match shows the claim agrees with the data pack, not that the data are right. |
 | data pack | data pack | All the numbers about the company that Stock Autopsy collected from the SEC and Yahoo for one date. Every analyst gets the same pack. |
 | red flag / severity | red flag / severity (1-5) | A suspicious point in the accounts or the management. Each flag has an innocent explanation too; severity 5 is the highest. |
-| done / failed (call status in the cost table; added 2026-10-22) | done / failed | Whether a call to the model ended with a usable answer. A failed call is listed with its cost, because a rejected answer is billed too. |
+| done / failed (call status in the cost table; draft, review pending) | done / failed | Whether a call to the model ended with a usable answer. A failed call is listed with its cost, because a rejected answer is billed too. |
 
 ## Analysts and committee
 

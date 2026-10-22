@@ -126,8 +126,8 @@ What the eval showed:
   not follow a severity-5 red flag from the Forensic analyst in one attempt and raised one
   without it in the other. That is the system's least stable call. Two reps per company
   are still a small sample. The whole gap over the constant answer comes from Comcast (2 of
-  2) and Plug Power (1 of 2), the two companies the owner has not labelled blind; on the
-  three owner-labelled companies the committee scored exactly like the constant answer. The run cost 2.67 USD through the Message Batches API.
+  2) and Plug Power (1 of 2), the two companies the author has not labelled blind; on the
+  three author-labelled companies the committee scored exactly like the constant answer. The run cost 2.67 USD through the Message Batches API.
   The release run of 2026-10-22 (2.75 USD) moved Kraft Heinz from "weak" to "conditional" in both
   attempts (acceptable, not the primary label): the price sentence now gives about 8% a year,
   which the committee reads as a case under conditions. That one case is the whole drop from
@@ -143,7 +143,7 @@ What the eval showed:
   the number check to catch at least 90% of them. Calculated claims are reproduced from
   the formula they cite, numbers in prose without a source are listed, and a sentence
   that turns an unknown value into zero ("no debt" where the filings report none) is
-  flagged. In the M5 runs: 8 and 5 wrong numbers (all partial) in about 270 data claims
+  flagged. In the first eval runs: 8 and 5 wrong numbers (all partial) in about 270 data claims
   per variant, one calculation off by about 5%, and the one "no debt" sentence the judge
   also found. In the release run of 2026-10-22: 6 wrong numbers in 370 data claims, 209 of 225
   calculations reproduced, 2 unknowns read as zero. In the first release run: 7 wrong numbers in
@@ -156,9 +156,9 @@ What the eval showed:
   value 21% too high; the model quoted it faithfully and every check passed. Invariant
   tests now compare each golden pack with its frozen price snapshot, and the data layer
   no longer uses stale share counts or treats corporate-action adjustments as splits.
-- Labels: Coca-Cola, Snowflake and Kraft Heinz were labelled by the owner. Comcast and
-  Plug Power were drafted by Claude Code from the data packs under the owner's
-  delegation and reviewed in two independent reviews; the owner has not labelled them
+- Labels: Coca-Cola, Snowflake and Kraft Heinz were labelled by the author. Comcast and
+  Plug Power were drafted by Claude Code from the data packs under the author's
+  delegation and reviewed in two independent reviews; the author has not labelled them
   blind. Plug Power is strict on purpose: only "red-flagged" counts as right, so that a
   constant "weak case" cannot pass it. Its label rests on liquidity and dilution (cash
   for about four months of burn, losses larger than revenue, a fourfold share count),

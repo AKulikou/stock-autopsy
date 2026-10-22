@@ -1,4 +1,4 @@
-// The finished looks of a card (web/static/cards.js, M9 and M10).
+// The finished looks of a card (web/static/cards.js).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

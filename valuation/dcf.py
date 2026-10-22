@@ -1,5 +1,5 @@
 """
-Discounted cash flow on the valuation evaluator's assumptions (decision D4:
+Discounted cash flow on the valuation evaluator's assumptions (Phase 1 scope:
 base DCF for bear / base / bull, reverse DCF and one-at-a-time sensitivities;
 the full sensitivity grid is Phase 2).
 

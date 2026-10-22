@@ -247,7 +247,7 @@ def test_percentage_points_are_read_as_percents(text):
     assert quantities(text)[0].candidates == [0.02, 2.0]
 
 
-# --- calculated claims: the three correct KO statements once reported as not reproduced (M15) ---
+# --- calculated claims: the three correct KO statements once reported as not reproduced ---
 
 KO_2026 = {
     "derived": {"valuation": {"pe": 29.49}},
@@ -312,7 +312,7 @@ def test_wrong_calculations_on_the_golden_packs_are_caught(factor):
 
 def test_a_flipped_direction_of_a_growth_rate_is_caught():
     # A difference of two data terms has no sign of its own, so "rose by" and "fell by"
-    # both fit it: a flipped direction is caught for growth rates only (measured in M15).
+    # both fit it: a flipped direction is caught for growth rates only (measured on the golden packs).
     assert 1 - reproduced_share(flip=True, kinds={"growth"}) >= 0.9
 
 

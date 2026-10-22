@@ -1,4 +1,4 @@
-"""Translated copies of a finished report (M13): number check, glossary, sections, retries, files."""
+"""Translated copies of a finished report: number check, glossary, sections, retries, files."""
 
 import re
 from pathlib import Path
@@ -473,7 +473,7 @@ def test_the_cli_translates_a_saved_run(fake, tmp_path, monkeypatch):
 
 
 def test_languages_are_named_by_their_english_name_or_code():
-    assert LANGUAGES[0][0] == "Lithuanian"  # the default (owner, 2026-10-22)
+    assert LANGUAGES[0][0] == "Lithuanian"  # the default
     assert language_name("RU") == language_name(" russian ") == "Russian"
     assert language_name("LT") == language_name("lithuanian") == "Lithuanian"
     assert language_name("Chinese") is None
@@ -559,7 +559,7 @@ def test_the_lithuanian_and_english_glossaries_have_the_same_terms_as_the_russia
     assert all(len(e.explanation) > 20 for e in lithuanian.entries)
     text = (GLOSSARY_DIR / "lithuanian.md").read_text(encoding="utf-8")
     rows = [line for line in text.splitlines() if line.startswith("| ") and not line.startswith("| English")]
-    assert len(rows) == 102 and all("draft 2026-10-22, owner review" in row.split(" | ")[0] for row in rows)
+    assert len(rows) == 102 and all("draft, review pending" in row.split(" | ")[0] for row in rows)
     by_name = {e.english: e.term for e in lithuanian.entries}
     assert by_name["Forensic Accountant"] == "Apskaitos tyrėjas"
     assert by_name["Valuation Analyst (assumptions)"] == "Vertinimo analitikas (prielaidos)"
@@ -569,7 +569,7 @@ def test_the_lithuanian_and_english_glossaries_have_the_same_terms_as_the_russia
     assert [e.variants for e in english.entries] == [e.variants for e in russian.entries]
 
 
-# ---- the glossary at the end of report.md and of its translations (D5) -----------------
+# ---- the glossary at the end of report.md and of its translations ----------------------
 
 
 def test_the_english_glossary_lists_only_the_terms_the_report_uses():
@@ -602,7 +602,7 @@ def test_a_language_without_a_glossary_keeps_the_english_one_and_says_so(fake):
         "> There is no Russian glossary yet; the English glossary follows.\n\n" + block)
 
 
-# ---- E4, E5 (owner's manual test 2026-10-22) ------------------------------------------
+# ---- look-alike letters, the retry note, the reason a section stayed in English -------
 
 
 def test_cyrillic_look_alikes_inside_a_latin_word_are_put_right_by_code():

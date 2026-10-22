@@ -2,7 +2,7 @@
 
 Russian glossary for translated reports (translate/glossary.py): the English term as reports
 write it, the Russian term the translator must use, and the explanation appended to the
-translation. Drafted by Claude (chat) on 2026-10-17; awaiting the owner's review. Analyst names
+translation. Drafted by Claude (chat) on 2026-10-17; awaiting review. Analyst names
 are translated with one Russian name each (see the last section). The numbered headings group
 the rows for review and are ignored by the code.
 
@@ -136,24 +136,24 @@ the rows for review and are ignored by the code.
 | number check | проверка чисел | Код (не модель) сверяет числа в утверждениях с данными и пересчитывает формулы. Совпадение доказывает верность пакету данных, а не правильность самих данных. |
 | data pack | пакет данных | Все числа о компании, собранные Stock Autopsy из SEC и с Yahoo на одну дату. Все аналитики получают один и тот же пакет. |
 | red flag / severity | красный флаг / серьёзность (1–5) | Подозрительное место в отчётности или управлении. У каждого флага есть невинное объяснение, а серьёзность 5 — самая высокая. |
-| done / failed (call status in the cost table; added 2026-10-22, owner review) | выполнено / ошибка | Закончился ли вызов модели пригодным ответом. Неудачный вызов тоже указан со стоимостью: отклонённый ответ оплачивается. |
+| done / failed (call status in the cost table; draft, review pending) | выполнено / ошибка | Закончился ли вызов модели пригодным ответом. Неудачный вызов тоже указан со стоимостью: отклонённый ответ оплачивается. |
 
-## Аналитики и комитет (added 2026-10-21, owner review)
+## Аналитики и комитет
 
 One Russian name per analyst, the same everywhere in a translation; the English name follows in
-brackets only in the heading of the analyst's own section. Rows added or changed on 2026-10-21 for
-the owner's review. Four analysts (earnings, moat, management, catalysts) are not in this version
+brackets only in the heading of the analyst's own section. Rows marked as drafts await
+review. Four analysts (earnings, moat, management, catalysts) are not in this version
 yet; their names are here so a later report reads the same.
 
 | English | Русский термин | Пояснение |
 |---|---|---|
-| Business Model Analyst (changed 2026-10-21, owner review) | Аналитик бизнес-модели | Разбирает, как компания зарабатывает и насколько устойчив её доход. |
-| Earnings Analyst (added 2026-10-21, owner review) | Аналитик квартальных результатов | Разбирает квартальный отчёт и телефонную конференцию по нему. В этой версии не работает: стенограммы не собираются. |
-| Forensic Accountant (changed 2026-10-21, owner review) | Аналитик-криминалист | Ищет признаки проблем в качестве отчётности и в управлении компанией. |
-| Moat Analyst (added 2026-10-21, owner review) | Аналитик конкурентных преимуществ | Оценивает, что защищает бизнес от конкурентов и насколько долго эта защита продержится. В этой версии не работает. |
-| Valuation Analyst (changed 2026-10-21, owner review) | Аналитик оценки | Предлагает допущения для трёх сценариев (по ним Stock Autopsy рассчитывает DCF) и толкует результат. |
-| Valuation Analyst (assumptions) (added 2026-10-21, owner review) | Аналитик оценки (допущения) | Первый шаг аналитика оценки: допущения для трёх сценариев, по которым Stock Autopsy рассчитывает DCF. |
-| Management & Capital Allocation Reviewer (added 2026-10-21, owner review) | Аналитик управления и распределения капитала | Оценивает руководство и то, как компания тратит деньги: вложения, покупки компаний, дивиденды, выкуп акций. В этой версии не работает. |
-| Catalyst & Risk Mapper (added 2026-10-21, owner review) | Аналитик катализаторов и рисков | Составляет календарь событий, которые могут сдвинуть цену, и сигналов, за которыми стоит следить. В этой версии не работает. |
-| Pre-Mortem Analyst (changed 2026-10-21, owner review) | Аналитик «вскрытия заранее» | Представляет, что вложение через несколько лет провалилось, и описывает самые вероятные причины. |
-| Investment Committee (changed 2026-10-21, owner review) | Инвестиционный комитет | Синтез: сводит выводы аналитиков, ищет противоречия между ними и выносит итоговый вердикт. Новых фактов не добавляет. |
+| Business Model Analyst (draft, review pending) | Аналитик бизнес-модели | Разбирает, как компания зарабатывает и насколько устойчив её доход. |
+| Earnings Analyst (draft, review pending) | Аналитик квартальных результатов | Разбирает квартальный отчёт и телефонную конференцию по нему. В этой версии не работает: стенограммы не собираются. |
+| Forensic Accountant (draft, review pending) | Аналитик-криминалист | Ищет признаки проблем в качестве отчётности и в управлении компанией. |
+| Moat Analyst (draft, review pending) | Аналитик конкурентных преимуществ | Оценивает, что защищает бизнес от конкурентов и насколько долго эта защита продержится. В этой версии не работает. |
+| Valuation Analyst (draft, review pending) | Аналитик оценки | Предлагает допущения для трёх сценариев (по ним Stock Autopsy рассчитывает DCF) и толкует результат. |
+| Valuation Analyst (assumptions) (draft, review pending) | Аналитик оценки (допущения) | Первый шаг аналитика оценки: допущения для трёх сценариев, по которым Stock Autopsy рассчитывает DCF. |
+| Management & Capital Allocation Reviewer (draft, review pending) | Аналитик управления и распределения капитала | Оценивает руководство и то, как компания тратит деньги: вложения, покупки компаний, дивиденды, выкуп акций. В этой версии не работает. |
+| Catalyst & Risk Mapper (draft, review pending) | Аналитик катализаторов и рисков | Составляет календарь событий, которые могут сдвинуть цену, и сигналов, за которыми стоит следить. В этой версии не работает. |
+| Pre-Mortem Analyst (draft, review pending) | Аналитик «вскрытия заранее» | Представляет, что вложение через несколько лет провалилось, и описывает самые вероятные причины. |
+| Investment Committee (draft, review pending) | Инвестиционный комитет | Синтез: сводит выводы аналитиков, ищет противоречия между ними и выносит итоговый вердикт. Новых фактов не добавляет. |

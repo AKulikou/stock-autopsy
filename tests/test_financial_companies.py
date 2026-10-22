@@ -1,4 +1,4 @@
-"""Banks and other financial companies (owner's manual test of 2026-10-22, Goldman Sachs): flagged by
+"""Banks and other financial companies (a run on Goldman Sachs, 2026-10-22): flagged by
 SEC SIC code, revenue read from the tag banks use, EV-, DCF- and cash-flow-based numbers marked as
 not meaningful. Nothing changes for any other company: the golden packs stay byte for byte."""
 

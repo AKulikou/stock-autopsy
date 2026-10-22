@@ -1,4 +1,4 @@
-"""How a person reads the data_quality block (M2): grouped, ordered by impact, no leftovers of field paths."""
+"""How a person reads the data_quality block: grouped, ordered by impact, no leftovers of field paths."""
 
 import copy
 import json

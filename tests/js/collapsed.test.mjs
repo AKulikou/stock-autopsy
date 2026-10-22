@@ -1,4 +1,4 @@
-// The glossary and the cost table are closed blocks on the page (web/static/collapsed.js, D5).
+// The glossary and the cost table are closed blocks on the page (web/static/collapsed.js).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

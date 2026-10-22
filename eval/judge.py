@@ -24,7 +24,7 @@ JUDGE_EFFORT = "low"
 JUDGE_LABEL = "Eval judge"
 JUDGE_MAX_TOKENS = 8000
 # The judge decides each statement by majority of this many independent answers: one
-# answer flipped borderline statements between passes on identical text (M5 baseline).
+# answer flipped borderline statements between passes on identical text (first eval baseline).
 JUDGE_VOTES = 3
 
 JUDGE_PRINCIPLES = """\

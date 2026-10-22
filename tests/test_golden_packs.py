@@ -1,6 +1,6 @@
 """
-Golden tickers (decision D2): KO (boring quality), SNOW (fast-growing, loss-making),
-KHC (accounting scandal: 2019 restatement); added with P2: CMCSA (cheap, steady cash
+Golden tickers: KO (boring quality), SNOW (fast-growing, loss-making),
+KHC (accounting scandal: 2019 restatement); added later: CMCSA (cheap, steady cash
 generator) and PLUG (non-reliance, restatements, heavy losses). The packs are rebuilt from trimmed
 SEC and price inputs frozen on 2026-10-15 and must match the frozen packs exactly;
 after a deliberate change, refreeze with scripts/freeze_golden.py and review the diff.
@@ -98,7 +98,7 @@ def test_no_number_in_a_golden_pack_is_nan_and_every_row_has_dates(packs, ticker
         assert row["period_start"] < row["period_end"]
 
 
-# Invariants every golden pack must keep (audit review R1, 2026-10-16): a pack can be
+# Invariants every golden pack must keep (found in an audit, 2026-10-16): a pack can be
 # quoted faithfully by the model and still be wrong, so the pack is checked against the
 # frozen price snapshot that was taken with it.
 

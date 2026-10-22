@@ -269,7 +269,7 @@ select {
   text-align: left; vertical-align: top; }
 .markdown th { background: var(--surface-muted); }
 
-/* Report toolbar (D4, E2, E3): tabs for the English report and each translation on the left,
+/* Report toolbar: tabs for the English report and each translation on the left,
    the language picker, Translate and Save (the copy on screen) on the right, one row on a
    desktop. Tabs look like tabs: an underline marks the open one, which is not clickable. */
 .report-toolbar { margin-bottom: var(--space-4); scroll-margin-top: var(--space-3); }
@@ -331,7 +331,7 @@ select {
   padding: var(--space-3) var(--space-4);
 }
 .candidate strong { font-size: 1.05rem; }
-/* Lookup cards (D2): a coloured bar from the verdict tokens, always with an icon and a label.
+/* Lookup cards: a coloured bar from the verdict tokens, always with an icon and a label.
    Green: exact match; amber (the "unclear" token, not the orange "weak" one): related company;
    grey: cannot be analyzed. */
 .candidate.is-exact, .candidate.is-related, .candidate.is-unavailable { border-left-width: 6px; }
@@ -372,7 +372,7 @@ select {
 .kv td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .detail-label { font-weight: 600; margin: var(--space-3) 0 var(--space-1); }
 .disclaimer { font-weight: 600; }
-/* Collapsed blocks inside rendered Markdown (D5): the cost table, the glossary, claims. */
+/* Collapsed blocks inside rendered Markdown: the cost table, the glossary, claims. */
 .markdown details { margin: var(--space-3) 0; padding: var(--space-2) var(--space-4);
   border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 .markdown details > summary { cursor: pointer; font-weight: 600; }

@@ -1,5 +1,5 @@
 // What each card and stage of the live view says when the run does not end
-// normally (M6). The screen is the only record of where an analysis stopped, so it
+// normally. The screen is the only record of where an analysis stopped, so it
 // is never reset by itself; instead every item tells the truth:
 //
 // - the connection is lost (the server may still be working): running items say
@@ -29,7 +29,7 @@ export function afterRunFailed(state) {
   return state;
 }
 
-// The live heading and the browser tab name the company (M11): a run takes minutes,
+// The live heading and the browser tab name the company: a run takes minutes,
 // often in one of many tabs.
 export function liveHeading({ name, ticker, relatedTo } = {}) {
   const found = relatedTo ? `, found as a company related to ${relatedTo}` : "";

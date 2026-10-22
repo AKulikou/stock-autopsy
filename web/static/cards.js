@@ -1,5 +1,5 @@
 // Analysis cards: one per analyst, shown from the start of a run. Each look has its
-// own mark, and none reuses the verdict colours for anything but a verdict (M9):
+// own mark, and none reuses the verdict colours for anything but a verdict:
 //
 //   waiting    dimmed, a hollow grey dot, "Waits for ..."
 //   running    a dot pulsing in the page accent, a thin moving accent line on top
@@ -33,7 +33,7 @@ export function el(tag, className, text) {
 }
 
 // A verdict word standing alone starts with a capital ("Adequate"); the same words stay
-// lower case inside sentences (reporting/wording.py keeps them so), M12.
+// lower case inside sentences (reporting/wording.py keeps them so).
 export function badgeLabel(text) {
   return text ? text[0].toUpperCase() + text.slice(1) : text;
 }
@@ -43,7 +43,7 @@ export function verdictBadge(verdictText, code) {
 }
 
 // What a finished, failed or skipped item looks like: {state, verdictClass, mark, badge}.
-// A step without a verdict is "done" in the accent, never the grey of a pending item (M10).
+// A step without a verdict is "done" in the accent, never the grey of a pending item.
 export function finishedLook(event) {
   if (event.status === "failed") return { state: "failed", mark: "failed", badge: "Failed" };
   if (event.status === "skipped") return { state: "skipped", mark: "hollow", badge: "Not relevant here" };

@@ -59,7 +59,7 @@ BANK_NOT_MEANINGFUL = "not meaningful for a bank"
 
 
 def multiple_text(multiples: dict, name: str, fmt) -> str:
-    """A multiple as shown; one left out for a bank says so instead of 'unknown' (E7)."""
+    """A multiple as shown; one left out for a bank says so instead of 'unknown'."""
     if multiples[name] is None and f"{name}: {NOT_MEANINGFUL}" in multiples.get("notes", []):
         return BANK_NOT_MEANINGFUL
     return fmt(multiples[name])

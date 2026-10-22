@@ -3,7 +3,7 @@ The FastAPI application: one page and a small JSON API (design: docs/web_ui.md).
 
     GET  /                           the page (web/static/index.html)
     GET  /api/options                example companies
-    POST /api/resolve {query}        ticker, or candidates for a name or brand (decision D5), each
+    POST /api/resolve {query}        ticker, or candidates for a name or brand, each
                                      checked for 10-K / 10-Q reports in its filing history
     POST /api/runs {ticker}          start an analysis (one at a time)
     GET  /api/runs/active            the run in progress, if any (to reattach after a reload)
@@ -57,7 +57,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 LOCAL_HOSTS = ("127.0.0.1", "localhost")
 EVENT_POLL_S = 0.3
 # An analyst call is silent for about a minute; a comment line every few seconds keeps
-# the stream from looking dead to the browser or anything in between (M4, 2026-10-17:
+# the stream from looking dead to the browser or anything in between (2026-10-17:
 # a stream dropped in a 40-second silence and the page reported a failure).
 HEARTBEAT_S = 15.0
 MEDIA_TYPES = {"report": "text/markdown; charset=utf-8"}

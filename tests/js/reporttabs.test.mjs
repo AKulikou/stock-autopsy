@@ -1,4 +1,4 @@
-// The report tabs (web/static/reporttabs.js, D4).
+// The report tabs (web/static/reporttabs.js).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
