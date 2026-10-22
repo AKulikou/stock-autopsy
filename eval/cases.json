@@ -2,7 +2,7 @@
   {
     "id": "KO",
     "fixture": "tests/fixtures/golden/KO",
-    "label_status": "owner-approved 2026-10-15; labelled from the pack, before any run of this ticker",
+    "label_status": "author-approved 2026-10-15; labelled from the pack, before any run of this ticker",
     "primary": "CONDITIONAL_CASE",
     "acceptable": [
       "WEAK_CASE"
@@ -21,7 +21,7 @@
   {
     "id": "SNOW",
     "fixture": "tests/fixtures/golden/SNOW",
-    "label_status": "owner-approved 2026-10-15; labelled from the pack, before any run of this ticker; the most debatable label",
+    "label_status": "author-approved 2026-10-15; labelled from the pack, before any run of this ticker; the most debatable label",
     "primary": "WEAK_CASE",
     "acceptable": [
       "CONDITIONAL_CASE"
@@ -38,7 +38,7 @@
   {
     "id": "KHC",
     "fixture": "tests/fixtures/golden/KHC",
-    "label_status": "owner-approved 2026-10-15; labelled after one real run of this ticker (verdict WEAK_CASE), so possibly anchored on it",
+    "label_status": "author-approved 2026-10-15; labelled after one real run of this ticker (verdict WEAK_CASE), so possibly anchored on it",
     "primary": "WEAK_CASE",
     "acceptable": [
       "CONDITIONAL_CASE"
@@ -58,7 +58,7 @@
   {
     "id": "CMCSA",
     "fixture": "tests/fixtures/golden/CMCSA",
-    "label_status": "drafted by Claude Code from the pack under the owner's delegation; reviewed in two independent reviews (2026-10-16); not blind-labelled by the owner",
+    "label_status": "drafted by Claude Code from the pack under the author's delegation; reviewed in two independent reviews (2026-10-16); not blind-labelled by the author",
     "primary": "CONDITIONAL_CASE",
     "acceptable": [],
     "rationale": "Flat revenue (3-year CAGR about 0.6%) but operating margins of 12-21% over ten years (17-19% in the last three) and about 20 billion of free cash flow over the last twelve months, at a price of about 6.7 times earnings and 3.7 times free cash flow (yield about 27%), with about 84 billion of debt. The price assumes decline; the case holds if cash flows stay near today's level. Calling it a weak case would mean the evidence does not support interest even at this price.",
@@ -76,7 +76,7 @@
   {
     "id": "PLUG",
     "fixture": "tests/fixtures/golden/PLUG",
-    "label_status": "drafted by Claude Code from the pack under the owner's delegation; reviewed in two independent reviews (2026-10-16); not blind-labelled by the owner. Strict on purpose: only red-flagged counts, so a constant 'weak case' cannot pass it",
+    "label_status": "drafted by Claude Code from the pack under the author's delegation; reviewed in two independent reviews (2026-10-16); not blind-labelled by the author. Strict on purpose: only red-flagged counts, so a constant 'weak case' cannot pass it",
     "primary": "RED_FLAGGED",
     "acceptable": [],
     "rationale": "Liquidity and dilution carry the label: cash of about 0.16 billion against an operating cash outflow of about 0.48 billion over the last twelve months (roughly four months of burn), an operating loss larger than revenue every year since FY2023 (TTM about -1.29 billion on 0.74 billion of revenue), and a share count up about fourfold since FY2020 (0.35 billion diluted then, 1.40 billion on the latest cover page). History, not a current red flag on its own: the 2021 non-reliance notice with late annual and quarterly reports, the 2022 amendment of the FY2020 annual report that extended the material weakness in internal control to 2018 and 2019, and a change of auditor in 2022; annual reports have been on time since. Checked on EDGAR on 2026-10-16: the amended annual reports of 2017-05-01, 2023-05-01 and 2025-04-30 only add the Part III information (executive pay and governance, no new numbers) and are not red flags.",
