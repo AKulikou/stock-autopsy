@@ -27,6 +27,15 @@ the evidence, never "buy" or "sell".
    SEC filing history is checked for free: a company with no 10-K or 10-Q report (a foreign
    company on Form 20-F or 40-F, a fund) is shown with the reason and cannot be analyzed.
    If an empty data pack is reached any other way, the run stops before the first Claude call.
+   Since 2026-10-22 (D2) each candidate is an exact match (green bar, "✓ Exact match", share
+   classes each with their class) or a related company (amber bar, "↔ Related: major investor
+   in OpenAI"); anything that cannot be analyzed is grey with its label and reason. Order:
+   green, amber, grey; a banner above related companies ("OpenAI is a private company and files
+   no reports with the SEC. Related public companies:"); a calm note when nothing is found; red
+   with "Try again" only when the lookup model or the SEC list failed. A run started from a
+   related card says so in the report title and on the page ("Microsoft Corp (found as a
+   company related to OpenAI)"). Every lookup is logged at INFO: the query, the model's
+   candidates, what was kept or dropped and why.
 2. **Data.** Steps light up: filings and price received, the data pack with real counts
    (annual reports, quarters, filing events, price date), then the DCF calculated by Stock Autopsy ("DCF by Stock Autopsy") with the
    sentence on what today's price assumes. A DCF the data cannot carry (no revenue, no
@@ -61,33 +70,32 @@ the evidence, never "buy" or "sell".
    `Coca_Cola_Co_KO_2026-10-17_090436_report.md`; the folder in results/ keeps its ticker-first name). report.json is still written to the run folder for programs,
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 
-5. **Translation, on demand (M13, variant A; tabs since 2026-10-22, D4).** One toolbar at the top
-   of the result: tabs "English report" and one per translated language (role tablist, arrow keys,
-   Home, End), a language select, Translate and Save (the copy in the open tab). A language
-   translated once is opened, not translated again; copies on disk come back as tabs when a
-   result is reopened. Before D4: below the result, a language select
-   (Lithuanian first and the default since 2026-10-22, then Startup Autopsy's list; the page
-   remembers the last choice in the browser) and "Translate report". One cheap call per
-   report section (Haiku 5.5, low effort; 0.023-0.031 USD and 41-63 s per report, measured on
-   three reports on 2026-10-17). A section must also keep its headings, table rows and list
-   items. The translated copy appears on the page as
-   rendered Markdown (raw HTML is never rendered) and as "Save report in Russian
-   (.md)" (report.ru.md, named company first like the English report). Every number of a section must come back with the same value and scale
-   (`translate/numbers.py`); a section that fails the check twice stays in English, marked with
-   the reason in words ("Kept in English: ..."), and the page names it under the translation.
-   A glossary per language (`translate/glossaries/<language>.md`; Russian: 101 terms drafted on
-   2026-10-17, the analyst names added on 2026-10-21; Lithuanian: the same 101 terms drafted on
-   2026-10-22; both awaiting review, Lithuanian by a fluent reader) gives the translator its
-   terms and is appended as a final section with the terms the report uses. Since 2026-10-22 (D5)
-   report.md ends with the English glossary (`translate/glossaries/english.md`) as a collapsed
+5. **Translation, on demand (M13, variant A; tabs and Lithuanian default since 2026-10-22).**
+   One toolbar at the top of the result: tabs "English report" and one per translated language
+   (role tablist; arrow keys, Home and End switch tabs), a language select (Lithuanian first and
+   the default, then Startup Autopsy's list; the page remembers the last choice in the browser),
+   Translate, and Save, which saves the copy in the open tab (report.lt.md, report.ru.md, named
+   company first like the English report). A finished translation gets its tab, is selected and
+   the page scrolls to the report; a language translated once is opened, not paid for again, and
+   copies on disk come back as tabs when a result is reopened. The translation notes (time, cost,
+   sections kept in English with the reason) stand at the top of the tab, above the rendered
+   Markdown (raw HTML is never rendered). One cheap call per report section (Haiku 5.5, low
+   effort; 0.023-0.031 USD and 41-63 s per report, measured on three reports on 2026-10-17).
+   A section must keep its headings, table rows and list items, and every number must come back
+   with the same value and scale (`translate/numbers.py`, which reads Russian and Lithuanian
+   number formats); a section that fails twice stays in English, marked with the reason in
+   words ("Kept in English: ..."). A glossary per language (`translate/glossaries/<language>.md`;
+   Russian: 101 terms drafted 2026-10-17, analyst names added 2026-10-21; Lithuanian: the same
+   terms drafted 2026-10-22; both awaiting review, Lithuanian by a fluent reader) gives the
+   translator its terms. report.md ends with the English glossary (`english.md`) as a collapsed
    `<details>` block of the terms it uses; the translator takes it off and code puts the target
-   language's block in its place (the English block and a one-line note when the language has no
-   file). The page shows the glossary and the cost table collapsed, in the English view and in
-   the translation tab; the files keep the cost table as written. The cost table says "done" or
-   "failed", words the glossaries define, instead of a status code. The English
-   report stays the source of truth; report.json and the page cards stay English (variant B,
-   translating the cards, is not planned). Reports of earlier runs:
-   `python -m translate results/<run> --language Lithuanian` (the default).
+   language's block in its place (the English block and a one-line note when the language has
+   no file). The page shows the glossary and the cost table collapsed, in the English view and
+   in the translation tab; the files keep the cost table as written, with "done" / "failed"
+   (words the glossaries define) instead of a status code. The English report stays the source
+   of truth; report.json and the page cards stay English (variant B, translating the cards, is
+   not planned). Reports of earlier runs: `python -m translate results/<run> --language
+   Lithuanian` (the default).
 
 Everything a person reads goes through `reporting/wording.py` (the same last pass as
 report.md): no verdict codes, field names, pack paths or tickers. The ticker appears only
