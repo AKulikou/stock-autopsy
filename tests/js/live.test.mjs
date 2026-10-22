@@ -27,6 +27,8 @@ test("the live heading and the tab name the company being analyzed", async () =>
   const { liveHeading, tabTitle, outcomeWords } = await import("../../web/static/live.js");
   assert.equal(liveHeading({ name: "Levi Strauss & Co", ticker: "LEVI" }), "Analyzing Levi Strauss & Co (LEVI)");
   assert.equal(liveHeading({ ticker: "LEVI" }), "Analyzing LEVI");
+  assert.equal(liveHeading({ name: "Microsoft Corp", ticker: "MSFT", relatedTo: "OpenAI" }),
+    "Analyzing Microsoft Corp (MSFT), found as a company related to OpenAI");
   assert.equal(liveHeading({}), "Analyzing");
   assert.equal(tabTitle("LEVI", "analyzing…"), "LEVI: analyzing… | Stock Autopsy");
   const view = { committee: { ok: true, verdict_text: "Weak case: the evidence does not support the thesis" } };

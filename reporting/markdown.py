@@ -22,6 +22,7 @@ from reporting.wording import (
     SOURCES,
     STRONGER_SIDE,
     company_display,
+    company_heading,
     field,
     humanize,
 )
@@ -74,7 +75,7 @@ def header(run: AutopsyRun) -> list[str]:
     price = pack["price"]
     price_text = f"{price['value']:,.2f} {price['currency']} (close {price['date']})" if price else "unknown"
     return [
-        f"# Stock Autopsy: {company_display(pack['company_name'])}",
+        f"# Stock Autopsy: {company_heading(pack['company_name'], run.related_to)}",
         "",
         f"> {DISCLAIMER}",
         "",

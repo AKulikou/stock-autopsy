@@ -59,9 +59,12 @@ def client(tmp_path):
 
 @pytest.fixture
 def fake(fake_claude, ko_pack, monkeypatch):
-    suggestions = Suggestions(candidates=[
-        Suggestion(ticker="YUM", note="KFC belongs to Yum! Brands."),
-        Suggestion(ticker=None, note="KFC in China is Yum China, a separate company."),
+    suggestions = Suggestions(query_name="KFC", is_private_or_not_listed=False, not_listed_reason=None,
+                              candidates=[
+        Suggestion(ticker="YUM", match_type="exact", relation=None, share_class=None,
+                   note="KFC belongs to Yum! Brands."),
+        Suggestion(ticker=None, match_type="related", relation="separate company in China", share_class=None,
+                   note="KFC in China is Yum China, a separate company."),
     ])
     installed = fake_claude(handler_for(ko_pack, {Suggestions: lambda pack: suggestions}))
     monkeypatch.setattr(resolve_module, "get_client", lambda: installed)
@@ -90,14 +93,15 @@ def shown_texts(value, key=None):
 
 def test_the_page_and_its_scripts_are_served(client):
     assert "<title>Stock Autopsy</title>" in client.get("/").text
-    for asset in ("app.js", "events.js", "cards.js", "markdown.js", "tokens.css", "app.css"):
+    for asset in ("app.js", "events.js", "cards.js", "lookup.js", "markdown.js", "tokens.css", "app.css"):
         assert client.get(f"/static/{asset}").status_code == 200, asset
 
 
 def test_a_ticker_in_capitals_resolves_without_a_model_call(client, fake):
     found = client.post("/api/resolve", json={"query": "KO"}).json()
     assert found["candidates"] == [
-        {"ticker": "KO", "name": "Coca Cola Co", "note": None, "unsupported": None}
+        {"ticker": "KO", "name": "Coca Cola Co", "note": None, "unsupported": None,
+         "match_type": "exact", "relation": None, "share_class": None}
     ]
     assert found["suggested"] is False and fake.requests == []
 
@@ -325,3 +329,16 @@ def test_a_section_kept_in_english_is_named_with_its_reason_on_the_page(client, 
             "(the translator returned the English text, twice).") in done["note"]
     again = client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).json()
     assert "Forensic Accountant (the translator returned the English text, twice)" in again["note"]
+
+
+def test_a_run_from_a_related_card_says_how_the_company_was_found(client, fake):
+    run_id = client.post("/api/runs", json={"ticker": "KO", "name": "Coca Cola Co",
+                                            "related_to": "OpenAI"}).json()["run_id"]
+    follow(client, run_id)
+    view = client.get(f"/api/runs/{run_id}/result").json()
+    assert view["company_heading"] == "Coca Cola Co (found as a company related to OpenAI)"
+    report = client.get(f"/api/runs/{run_id}/files/report").text
+    assert report.splitlines()[0] == "# Stock Autopsy: Coca Cola Co (found as a company related to OpenAI)"
+    plain = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
+    follow(client, plain)
+    assert client.get(f"/api/runs/{plain}/result").json()["company_heading"] == "Coca Cola Co"

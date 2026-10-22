@@ -304,9 +304,23 @@ select {
   padding: var(--space-3) var(--space-4);
 }
 .candidate strong { font-size: 1.05rem; }
-.candidate.is-unsupported { cursor: not-allowed; opacity: 1; border-style: dashed; }
-.candidate.is-unsupported strong { color: var(--text-muted); }
+/* Lookup cards (D2): a coloured bar from the verdict tokens, always with an icon and a label.
+   Green: exact match; amber (the "unclear" token, not the orange "weak" one): related company;
+   grey: cannot be analyzed. */
+.candidate.is-exact, .candidate.is-related, .candidate.is-unavailable { border-left-width: 6px; }
+.candidate.is-exact { border-left-color: var(--verdict-good); }
+.candidate.is-related { border-left-color: var(--verdict-unclear); }
+.candidate.is-unavailable { border-left-color: var(--verdict-pending); }
+.match-label { font-size: 0.9rem; font-weight: 600; }
+.is-exact .match-label { color: var(--verdict-good); }
+.is-related .match-label { color: var(--verdict-unclear); }
+.is-unavailable .match-label { color: var(--text-muted); }
+.candidate-action { color: var(--accent); font-weight: 600; }
+.candidate.is-unavailable { cursor: not-allowed; opacity: 1; border-style: dashed; border-left-style: solid; }
+.candidate.is-unavailable strong { color: var(--text-muted); }
 .unsupported-note { color: var(--text); }
+.notice-calm, .notice-hint, .notice-banner { border-color: var(--border); background: var(--surface-muted); }
+.notice-banner { border-left: 6px solid var(--verdict-unclear); font-weight: 600; }
 .price-assumes {
   margin: var(--space-3) 0 0; padding: var(--space-3) var(--space-4);
   background: var(--surface-muted); border-radius: var(--radius);

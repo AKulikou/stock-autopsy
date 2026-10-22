@@ -31,9 +31,10 @@ export function afterRunFailed(state) {
 
 // The live heading and the browser tab name the company (M11): a run takes minutes,
 // often in one of many tabs.
-export function liveHeading({ name, ticker } = {}) {
-  if (name && ticker && name !== ticker) return `Analyzing ${name} (${ticker})`;
-  return name || ticker ? `Analyzing ${name || ticker}` : "Analyzing";
+export function liveHeading({ name, ticker, relatedTo } = {}) {
+  const found = relatedTo ? `, found as a company related to ${relatedTo}` : "";
+  if (name && ticker && name !== ticker) return `Analyzing ${name} (${ticker})${found}`;
+  return name || ticker ? `Analyzing ${name || ticker}${found}` : "Analyzing";
 }
 
 export function tabTitle(subject, state) {

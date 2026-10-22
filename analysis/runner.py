@@ -77,6 +77,9 @@ class AutopsyRun:
     model: str = MODEL
     duration_s: float = 0.0
     calls: list[dict] = field(default_factory=list)
+    # What the person looked up when they picked this company as a related one ("OpenAI"):
+    # shown in headings only, never part of the pack (decision D5).
+    related_to: str | None = None
 
     def result(self, key: str) -> dict | None:
         return next((r for r in self.results if r["key"] == key), None)

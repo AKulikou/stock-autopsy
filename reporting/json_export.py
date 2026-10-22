@@ -18,6 +18,7 @@ def build_json(run: AutopsyRun) -> dict:
         "meta": {
             "ticker": pack["ticker"],
             "company_name": pack["company_name"],
+            "found_as_related_to": run.related_to,
             "as_of": pack["as_of"],
             "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "model": run.model,

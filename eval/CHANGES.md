@@ -8,6 +8,26 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — company lookup: exact match or related company (D2; lookup prompt and schema, not an analyst)
+
+What changed: the lookup call (Haiku 5.5, web/resolve.py; it never touches the data pack or the
+analysts) now answers per candidate match_type ("exact" or "related"), relation (a few words,
+e.g. "major investor in OpenAI") and share_class, and for the query query_name,
+is_private_or_not_listed and a reason. Its prompt says what each type means and asks for no
+candidates rather than a guess. Code keeps checking every ticker against the SEC list and the
+filing history, orders exact, related, then companies that cannot be analyzed, and writes the
+banner ("OpenAI is a private company and files no reports with the SEC. Related public
+companies:"). A run started from a related card says so in the report title and on the page
+("Microsoft Corp (found as a company related to OpenAI)"); the relation never enters the pack.
+Every lookup is logged at INFO (query, the model's candidates, kept or dropped and why).
+
+Expected effect: "openai" shows Microsoft and Nvidia as related companies under the banner
+instead of as unexplained suggestions. Risk: the model may call a brand owner "related" or a
+partner "exact"; the label then misleads, but the SEC checks still stop anything that cannot be
+analyzed. Checked with the fake client only (tests/test_resolve.py); no paid call. One lookup
+costs about 0.0002 USD, so the owner's manual checks of "openai", "chrysler" and "anthropic" on
+the real page cost under 0.001 USD.
+
 ## 2026-10-22 — prompt cache: one output schema for all analysts, behind SHARED_OUTPUT_SCHEMA (D1; request change, off by default, NOT measured)
 
 Finding, from the owner's NVDA run of 2026-10-22 (logs/run_20261022_091656.log) and the 2026-10-21

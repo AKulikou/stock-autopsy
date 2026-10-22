@@ -11,6 +11,7 @@ import {
   outcomeWords,
   tabTitle,
 } from "./live.js";
+import { candidateCard, lookupNotice, orderCandidates } from "./lookup.js";
 import { renderMarkdown } from "./markdown.js";
 
 const $ = (id) => document.getElementById(id);
@@ -19,7 +20,7 @@ let timer = null;
 let languages = [];
 let defaultLanguage = null;
 let analysts = []; // [{key, label, waits_for}] in the order a run starts them
-let subject = null; // {name, ticker} of the run on screen
+let subject = null; // {name, ticker, relatedTo} of the run on screen
 
 function show(view) {
   for (const id of VIEWS) $(id).hidden = id !== view;
@@ -50,11 +51,42 @@ function capitalize(text) {
 
 // ---------- 1. Choose a company ----------
 
-function inputMessage(text, isError = false) {
+// kind: "error" (red, with a retry button when a retry may help), "banner", "calm" or "hint".
+function inputMessage(text, kind = "calm", retry = null) {
   const box = $("input-message");
-  box.classList.toggle("is-error", isError);
-  box.textContent = text || "";
+  box.className = `notice notice-${kind}${kind === "error" ? " is-error" : ""}`;
+  box.replaceChildren();
+  if (text) box.append(el("p", null, text));
+  if (retry) {
+    const buttons = el("div", "buttons");
+    const again = el("button", "secondary", "Try again");
+    again.type = "button";
+    again.addEventListener("click", retry);
+    buttons.append(again);
+    box.append(buttons);
+  }
   box.hidden = !text;
+}
+
+function candidateButton(c, relatedTo) {
+  const look = candidateCard(c);
+  const button = el("button", `candidate secondary is-${look.kind}`);
+  button.type = "button";
+  const label = el("span", "match-label");
+  label.append(el("span", "match-icon", look.icon), document.createTextNode(` ${look.label}`));
+  label.firstChild.setAttribute("aria-hidden", "true");
+  button.append(label, el("strong", null, c.name));
+  if (c.note && c.note !== c.relation) button.append(el("span", "muted", c.note));
+  if (!look.canRun) {
+    // No 10-K or 10-Q reports: a run would only pay for an empty data pack.
+    button.disabled = true;
+    button.append(el("span", "unsupported-note", `Cannot be analyzed. ${c.unsupported}`));
+  } else {
+    button.append(el("span", "candidate-action", "Analyze"));
+    const related = look.kind === "related" ? relatedTo : null;
+    button.addEventListener("click", () => analyze(c.ticker, c.name, related));
+  }
+  return button;
 }
 
 async function find(query) {
@@ -64,29 +96,11 @@ async function find(query) {
   $("find").disabled = true;
   const { status, data } = await request("POST", "/api/resolve", { query }).catch(() => ({ status: 0, data: {} }));
   $("find").disabled = false;
-  if (status !== 200) {
-    inputMessage(status === 0 ? "The local server does not answer." : detailText(data), true);
-    return;
-  }
-  if (data.message) inputMessage(data.message, !data.candidates.length);
-  if (data.suggested && data.candidates.length) {
-    inputMessage("Suggestions from the model's knowledge; each one is checked against the SEC list. Pick one:");
-  }
-  for (const c of data.candidates) {
-    const button = el("button", "candidate secondary");
-    button.type = "button";
-    button.append(el("strong", null, c.name));
-    if (c.note) button.append(el("span", "muted", c.note));
-    if (c.unsupported) {
-      // No 10-K or 10-Q reports: a run would only pay for an empty data pack.
-      button.disabled = true;
-      button.classList.add("is-unsupported");
-      button.append(el("span", "unsupported-note", `Cannot be analyzed. ${c.unsupported}`));
-    } else {
-      button.append(el("span", null, "Analyze"));
-      button.addEventListener("click", () => analyze(c.ticker, c.name));
-    }
-    $("candidates").append(button);
+  const notice = lookupNotice(status, data);
+  if (notice) inputMessage(notice.text, notice.kind, notice.retry ? () => find(query) : null);
+  if (status !== 200) return;
+  for (const c of orderCandidates(data.candidates)) {
+    $("candidates").append(candidateButton(c, data.query_name || query.trim()));
   }
   // A ticker typed exactly: no need to pick.
   if (!data.suggested && data.candidates.length === 1 && !data.candidates[0].unsupported) {
@@ -94,15 +108,17 @@ async function find(query) {
   }
 }
 
-async function analyze(ticker, name) {
-  const { status, data } = await request("POST", "/api/runs", { ticker, name }).catch(() => ({ status: 0, data: {} }));
+async function analyze(ticker, name, relatedTo = null) {
+  const body = { ticker, name, related_to: relatedTo };
+  const { status, data } = await request("POST", "/api/runs", body).catch(() => ({ status: 0, data: {} }));
   if (status === 202) {
-    startLive(data.run_id, 0, null, { name, ticker });
+    startLive(data.run_id, 0, null, { name, ticker, relatedTo });
   } else if (status === 409 && data.active_run_id) {
     const active = await request("GET", "/api/runs/active").catch(() => ({ data: {} }));
-    startLive(data.active_run_id, null, detailText(data), { name: active.data.name, ticker: active.data.ticker });
+    startLive(data.active_run_id, null, detailText(data),
+      { name: active.data.name, ticker: active.data.ticker, relatedTo: active.data.related_to });
   } else {
-    inputMessage(status === 0 ? "The local server does not answer." : detailText(data), true);
+    inputMessage(status === 0 ? "The local server does not answer." : detailText(data), "error");
   }
 }
 
@@ -127,7 +143,7 @@ async function openResult(runId) {
     renderResult(runId, data);
     show("result-view");
   } else {
-    inputMessage(status === 0 ? "The local server does not answer." : data.error || detailText(data), true);
+    inputMessage(status === 0 ? "The local server does not answer." : data.error || detailText(data), "error");
   }
 }
 
@@ -323,7 +339,7 @@ function banner(view) {
   const box = el("div", `verdict-banner verdict-${verdictClass(c.verdict)}`);
   const [short, meaning] = c.verdict_text.split(": ");
   box.append(
-    el("p", "verdict-label", `${view.company} · data as of ${view.as_of}`),
+    el("p", "verdict-label", `${view.company_heading || view.company} · data as of ${view.as_of}`),
     el("p", "verdict-label", `Financial statements to ${view.statements_to || "an unknown date"}`),
     el("p", "verdict-text", short),
     el("p", "verdict-meaning", capitalize(meaning || "") + "."),
@@ -529,7 +545,8 @@ async function init() {
   $("again").addEventListener("click", () => show("input-view"));
   const active = await request("GET", "/api/runs/active");
   if (active.data.run_id) {
-    startLive(active.data.run_id, active.data.elapsed_s, null, { name: active.data.name, ticker: active.data.ticker });
+    startLive(active.data.run_id, active.data.elapsed_s, null,
+      { name: active.data.name, ticker: active.data.ticker, relatedTo: active.data.related_to });
   }
   else loadRecent();
 }

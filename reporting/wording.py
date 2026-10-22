@@ -165,6 +165,15 @@ def company_display(name: str) -> str:
     return name.title() if name.isupper() else name
 
 
+def company_heading(name: str, related_to: str | None = None) -> str:
+    """
+    The company as a heading names it: "Microsoft Corp (found as a company related to
+    OpenAI)" when the person picked it as a company related to what they typed.
+    """
+    company = company_display(name)
+    return f"{company} (found as a company related to {related_to})" if related_to else company
+
+
 # Tickers that are also ordinary words, abbreviations or codes in report text. Such a
 # ticker is replaced only where it cannot be the word: "LOW's", "(T)", "IT shares".
 # Single letters are always treated so ("A strong year").
