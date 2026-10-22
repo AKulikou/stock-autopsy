@@ -8,6 +8,18 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — translation: an English source word written with Cyrillic letters is put back by code
+
+Why a data quality section stayed in English in a Russian copy of 2026-10-22: not by design and
+not the number check, but the mixed-alphabet check. Both answers wrote "стock" (Cyrillic с and т,
+Latin ock) for the source's "stock" (the field name "stock based compensation" and "not treated as
+a stock split"); the retry note named the word and it came back the same, so the section was kept
+in English with its one-line note. Code now gives such a word back its English spelling when its
+Cyrillic letters read, by sound or by look, as the letters of an English word of the same source
+section ("стock" -> "stock", "бottlers" -> "bottlers", "ИT" -> "IT"); a mixed word that matches no
+source word is still rejected. The check itself is unchanged and no prompt changed. A scan of
+every stored Russian and Lithuanian copy finds three such words, all three of them this kind.
+
 ## 2026-10-22 — the price sentence writes a negative operating margin as a loss (committee input)
 
 What changed: the sentence Python writes on what the price assumes (valuation/dcf.py,

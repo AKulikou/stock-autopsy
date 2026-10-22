@@ -25,6 +25,8 @@ import re
 import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
+from itertools import product
+from math import prod
 from pathlib import Path
 
 from config import MAX_TOKENS, TRANSLATION_EFFORT, TRANSLATION_MODEL, TRANSLATION_RETRY_EFFORT
@@ -280,6 +282,47 @@ def fix_look_alikes(text: str, language: str) -> str:
     return _WORD.sub(fix, text)
 
 
+# The Latin letters a translator may have meant by a Cyrillic one inside an English word: by
+# sound (с = s, т = t) and by look (с = c, р = p).
+CYRILLIC_AS_LATIN = {
+    "а": "a", "б": "b", "в": "vb", "г": "g", "д": "d", "е": "e", "ё": "e", "з": "z", "и": "i", "й": "iy",
+    "к": "k", "л": "l", "м": "m", "н": "nh", "о": "o", "п": "p", "р": "rp", "с": "sc", "т": "t", "у": "uy",
+    "ф": "f", "х": "hx", "ц": "c", "і": "i", "ј": "j", "ѕ": "s",
+}
+MAX_READINGS = 64
+
+
+def restore_source_words(source: str, text: str) -> str:
+    """
+    A word of the translation that mixes Cyrillic and Latin letters and reads, letter by letter,
+    as an English word of the source section gets that word back: "стock" in a Russian copy of
+    2026-10-22, rejected twice, was the source's "stock" (a field name kept in English). A mixed
+    word that matches no source word is left for the check to reject.
+    """
+    english: dict[str, str] = {}
+    for word in _WORD.findall(source):
+        if word.isascii():
+            english.setdefault(word.lower(), word)
+
+    def fix(match: re.Match) -> str:
+        word = match.group(0)
+        if not {"CYRILLIC", "LATIN"} <= {_script(c) for c in word}:
+            return word
+        options = [CYRILLIC_AS_LATIN.get(c.lower(), "") if _script(c) == "CYRILLIC" else c.lower()
+                   for c in word]
+        if not all(options) or prod(len(o) for o in options) > MAX_READINGS:
+            return word
+        for letters in product(*options):
+            found = english.get("".join(letters))
+            if found and len(word) > 1 and word.isupper():
+                return found.upper()  # "ИT" is "IT", not the pronoun "it" of the source
+            if found:  # the first letter's case follows the translation
+                return (found[0].upper() if word[0].isupper() else found[0].lower()) + found[1:]
+        return word
+
+    return _WORD.sub(fix, text)
+
+
 def _mixed_words(problem: str) -> list[str]:
     """The words of a "words mixing alphabets (a, b)" problem, each once, ignoring case."""
     match = re.search(r"words mixing alphabets \((.*)\)$", problem)
@@ -435,9 +478,12 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
 
 
 def _tidied(section: str, outcome: dict, language: str) -> dict:
-    """What code puts right in an answer before it is checked: look-alike letters, number cells of tables."""
+    """
+    What code puts right in an answer before it is checked: look-alike letters, an English word of
+    the source written with Cyrillic letters, number cells of tables.
+    """
     if outcome["status"] == "success":
-        text = fix_look_alikes(outcome["text"], language)
+        text = restore_source_words(section, fix_look_alikes(outcome["text"], language))
         outcome["text"] = localize_tables(section, text, language)
     return outcome
 

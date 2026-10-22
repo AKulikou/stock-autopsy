@@ -35,6 +35,7 @@ from translate.translator import (
     kept_sections,
     looks_untranslated,
     mixed_script_words,
+    restore_source_words,
     retry_detail,
     section_problem,
     split_sections,
@@ -871,3 +872,59 @@ def test_a_table_missing_a_row_twice_stays_in_english(fake):
         "twice a table came back broken (the table with the columns Between, Conflict, Nature, "
         "2 rows instead of 3)")}]
     assert "| Forensic vs Valuation | positive cash flow against a negative quarter |" in outcome["text"]
+
+
+# ---- the data quality section --------------------------------------------------------
+
+DATA_QUALITY = """## Data quality
+
+Sources: SEC financial data received, price (Yahoo Finance) received.
+
+| Restated | Period | Original | Restated | Original filed | Restating filing |
+|---|---|---|---|---|---|
+| stock based compensation | FY2021 | $81.64M | $63.89M | 2022-02-28 | 10-K/A 2023-05-27 |
+
+- Price history entry of 2019-05-23 with ratio 1.062 is not treated as a stock split: a price adjustment
+- gross profit (FY2016-FY2025): GrossProfit not reported; computed as revenue - cost of revenue
+- dividends paid (FY2021, FY2022): not reported in the filings (unknown, not zero)
+"""
+
+
+def data_quality_translator(mixed_word: str):
+    """A Russian 'translation' keeping GrossProfit, 10-K/A and FY labels, with one word mixing alphabets."""
+    def handler(kwargs):
+        source = kwargs["messages"][0]["content"]
+        text = fake_russian(source.replace("GrossProfit", "\u0000")).replace("\u0000", "GrossProfit")
+        return text_response(text.replace("- текст текст", f"- {mixed_word} текст", 1))
+
+    return handler
+
+
+def test_a_source_word_written_with_cyrillic_letters_is_put_back_by_code():
+    # The Russian copy of 2026-10-22 kept its data quality section in English: twice "стock".
+    assert restore_source_words("not treated as a stock split", "не считается (стock split)") == (
+        "не считается (stock split)")
+    assert restore_source_words("Stock based", "Стock") == "Stock"
+    assert restore_source_words("Bottlers buy it; IT costs", "бottlers и ИT") == "bottlers и IT"
+    # No English word of the source reads that way: left for the check to reject.
+    assert restore_source_words("The verdict", "Vердикt и Кредит") == "Vердикt и Кредит"
+
+
+def test_the_data_quality_section_is_translated_and_keeps_codes(fake):
+    fake.create_handler = data_quality_translator("стock")
+    answer = data_quality_translator("стock")({"messages": [{"content": DATA_QUALITY}]}).content[0].text
+    assert "words mixing alphabets (стock)" in section_problem(DATA_QUALITY, answer, "Russian")  # before
+    outcome = translate_document(DATA_QUALITY, "Russian")
+    assert len(translation_calls(fake)) == 1 and outcome["untranslated_sections"] == 0
+    text = outcome["text"]
+    assert "Data quality" not in text and "стock" not in text and "- stock" in text
+    assert all(code in text for code in ("GrossProfit", "10-K/A", "FY2016-FY2025", "FY2021", "1.062"))
+
+
+def test_a_data_quality_section_that_still_fails_says_why_it_stayed_in_english(fake):
+    fake.create_handler = data_quality_translator("Кredit")  # no "kredit" in the source
+    outcome = translate_document(DATA_QUALITY, "Russian")
+    reason = "twice the translation mixed Latin and Cyrillic letters (Кredit)"
+    assert outcome["kept_sections"] == [{"heading": "Data quality", "reason": reason}]
+    note = f"> Data quality stayed in English: {reason}. The English original follows."
+    assert outcome["text"].startswith(note)
