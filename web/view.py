@@ -26,7 +26,7 @@ from reporting.wording import (
 )
 from translate.glossary import ENGLISH, load_glossary, split_glossary
 from translate.languages import CODES, LANGUAGES, NATIVE_NAMES
-from translate.translator import REPORT_FILENAME, kept_sections, translated_path
+from translate.translator import REPORT_FILENAME, kept_sections, kept_sentence, translated_path
 from web.runs import Run
 
 CODE_KEYS = {"verdict", "status", "kind", "key", "check"}
@@ -298,9 +298,7 @@ def translation_view(outcome: dict, language: str, cost: float | None) -> dict:
     else:
         note = f"Translated in {outcome['duration_s']:.0f} s, about ${(cost or 0):.2f}."
     if kept:
-        sections = "; ".join(f"{k['heading']} ({k['reason']})" for k in kept)
-        note += (f" {len(kept)} section{'s' if len(kept) > 1 else ''} stayed in English and "
-                 f"{'are' if len(kept) > 1 else 'is'} marked in the text: {sections}.")
+        note += "".join(f" {kept_sentence(k['heading'], k['reason'])}" for k in kept)
     return {
         "language": language,
         "label": NATIVE_NAMES[language],

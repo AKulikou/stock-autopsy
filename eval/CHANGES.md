@@ -8,6 +8,20 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — translation: look-alike letters fixed by code, the retry names the word, one-sentence reason (E4, E5)
+
+The owner's Lithuanian copy of Costco kept "Forensic Accountant" in English: both answers wrote
+"paketе", whose last letter is the Cyrillic "е" (U+0435); the check was right. Now, in a
+Latin-script language, a Latin word with a few Cyrillic look-alikes (а е о р с х у к ...) gets
+the Latin letters from code, with no retry; a word that is mostly Cyrillic or has a letter with
+no Latin twin ("Vердикt") is still rejected, and the retry note names the word and each foreign
+letter with its code point. Russian copies are not changed by code (the note names the word).
+The reason for a section kept in English is one sentence, the same in the copy, on the page
+and in the CLI: "Forensic Accountant stayed in English: twice the translation mixed Latin and
+Cyrillic letters (paketе)." Copies with the old "Kept in English:" note are still read.
+The translation prompt changes only on a retry, by the named words. Checked with the fake
+client; one live Lithuanian translation of the Costco report follows (about 0.03 USD).
+
 ## 2026-10-22 — pre-release P3 lost to batch-call timeouts; the batch client now survives them (eval instrument)
 
 The first `v4_release` run (5 cases x 2 reps, --batch) and a second run the owner started both

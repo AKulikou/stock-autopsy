@@ -21,13 +21,14 @@ from dotenv import load_dotenv
 def describe(outcome: dict, language: str, cost: float | None) -> str:
     """One line on what the translation did, in words."""
     from core.token_summary import format_cost
+    from translate.translator import kept_sentence
 
     if outcome["reused"]:
         return f"{outcome['path']} already exists; nothing was translated or paid for."
     if outcome["status"] != "success":
         return f"The translation into {language} failed ({outcome['error']}); no file was written."
     kept = outcome["untranslated_sections"]
-    reasons = "".join(f" Kept in English: {k['heading']} ({k['reason']})." for k in outcome["kept_sections"])
+    reasons = "".join(f" {kept_sentence(k['heading'], k['reason'])}" for k in outcome["kept_sections"])
     return (
         f"Translated into {language}: {outcome['path']}. {outcome['sections']} sections, "
         f"{kept} kept in English, {outcome['number_rejections']} answers rejected because a number changed, "

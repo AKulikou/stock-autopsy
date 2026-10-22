@@ -338,10 +338,10 @@ def test_a_section_kept_in_english_is_named_with_its_reason_on_the_page(client, 
     follow(client, run_id)
     done = client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).json()
     assert done["kept_in_english"] == 1
-    assert ("1 section stayed in English and is marked in the text: Forensic Accountant "
-            "(the translator returned the English text, twice).") in done["note"]
+    sentence = "Forensic Accountant stayed in English: twice the translator returned the English text."
+    assert sentence in done["note"]
     again = client.post(f"/api/runs/{run_id}/translation", json={"language": "Russian"}).json()
-    assert "Forensic Accountant (the translator returned the English text, twice)" in again["note"]
+    assert sentence in again["note"]
 
 
 def test_a_run_from_a_related_card_says_how_the_company_was_found(client, fake):

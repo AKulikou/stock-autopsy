@@ -20,10 +20,13 @@ from translate.translator import (
     MACHINE_TRANSLATION_NOTE,
     RETRY_NOTE,
     analyst_heading,
+    fix_look_alikes,
     heading_untranslated,
+    kept_reason,
     kept_sections,
     looks_untranslated,
     mixed_script_words,
+    retry_detail,
     section_problem,
     split_sections,
     structure_changed,
@@ -301,10 +304,14 @@ def test_a_section_whose_numbers_change_twice_stays_in_english(fake):
     fake.create_handler = translator(wrong_numbers_first=2)
     outcome = translate_document(REPORT, "Russian")
     assert (outcome["untranslated_sections"], outcome["number_rejections"]) == (1, 2)
-    note = "> Kept in English: a number did not come back with the same value, twice (47.94 billion)."
+    reason = "twice a number came back changed (47.94 billion)"
+    note = f"> In plain words stayed in English: {reason}."
     kept = f"{note} The English original follows.\n\n### In plain words\n\nRevenue was $47.94 billion"
     assert kept in outcome["text"]
-    assert outcome["kept_sections"] == [{"heading": "In plain words", "reason": note[19:-1]}]
+    assert outcome["kept_sections"] == [{"heading": "In plain words", "reason": reason}]
+    # A copy made before 2026-10-22 is still read back.
+    old = "> Kept in English: a number did not come back. The English original follows.\n\n### Valuation\n"
+    assert kept_sections(old) == [{"heading": "Valuation", "reason": "a number did not come back"}]
     assert kept_sections(outcome["text"]) == outcome["kept_sections"]
 
 
@@ -323,9 +330,9 @@ def test_a_section_returned_in_english_says_so_where_it_stays(fake):
     fake.create_handler = english_forensic
     outcome = translate_document(REPORT.replace("### Forensic Accountant\n", long_forensic, 1), "Russian")
     assert outcome["kept_sections"] == [
-        {"heading": "Forensic Accountant", "reason": "the translator returned the English text, twice"}
+        {"heading": "Forensic Accountant", "reason": "twice the translator returned the English text"}
     ]
-    assert "> Kept in English: the translator returned the English text, twice. The English original" in (
+    assert "> Forensic Accountant stayed in English: twice the translator returned the English text." in (
         outcome["text"])
 
 
@@ -593,3 +600,35 @@ def test_a_language_without_a_glossary_keeps_the_english_one_and_says_so(fake):
     outcome = translate_document(REPORT + "\n" + block, "Russian", None)
     assert outcome["text"].endswith(
         "> There is no Russian glossary yet; the English glossary follows.\n\n" + block)
+
+
+# ---- E4, E5 (owner's manual test 2026-10-22) ------------------------------------------
+
+
+def test_cyrillic_look_alikes_inside_a_latin_word_are_put_right_by_code():
+    # "paketе" ended in a Cyrillic "е" (U+0435) twice, and the section stayed in English.
+    fixed = fix_look_alikes("Duomenų paketе ir Paketе.", "Lithuanian")
+    assert fixed == "Duomenų pakete ir Pakete." and mixed_script_words(fixed, "Lithuanian") == []
+    # A word that is mostly Cyrillic, or has letters with no Latin twin, is left for the check.
+    assert fix_look_alikes("## Vердикt", "Lithuanian") == "## Vердикt"
+    # Lithuanian, German and Russian words are never touched.
+    for text, language in (("ąčęėįšųūž Paketų žodynas", "Lithuanian"), ("Größe und Übersicht", "German"),
+                           ("Пессимистичный сценарий", "Russian")):
+        assert fix_look_alikes(text, language) == text and mixed_script_words(text, language) == []
+
+
+def test_the_retry_names_the_word_and_its_foreign_letters():
+    note = retry_detail("not in Russian: words mixing alphabets (закončившийся)")
+    assert "закončившийся" in note and "o (Latin, U+006F)" in note and "n (Latin, U+006E)" in note
+
+
+def test_a_section_kept_in_english_says_why_in_one_short_sentence():
+    reason = kept_reason(["not in Lithuanian: words mixing alphabets (paketе)",
+                          "not in Lithuanian: words mixing alphabets (paketе, Paketе, paketе)"])
+    assert reason == "twice the translation mixed Latin and Cyrillic letters (paketе)"
+    assert kept_reason(["left in English"] * 2) == "twice the translator returned the English text"
+    mixed_then_number = ["not in Russian: words mixing alphabets (закončившийся)",
+                         "numbers changed: 4 billion"]
+    assert kept_reason(mixed_then_number) == (
+        "the translation mixed Latin and Cyrillic letters (закončившийся), then a number came back changed "
+        "(4 billion)")

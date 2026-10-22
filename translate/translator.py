@@ -77,10 +77,18 @@ UNTRANSLATED_SHARE = 0.6
 MIN_WORDS_TO_CHECK = 25
 # Put above a section kept in English, with the reason in words, so a reader of the
 # copy (and the page, which reads it back with kept_sections()) sees why.
-UNTRANSLATED_NOTE = "> Kept in English: {reason}. The English original follows.\n\n"
+# The same sentence stands in the copy, on the page and in the CLI (E5): kept_sentence().
+UNTRANSLATED_NOTE = "> {sentence} The English original follows.\n\n"
+# Copies made before 2026-10-22 say "Kept in English: <reason>." instead; both are read back.
 _KEPT = re.compile(
-    r"(?m)^> Kept in English: (?P<reason>.+)\. The English original follows\.\n\n#{2,3} (?P<heading>.+)$"
+    r"(?m)^> (?:Kept in English|.+? stayed in English): (?P<reason>.+)\. The English original follows\.\n\n"
+    r"#{2,3} (?P<heading>.+)$"
 )
+
+
+def kept_sentence(heading: str, reason: str) -> str:
+    """'Forensic Accountant stayed in English: twice the translator returned the English text.'"""
+    return f"{heading} stayed in English: {reason}."
 
 # The overlap check cannot see a section that comes back in a third language; the
 # script of the letters tells Russian from Lithuanian, and letters outside a Latin
@@ -121,18 +129,21 @@ MACHINE_TRANSLATION_NOTE = (
 )
 
 
-def system_prompt(language: str, section: str, glossary: Glossary | None, retry: bool) -> str:
+def system_prompt(language: str, section: str, glossary: Glossary | None, retry: bool,
+                  detail: str = "") -> str:
     prompt = TRANSLATION_PROMPT.format(language=language, analysts=", ".join(ANALYST_NAMES))
     terms = glossary.prompt_lines(section) if glossary else ""
     if terms:
         prompt += GLOSSARY_NOTE.format(language=language, terms=terms)
     if retry:
         prompt += RETRY_NOTE.format(language=language)
+    if detail:
+        prompt += detail + "\n"
     return prompt
 
 
 def translate_markdown(markdown: str, language: str, glossary: Glossary | None = None,
-                       retry: bool = False) -> dict:
+                       retry: bool = False, detail: str = "") -> dict:
     """
     Translate one Markdown text. Never raises. A retry adds RETRY_NOTE and thinks more.
 
@@ -146,7 +157,7 @@ def translate_markdown(markdown: str, language: str, glossary: Glossary | None =
             model=TRANSLATION_MODEL,
             max_tokens=MAX_TOKENS,
             output_config={"effort": TRANSLATION_RETRY_EFFORT if retry else TRANSLATION_EFFORT},
-            system=system_prompt(language, markdown, glossary, retry),
+            system=system_prompt(language, markdown, glossary, retry, detail),
             messages=[{"role": "user", "content": markdown}],
         )
         usage = {
@@ -230,6 +241,62 @@ def mixed_script_words(text: str, language: str) -> list[str]:
     return found
 
 
+# Cyrillic letters that look like Latin ones. A Latin-script translation that holds one inside a
+# Latin word ("paketе" with a Cyrillic "е", Lithuanian copy of 2026-10-22, rejected twice) means
+# the Latin letter: code puts it right instead of paying for a retry that repeats it.
+LOOK_ALIKES = str.maketrans({
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "х": "x", "у": "y", "к": "k", "і": "i", "ј": "j",
+    "ѕ": "s", "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H", "О": "O", "Р": "P", "С": "C",
+    "Т": "T", "Х": "X", "У": "Y", "І": "I", "Ј": "J", "Ѕ": "S",
+})
+
+
+def fix_look_alikes(text: str, language: str) -> str:
+    """
+    In a Latin-script language, a word of Latin letters with a few Cyrillic look-alikes gets
+    the Latin letters. A word that is mostly Cyrillic, or holds a Cyrillic letter with no
+    Latin twin ("Vердикt"), is left as it is for the check to reject.
+    """
+    if language.strip().lower() not in LATIN_ALPHABETS:
+        return text
+
+    def fix(match: re.Match) -> str:
+        word = match.group(0)
+        cyrillic = [c for c in word if _script(c) == "CYRILLIC"]
+        latin = [c for c in word if _script(c) == "LATIN"]
+        if not cyrillic or len(latin) < len(cyrillic):
+            return word
+        fixed = word.translate(LOOK_ALIKES)
+        return fixed if all(_script(c) != "CYRILLIC" for c in fixed) else word
+
+    return _WORD.sub(fix, text)
+
+
+def _mixed_words(problem: str) -> list[str]:
+    """The words of a "words mixing alphabets (a, b)" problem, each once, ignoring case."""
+    match = re.search(r"words mixing alphabets \((.*)\)$", problem)
+    words, seen = [], set()
+    for word in (match.group(1).split(", ") if match else []):
+        if word.casefold() not in seen:
+            seen.add(word.casefold())
+            words.append(word)
+    return words
+
+
+def retry_detail(problem: str) -> str:
+    """What exactly was wrong, for the retry: each mixed word and its letters from the other alphabet."""
+    lines = []
+    for word in _mixed_words(problem):
+        scripts = [_script(c) for c in word if c.isalpha()]
+        main = max(set(scripts), key=scripts.count)
+        foreign = ", ".join(f"{c} ({_script(c).title()}, U+{ord(c):04X})"
+                            for c in dict.fromkeys(word) if c.isalpha() and _script(c) != main)
+        lines.append(f'The word "{word}" mixes alphabets: {foreign}.')
+    if not lines:
+        return ""
+    return "In your previous answer: " + " ".join(lines) + " Write every word in one alphabet only."
+
+
 def _heading(text: str) -> str:
     return text.strip().split("\n", 1)[0].strip()
 
@@ -275,7 +342,7 @@ def section_problem(source: str, translation: str, language: str) -> str | None:
         wrong = wrong_language(translation, language)
         if wrong:
             return f"not in {language}: {wrong}"
-    mixed = mixed_script_words(translation, language)
+    mixed = list(dict.fromkeys(mixed_script_words(translation, language)))
     if mixed:
         return f"not in {language}: words mixing alphabets ({', '.join(mixed[:3])})"
     missing = missing_numbers(source, translation)
@@ -296,6 +363,8 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
     English original; anything worse keeps the English section, marked.
     """
     first = translate_markdown(section, language, glossary)
+    if first["status"] == "success":
+        first["text"] = fix_look_alikes(first["text"], language)
     if first["status"] != "success":
         return {**first, "calls": 1, "untranslated": False, "number_rejections": 0}
     first_problem = section_problem(section, first["text"], language)
@@ -303,7 +372,9 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
         return {**first, "calls": 1, "untranslated": False, "number_rejections": 0}
     heading = _heading(section)
     _log_rejected(heading, first_problem, first["text"])
-    second = translate_markdown(section, language, glossary, retry=True)
+    second = translate_markdown(section, language, glossary, retry=True, detail=retry_detail(first_problem))
+    if second["status"] == "success":
+        second["text"] = fix_look_alikes(second["text"], language)
     billed = {key: first.get(key, 0) + second.get(key, 0) for key in ("input_tokens", "output_tokens")}
     attempts = [(first, first_problem)]
     if second["status"] == "success":
@@ -319,32 +390,45 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
             logger.warning(f"[Translation] '{heading}': the heading stayed English after a retry")
             return {**attempt, **billed, "calls": 2, "untranslated": False, "number_rejections": rejections}
     reason = kept_reason([problem for _, problem in attempts])
-    logger.warning(f"[Translation] '{heading}' kept in English after a retry ({reason})")
-    return {"status": "success", "text": UNTRANSLATED_NOTE.format(reason=reason) + section,
+    name = heading.lstrip("#").strip()
+    logger.warning(f"[Translation] {kept_sentence(name, reason)}")
+    note = UNTRANSLATED_NOTE.format(sentence=kept_sentence(name, reason))
+    return {"status": "success", "text": note + section,
             "model": TRANSLATION_MODEL, **billed, "calls": 2, "untranslated": True,
-            "kept": {"heading": heading.lstrip("#").strip(), "reason": reason},
+            "kept": {"heading": name, "reason": reason},
             "number_rejections": rejections}
 
 
-def _problem_words(problem: str) -> str:
-    detail = f" ({problem.split(': ', 1)[1]})" if ": " in problem else ""
+def _problem_words(problem: str) -> tuple[str, list[str]]:
+    """A rejected answer's problem as a short phrase and its details (numbers, words)."""
+    head, _, rest = problem.partition(": ")
     if problem == "left in English":
-        return "the translator returned the English text"
+        return "the translator returned the English text", []
+    if problem == HEADING_LEFT:
+        return "the heading stayed in English", []
     if problem.startswith(NUMBERS_CHANGED):
-        return f"a number did not come back with the same value{detail}"
+        return "a number came back changed", [x for x in rest.split(", ") if x]
     if problem.startswith("structure changed"):
-        return f"the translation added or dropped headings, table rows or list items{detail}"
-    return f"the translation was {problem.split(': ', 1)[0]}{detail}"  # "not in Russian (...)"
+        return "headings, table rows or list items came back changed", [rest] if rest else []
+    if "words mixing alphabets" in problem:
+        return "the translation mixed Latin and Cyrillic letters", _mixed_words(problem)
+    language = head.removeprefix("not in ")
+    return f"the translation was not in {language}", [rest] if rest else []
 
 
 def kept_reason(problems: list[str]) -> str:
-    """Why a section stayed in English, in words: the problems of the rejected attempts."""
-    words = [_problem_words(problem) for problem in problems]
-    if len(words) == 2 and words[0] == words[1]:
-        text = words[0]
-        start = text.rfind(" (") if text.endswith(")") else len(text)
-        return f"{text[:start]}, twice{text[start:]}"
-    return "; then ".join(words)
+    """
+    Why a section stayed in English, in one short phrase: the reason once, "twice" when both
+    answers failed the same way, details in one pair of brackets, each word once (E5).
+    """
+    def phrase(text: str, details: list[str]) -> str:
+        unique = list({d.casefold(): d for d in reversed(details)}.values())[::-1]
+        return f"{text} ({', '.join(unique)})" if unique else text
+
+    parts = [_problem_words(problem) for problem in problems]
+    if len(parts) == 2 and parts[0][0] == parts[1][0]:
+        return "twice " + phrase(parts[0][0], parts[0][1] + parts[1][1])
+    return ", then ".join(phrase(text, details) for text, details in parts)
 
 
 def analyst_heading(source: str, translation: str, glossary: Glossary | None) -> str:
