@@ -71,8 +71,8 @@ the evidence, never "buy" or "sell".
 
 5. **Translation, on demand.**
    One toolbar at the top of the result: tabs "English" and one per translated language
-   (role tablist; arrow keys, Home and End switch tabs), a language select (Lithuanian first and
-   the default, then Startup Autopsy's list; the page remembers the last choice in the browser),
+   (role tablist; arrow keys, Home and End switch tabs), a language select (Startup Autopsy's list
+   and order: Lithuanian first and selected on every load, the rest by their own names),
    Translate, and Save, which saves the copy in the open tab (report.lt.md, report.ru.md, named
    company first like the English report). A finished translation gets its tab, is selected and
    the page scrolls to the report; a language translated once is opened, not paid for again, and

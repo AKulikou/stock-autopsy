@@ -25,6 +25,16 @@ export function tabLabel(tab, translations) {
   return tab === ORIGINAL ? "English" : translations.get(tab).label;
 }
 
+// The language select: the server's order, the default (Lithuanian) selected on every load.
+// The page no longer remembers the last choice (it did on 2026-10-22; an old stored choice is ignored).
+export function languageOptions(languages, defaultLanguage) {
+  return languages.map((language) => ({
+    value: language.name,
+    label: language.label,
+    selected: language.name === defaultLanguage,
+  }));
+}
+
 // Translate only a language this page has not translated yet: a second click on Translate
 // for the same language opens its tab instead of asking (and paying) again.
 export function needsTranslation(language, translations) {

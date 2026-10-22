@@ -14,8 +14,7 @@ import {
 import { costMarkdown, glossaryMarkdown } from "./collapsed.js";
 import { candidateCard, lookupNotice, orderCandidates } from "./lookup.js";
 import { renderMarkdown } from "./markdown.js";
-import { browserStorage, rememberLanguage, rememberedLanguage } from "./prefs.js";
-import { ORIGINAL, needsTranslation, saveTarget, tabKeyTarget, tabLabel } from "./reporttabs.js";
+import { ORIGINAL, languageOptions, needsTranslation, saveTarget, tabKeyTarget, tabLabel } from "./reporttabs.js";
 
 const $ = (id) => document.getElementById(id);
 const VIEWS = ["input-view", "live-view", "result-view"];
@@ -496,14 +495,12 @@ function reportTabs(runId, englishPane) {
   save.setAttribute("download", "");
   const select = el("select");
   select.setAttribute("aria-label", "Language of the translation");
-  const chosen = rememberedLanguage(browserStorage(), languages, defaultLanguage);
-  for (const language of languages) {
+  for (const language of languageOptions(languages, defaultLanguage)) {
     const option = el("option", null, language.label);
-    option.value = language.name;
-    option.selected = language.name === chosen;
+    option.value = language.value;
+    option.selected = language.selected;
     select.append(option);
   }
-  select.addEventListener("change", () => rememberLanguage(browserStorage(), select.value));
   const translate = el("button", "secondary", "Translate");
   translate.type = "button";
   const picker = el("div", "translate-form");
@@ -588,7 +585,6 @@ function reportTabs(runId, englishPane) {
 
   translate.addEventListener("click", async () => {
     const language = select.value;
-    rememberLanguage(browserStorage(), language);
     if (!needsTranslation(language, translations)) {
       show(language, true); // translated already: open its tab, never pay twice
       toolbar.scrollIntoView({ block: "start" });

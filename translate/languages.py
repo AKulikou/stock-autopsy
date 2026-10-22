@@ -1,6 +1,7 @@
 """
-Languages offered for a translated copy of the report: the same list as Startup
-Autopsy's web page (no Chinese), Lithuanian first as the default.
+Languages offered for a translated copy of the report: the same list and order as
+Startup Autopsy's web page (no Chinese): Lithuanian first as the default, the rest
+alphabetically by their own names.
 
 The page shows each language by its own name; the English name goes to the
 translator (prompt, glossary file) and the code into the file name
@@ -32,7 +33,6 @@ class Language(NamedTuple):
 
 LANGUAGES: tuple[Language, ...] = (
     Language("Lithuanian", "Lietuvių", "lt", DECIMAL_COMMA),
-    Language("Russian", "Русский", "ru", DECIMAL_COMMA),
     Language("German", "Deutsch", "de", DECIMAL_COMMA),
     Language("Estonian", "Eesti", "et", DECIMAL_COMMA),
     Language("Spanish", "Español", "es", DECIMAL_COMMA),
@@ -40,6 +40,7 @@ LANGUAGES: tuple[Language, ...] = (
     Language("Italian", "Italiano", "it", DECIMAL_COMMA),
     Language("Latvian", "Latviešu", "lv", DECIMAL_COMMA),
     Language("Polish", "Polski", "pl", DECIMAL_COMMA),
+    Language("Russian", "Русский", "ru", DECIMAL_COMMA),
     Language("Ukrainian", "Українська", "uk", DECIMAL_COMMA),
 )
 DEFAULT_LANGUAGE = LANGUAGES[0][0]

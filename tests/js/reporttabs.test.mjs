@@ -1,8 +1,16 @@
 // The report tabs (web/static/reporttabs.js).
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { ORIGINAL, needsTranslation, saveTarget, tabKeyTarget, tabLabel } from "../../web/static/reporttabs.js";
+import {
+  ORIGINAL,
+  languageOptions,
+  needsTranslation,
+  saveTarget,
+  tabKeyTarget,
+  tabLabel,
+} from "../../web/static/reporttabs.js";
 
 const translations = new Map([
   ["Lithuanian", { code: "lt", label: "Lietuvių", download_label: "Save report in Lithuanian (.md)" }],
@@ -34,4 +42,36 @@ test("tabs are named English and by each language's own name", () => {
 test("a language translated in this session is not translated again", () => {
   assert.equal(needsTranslation("Lithuanian", translations), false);
   assert.equal(needsTranslation("German", translations), true);
+});
+
+// As /api/options sends them: Startup Autopsy's list and order.
+const OFFERED = [
+  ["Lithuanian", "Lietuvių"], ["German", "Deutsch"], ["Estonian", "Eesti"], ["Spanish", "Español"],
+  ["French", "Français"], ["Italian", "Italiano"], ["Latvian", "Latviešu"], ["Polish", "Polski"],
+  ["Russian", "Русский"], ["Ukrainian", "Українська"],
+].map(([name, label]) => ({ name, label }));
+
+test("the language select keeps the server's order and opens on Lietuvių", () => {
+  const options = languageOptions(OFFERED, "Lithuanian");
+  assert.deepEqual(options.map((o) => o.label), [
+    "Lietuvių", "Deutsch", "Eesti", "Español", "Français", "Italiano", "Latviešu", "Polski", "Русский", "Українська",
+  ]);
+  assert.deepEqual(options.filter((o) => o.selected).map((o) => o.value), ["Lithuanian"]);
+});
+
+test("a language remembered by the old page does not change the selection on load", () => {
+  // The page of 2026-10-22 stored the last choice; a browser may still hold it.
+  const stored = new Map([["stock-autopsy.translation-language", "Russian"]]);
+  globalThis.localStorage = { getItem: (key) => stored.get(key) ?? null, setItem: (k, v) => stored.set(k, v) };
+  try {
+    const selected = languageOptions(OFFERED, "Lithuanian").filter((o) => o.selected);
+    assert.deepEqual(selected.map((o) => o.label), ["Lietuvių"]);
+  } finally {
+    delete globalThis.localStorage;
+  }
+  // Nothing on the page reads or writes the stored choice any more.
+  for (const file of ["app.js", "reporttabs.js"]) {
+    const source = readFileSync(new URL(`../../web/static/${file}`, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /localStorage|translation-language|prefs\.js/, file);
+  }
 });

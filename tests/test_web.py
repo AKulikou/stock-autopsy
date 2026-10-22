@@ -101,7 +101,7 @@ def test_the_page_and_its_scripts_are_served(client):
     page = client.get("/").text
     assert "<title>Stock Autopsy</title>" in page and "DCF by Stock Autopsy" in page and "Python" not in page
     assert "Valuation calculated by Stock Autopsy" in client.get("/static/app.js").text
-    for asset in ("app.js", "events.js", "cards.js", "collapsed.js", "lookup.js", "prefs.js", "reporttabs.js",
+    for asset in ("app.js", "events.js", "cards.js", "collapsed.js", "lookup.js", "reporttabs.js",
                   "markdown.js",
                   "tokens.css", "app.css"):
         assert client.get(f"/static/{asset}").status_code == 200, asset
@@ -215,7 +215,11 @@ def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client,
 
     fake.create_handler = russian
     options = client.get("/api/options").json()
-    assert options["default_language"] == "Lithuanian" and options["languages"][0]["label"] == "Lietuvių"
+    assert options["default_language"] == "Lithuanian"
+    # Startup Autopsy's list and order: Lithuanian first, the rest by their own names.
+    assert [language["label"] for language in options["languages"]] == [
+        "Lietuvių", "Deutsch", "Eesti", "Español", "Français", "Italiano", "Latviešu", "Polski", "Русский",
+        "Українська"]
     run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
     follow(client, run_id)
     assert client.get(f"/api/runs/{run_id}/translations/ru").status_code == 404

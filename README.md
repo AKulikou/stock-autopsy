@@ -66,8 +66,8 @@ reopened from the next event (the server also sends a heartbeat during the long 
 steps), so a lost connection is never reported as a failed run, and finished analyses can
 be reopened from "Recent analyses". Design: [docs/web_ui.md](docs/web_ui.md).
 
-A finished report can be translated on demand (Lithuanian by default, and the page remembers
-the last choice; the same languages as Startup Autopsy), on the page or with
+A finished report can be translated on demand (Lithuanian by default; the same languages
+in the same order as Startup Autopsy), on the page or with
 `python -m translate results/<run> --language Lithuanian`:
 one cheap call per section, and a section whose numbers do not come back with the same value
 and scale stays in English. A glossary per language fixes the terms (Russian, and a Lithuanian

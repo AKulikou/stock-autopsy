@@ -93,7 +93,7 @@ explicit OK; state the expected cost first. `messages.count_tokens` is free.
   their number format, numbers written in that format by code (`number_format.py`), CLI
 - `web/` — FastAPI app (`app.py`), one run at a time (`runs.py`), name or brand to ticker
   (`resolve.py`), the result in words (`view.py`); `static/` holds the page (shell shared
-  with Startup Autopsy plus `live.js`, `lookup.js`, `prefs.js`, `reporttabs.js`,
+  with Startup Autopsy plus `live.js`, `lookup.js`, `reporttabs.js`,
   `collapsed.js`, `app.js`)
 - `core/` — shared Anthropic client, `BatchingClient`, `structured_call.py` (one validated
   structured request), token costs, canonical JSON, parallel calls
