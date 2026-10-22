@@ -9,10 +9,15 @@ read it. For a person the same facts are grouped and ordered by impact:
    folded into that one line;
 2. restatements (periods with the same restated fields share one line) and source
    conflicts;
-3. other notes, missing and partial values;
+3. other notes, missing and partial values; a note repeated for several periods
+   ("gross_profit FY2016: GrossProfit not reported; ...", one per year) is one line
+   with the periods, and three or more consecutive fiscal years read as a range
+   (FY2016-FY2025);
 4. rounding differences between filings;
 5. one fixed line for what this version never collects.
 """
+
+import re
 
 from datalayer.pack import FRESHNESS_COVERS, parse_freshness_note
 from reporting.wording import MISSING_REASONS, field
@@ -28,6 +33,60 @@ NOT_COLLECTED_WORDS = {
 }
 FRESHNESS_FIELDS = ("ttm", "balance_sheet_latest")
 ROUNDING_MARK = "smaller differences (under 0.5%)"
+# A data layer note about one period: "<field key> <period>: <text>".
+_PERIOD_NOTE = re.compile(r"^(?P<field>[a-z][a-z0-9_]*) (?P<period>\S+): (?P<text>.+)$")
+_FISCAL_YEAR = re.compile(r"^FY(\d{4})$")
+MIN_RANGE = 3  # "FY2016, FY2017" stays a list; three or more consecutive years are a range
+
+
+def period_list(periods: list[str]) -> str:
+    """FY2016, FY2017, FY2019-FY2025: runs of three or more consecutive fiscal years as a range."""
+    parts: list[str] = []
+    run: list[int] = []
+
+    def close() -> None:
+        if len(run) >= MIN_RANGE:
+            parts.append(f"FY{run[0]}-FY{run[-1]}")
+        else:
+            parts.extend(f"FY{year}" for year in run)
+        run.clear()
+
+    for period in periods:
+        year = _FISCAL_YEAR.match(period)
+        if year and run and int(year[1]) == run[-1] + 1:
+            run.append(int(year[1]))
+            continue
+        close()
+        if year:
+            run.append(int(year[1]))
+        else:
+            parts.append(period)
+    close()
+    return ", ".join(parts)
+
+
+def grouped_notes(notes: list[str]) -> list[str]:
+    """
+    Notes whose text is the same except for the period, as one line with the periods, at the
+    place of the first: "gross profit (FY2016-FY2025): GrossProfit not reported; ...". The
+    pack (and report.json) keeps one note per period.
+    """
+    order: list[str | tuple[str, str]] = []
+    periods: dict[tuple[str, str], list[str]] = {}
+    for note in notes:
+        match = _PERIOD_NOTE.match(note)
+        if not match:
+            order.append(note)
+            continue
+        key = (match["field"], match["text"])
+        if key not in periods:
+            periods[key] = []
+            order.append(key)
+        periods[key].append(match["period"])
+    return [
+        item if isinstance(item, str) else f"{field(item[0])} ({period_list(periods[item])}): {item[1]}"
+        for item in order
+    ]
 
 
 def freshness(pack: dict) -> dict | None:
@@ -71,7 +130,7 @@ def restated_lines(pack: dict) -> list[str]:
     for period, fields in by_period.items():
         by_fields.setdefault(tuple(fields), []).append(period)
     return [
-        f"{', '.join(periods)}: earlier figures were restated ({', '.join(fields)})"
+        f"{period_list(periods)}: earlier figures were restated ({', '.join(fields)})"
         for fields, periods in by_fields.items()
     ]
 
@@ -92,7 +151,7 @@ def _whole(value: float) -> str:
 
 
 def _periods(periods: list[str]) -> str:
-    return "" if periods == ["all"] else f" ({', '.join(periods)})"
+    return "" if periods == ["all"] else f" ({period_list(periods)})"
 
 
 def quality_lines(pack: dict, with_restated: bool = True) -> list[str]:
@@ -109,7 +168,7 @@ def quality_lines(pack: dict, with_restated: bool = True) -> list[str]:
         lines += restated_lines(pack)
     lines += conflict_lines(pack)
 
-    notes = [n for n in q["period_notes"] if not parse_freshness_note(n)]
+    notes = grouped_notes([n for n in q["period_notes"] if not parse_freshness_note(n)])
     lines += [n for n in notes if ROUNDING_MARK not in n]
     lines += [
         f"{field(m['field'])}{_periods(m['periods'])}: {MISSING_REASONS.get(m['reason'], m['reason'])} "
