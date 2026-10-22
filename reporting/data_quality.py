@@ -15,6 +15,8 @@ read it. For a person the same facts are grouped and ordered by impact:
    (FY2016-FY2025);
 4. rounding differences between filings;
 5. one fixed line for what this version never collects.
+
+Every line starts with a capital letter.
 """
 
 import re
@@ -187,7 +189,12 @@ def quality_lines(pack: dict, with_restated: bool = True) -> list[str]:
     words = [NOT_COLLECTED_WORDS[name] for name in NOT_COLLECTED_WORDS if name in never]
     if words:
         lines.append(f"Not collected in this version (unknown, not zero): {_join(words)}.")
-    return lines
+    return [capitalized(line) for line in lines]
+
+
+def capitalized(line: str) -> str:
+    """Every line starts with a capital letter: "market cap: ..." reads "Market cap: ..."."""
+    return line[:1].upper() + line[1:]
 
 
 def _join(words: list[str]) -> str:

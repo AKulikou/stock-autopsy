@@ -29,6 +29,7 @@ from translate.translator import (
     MACHINE_TRANSLATION_NOTE,
     RETRY_NOTE,
     analyst_heading,
+    capital_list_items,
     fix_look_alikes,
     heading_untranslated,
     kept_reason,
@@ -917,7 +918,7 @@ def test_the_data_quality_section_is_translated_and_keeps_codes(fake):
     outcome = translate_document(DATA_QUALITY, "Russian")
     assert len(translation_calls(fake)) == 1 and outcome["untranslated_sections"] == 0
     text = outcome["text"]
-    assert "Data quality" not in text and "стock" not in text and "- stock" in text
+    assert "Data quality" not in text and "стock" not in text and "- Stock" in text
     assert all(code in text for code in ("GrossProfit", "10-K/A", "FY2016-FY2025", "FY2021", "1.062"))
 
 
@@ -928,3 +929,15 @@ def test_a_data_quality_section_that_still_fails_says_why_it_stayed_in_english(f
     assert outcome["kept_sections"] == [{"heading": "Data quality", "reason": reason}]
     note = f"> Data quality stayed in English: {reason}. The English original follows."
     assert outcome["text"].startswith(note)
+
+
+def test_data_quality_list_items_start_with_a_capital_letter_in_a_translation(fake):
+    fake.create_handler = lambda kwargs: text_response(fake_russian(kwargs["messages"][0]["content"]))
+    source = ("## Data quality\n\n- Market cap: SEC 75, Yahoo Finance 76\n"
+              "- Gross profit (FY2016-FY2021): computed\n")
+    text = translate_document(source, "Russian")["text"]
+    items = [line for line in text.splitlines() if line.startswith("- ")]
+    assert len(items) == 2 and all(item[2].isupper() for item in items)
+    # Other sections keep the translator's case.
+    other = "### Next research steps\n\n- check the debt schedule in the filings\n"
+    assert capital_list_items(other, "- проверить график долга") == "- проверить график долга"

@@ -484,8 +484,21 @@ def _tidied(section: str, outcome: dict, language: str) -> dict:
     """
     if outcome["status"] == "success":
         text = restore_source_words(section, fix_look_alikes(outcome["text"], language))
+        text = capital_list_items(section, text)
         outcome["text"] = localize_tables(section, text, language)
     return outcome
+
+
+# The section whose list items code writes with a capital first letter in the original
+# (reporting/data_quality.py); a translation keeps that.
+CAPITALIZED_LISTS = ("## Data quality",)
+
+
+def capital_list_items(source: str, translation: str) -> str:
+    """In the data quality section every list item starts with a capital letter, as in report.md."""
+    if _heading(source) not in CAPITALIZED_LISTS:
+        return translation
+    return re.sub(r"(?m)^(\s*[-*+]\s+)(\w)", lambda m: m.group(1) + m.group(2).upper(), translation)
 
 
 def _problem_words(problem: str) -> tuple[str, list[str]]:

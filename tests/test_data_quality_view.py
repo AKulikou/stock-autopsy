@@ -34,8 +34,8 @@ def test_without_the_freshness_note_the_partial_lines_stay(ko_pack):
     notes = pack["data_quality"]["period_notes"]
     pack["data_quality"]["period_notes"] = [n for n in notes if "not in SEC company facts" not in n]
     lines = quality_lines(pack)
-    assert "last twelve months: periods up to 2026-04-03 only" in lines
-    assert "latest balance sheet: periods up to 2026-04-03 only" in lines
+    assert "Last twelve months: periods up to 2026-04-03 only" in lines
+    assert "Latest balance sheet: periods up to 2026-04-03 only" in lines
     assert not any(line.startswith("Latest quarter missing") for line in lines)
     assert statements_to(pack) == ko_pack["ttm"]["period_end"]
 
@@ -53,7 +53,7 @@ def test_a_conflict_says_which_source_is_used_without_float_noise(ko_pack):
          "dates": {}},
     ]
     lines = quality_lines(pack)
-    assert "market cap: SEC 75,148,500,000, Yahoo Finance 76,881,214,603; the SEC figure is used" in lines
+    assert "Market cap: SEC 75,148,500,000, Yahoo Finance 76,881,214,603; the SEC figure is used" in lines
     assert any(line.endswith("the Yahoo Finance figure is used because the SEC one is out of date")
                for line in lines)
 
@@ -86,9 +86,9 @@ def test_a_note_repeated_for_every_year_is_one_line_with_a_range(ko_pack):
     lines = quality_lines(pack)
     assert lines[0].startswith("Latest quarter missing")  # the freshness note stays first
     grouped = [line for line in lines if "GrossProfit" in line]
-    assert grouped == ["gross profit (FY2016, FY2017, FY2019-FY2025): GrossProfit not reported; "
+    assert grouped == ["Gross profit (FY2016, FY2017, FY2019-FY2025): GrossProfit not reported; "
                        "computed as revenue - cost of revenue"]
-    assert "operating income (FY2020): 0 where 10-K filed 2021-02-26 reports 123; not used" in lines
+    assert "Operating income (FY2020): 0 where 10-K filed 2021-02-26 reports 123; not used" in lines
     rounding = next(line for line in lines if "smaller differences" in line)
     assert lines.index(grouped[0]) < lines.index(rounding)
     # The pack, and so report.json, keeps one note per period.
@@ -101,7 +101,12 @@ def test_coca_cola_keeps_its_two_restated_years_as_a_list(ko_pack):
 
 def test_kraft_heinz_missing_years_read_as_ranges(khc_pack):
     lines = quality_lines(khc_pack)
-    assert "share repurchases (FY2016-FY2020): not reported in the filings (unknown, not zero)" in lines
-    assert "short term investments (FY2016-FY2023): not reported in the filings (unknown, not zero)" in lines
+    assert "Share repurchases (FY2016-FY2020): not reported in the filings (unknown, not zero)" in lines
+    assert "Short term investments (FY2016-FY2023): not reported in the filings (unknown, not zero)" in lines
     assert lines[0].startswith("FY2016: earlier figures were restated")  # impact order unchanged
     assert not any(", FY2017, FY2018" in line for line in lines)
+
+
+def test_every_line_starts_with_a_capital_letter(ko_pack, khc_pack):
+    for pack in (ko_pack, khc_pack):
+        assert all(line[0].isupper() or line[0].isdigit() for line in quality_lines(pack))
