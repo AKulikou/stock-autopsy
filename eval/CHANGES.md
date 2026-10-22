@@ -8,6 +8,38 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — release eval `v4_release`: 5 golden cases x 2 reps on the code of 2026-10-22 (measured)
+
+Setup: --reps 2 --batch, default configuration (shared output schema off: the API refuses it),
+code 935bc59; it measures everything since v3_release that the model sees: C2 (the reverse DCF
+names its discount rate), C3 and M14 (the price sentence), the Coca-Cola pack refrozen (C1), and
+the prompts of 67404ad, already in v3. Cost 2.75 USD, 32 minutes, cache read 21% on average.
+Graded with the checks of 2026-10-22, v3_release regraded with the same checks:
+
+| | v3_release | v4_release |
+|---|---|---|
+| Primary verdict | 7/10 | 5/10 |
+| Acceptable | 9/10 | 9/10 |
+| Error cost (0 = primary) | 0.40 | 0.80 |
+| must_find / no must_not | 9/10 / 9/10 | 10/10 / 9/10 |
+| Data numbers matched | 338 of 379 | 327 of 370 |
+| Wrong numbers on exact paths | 7 | 6 |
+| Calculations reproduced | 198 of 211 | 209 of 225 |
+| Prose numbers without a source | 51 of 2,696 | 36 of 2,606 |
+| Unknowns read as zero | 4 | 2 |
+
+Per case: Comcast conditional 2/2 both runs; Coca-Cola weak 2/2 both (acceptable); Snowflake weak
+2/2 both; Plug Power red-flagged in one of two attempts in both runs (the least stable call);
+**Kraft Heinz weak 2/2 -> conditional 2/2** (acceptable, not primary). The whole drop of the
+primary score is that one case, moved the same way in both attempts, so it is not noise: the
+price sentence now gives about 8.1-8.2% a year at $22.70, and the committee reads it as a case
+under conditions. Which change moved it (C2 or the price sentence) this run cannot tell.
+Facts are not worse: fewer wrong numbers, the share of matched numbers and reproduced
+calculations within one point, fewer unsourced prose numbers. The constant answer "weak case"
+also scores error cost 0.80 on these attempts, so on this set the committee no longer beats it.
+Recorded, nothing changed because of it; the Kraft Heinz label (weak primary, conditional
+acceptable) stays as the owner wrote it.
+
 ## 2026-10-22 — banks and other financial companies flagged by SIC code (E7; data pack change for them only)
 
 The owner's run on Goldman Sachs (SIC 6211) gave "insufficient data": revenue, total debt, EV and

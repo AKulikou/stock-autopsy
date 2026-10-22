@@ -118,6 +118,7 @@ What the eval showed:
   | Before the valuation change (1 rep each) | 4/5 | 5/5 | 0.20 |
   | After the valuation change (1 rep each) | 2/5 | 4/5 | 1.00 |
   | Release run (2 reps each, corrected data, revised labels) | 7/10 | 9/10 | 0.40 |
+  | Release run of 2026-10-22 (2 reps each, the same cases) | 5/10 | 9/10 | 0.80 |
   | A constant "weak case" on the release attempts | 4/10 | 6/10 | 0.80 |
 
   In the release run Coca-Cola, Snowflake and Kraft Heinz came out weak twice, Comcast a
@@ -127,6 +128,10 @@ What the eval showed:
   are still a small sample. The whole gap over the constant answer comes from Comcast (2 of
   2) and Plug Power (1 of 2), the two companies the owner has not labelled blind; on the
   three owner-labelled companies the committee scored exactly like the constant answer. The run cost 2.67 USD through the Message Batches API.
+  The release run of 2026-10-22 (2.75 USD) moved Kraft Heinz from "weak" to "conditional" in both
+  attempts (acceptable, not the primary label): the price sentence now gives about 8% a year,
+  which the committee reads as a case under conditions. That one case is the whole drop from
+  7/10 to 5/10; with it the committee's error cost equals the constant answer's on this set.
 - Valuation is judged by what the price assumes rather than by a DCF value at one
   chosen discount rate: Stock Autopsy solves, in code, the yearly return a buyer at today's price gets if
   the base case comes true. At the eval's prices that was about 5% a year for Coca-Cola
@@ -140,8 +145,9 @@ What the eval showed:
   that turns an unknown value into zero ("no debt" where the filings report none) is
   flagged. In the M5 runs: 8 and 5 wrong numbers (all partial) in about 270 data claims
   per variant, one calculation off by about 5%, and the one "no debt" sentence the judge
-  also found. In the release run: 7 wrong numbers in 379 data claims, 195 of 211
-  calculations reproduced (198 after a regrade with the corrected calculation check of
+  also found. In the release run of 2026-10-22: 6 wrong numbers in 370 data claims, 209 of 225
+  calculations reproduced, 2 unknowns read as zero. In the first release run: 7 wrong numbers in
+  379 data claims, 195 of 211 calculations reproduced (198 after a regrade with the corrected calculation check of
   2026-10-17, which no longer rejects a stated constant, a part of a formula or the size of
   a difference written old - new), and one "no debt" sentence again (Snowflake).
 - **The number check proves faithfulness to the data pack, not that the pack is right.**
