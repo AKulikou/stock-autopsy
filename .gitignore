@@ -45,3 +45,7 @@ Thumbs.db
 
 # Personal research (tickers, notes): never committed
 private/
+
+# Console captures of a run or an eval (a 2026-10-22 capture once slipped into a commit)
+*_console.txt
+*.console.txt
