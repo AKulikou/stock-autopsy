@@ -192,7 +192,7 @@ def dcf_event(valuation_math: dict, assumptions_ok: bool) -> ProgressEvent:
     Done; failed only when the step really failed (the assumptions call); otherwise the
     data could not carry a DCF (no revenue, no share count): "not computed", with why.
     """
-    label = "DCF computed by Python"
+    label = "DCF by Stock Autopsy"
     if valuation_math.get("computed"):
         return ProgressEvent("dcf", "done", label=label, text=valuation_math.get("price_assumes"))
     reasons = "; ".join(valuation_math.get("reasons", []))

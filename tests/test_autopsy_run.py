@@ -386,3 +386,11 @@ def test_report_md_ends_with_a_collapsed_glossary_of_the_terms_it_uses(fake_clau
     # The cost table says "done", a word the glossary defines, not the status code.
     assert "| done |" in body and "| success |" not in body
     assert any(e.term == "done / failed" for e in listed)
+
+
+def test_the_valuation_math_is_named_as_the_tool_s_own_calculation(fake_claude, raw_ko, ko_pack):
+    run, _ = run_with(fake_claude, raw_ko, ko_pack)
+    assert "## Valuation math (calculated by Stock Autopsy, not by the AI)" in build_report(run)
+    assert "Python" not in build_report(run).split("<details><summary>Glossary</summary>")[0].replace(
+        "Gross margin is the margin computed by Python.", "")  # a sample analyst sentence, not ours
+    assert dcf_event(run.valuation_math, True).label == "DCF by Stock Autopsy"

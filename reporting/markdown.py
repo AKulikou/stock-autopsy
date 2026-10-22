@@ -186,7 +186,7 @@ def synthesis_section(run: AutopsyRun) -> list[str]:
 def valuation_section(run: AutopsyRun) -> list[str]:
     multiples = run.pack["derived"]["valuation"]
     lines = [
-        "## Valuation math (computed by Python)",
+        "## Valuation math (calculated by Stock Autopsy, not by the AI)",
         "",
         f"Multiples on {multiples['basis'] or 'no TTM basis'} (to {multiples['ttm_period_end']}), "
         f"price of {multiples['price_date']}.",

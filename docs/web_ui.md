@@ -28,7 +28,7 @@ the evidence, never "buy" or "sell".
    company on Form 20-F or 40-F, a fund) is shown with the reason and cannot be analyzed.
    If an empty data pack is reached any other way, the run stops before the first Claude call.
 2. **Data.** Steps light up: filings and price received, the data pack with real counts
-   (annual reports, quarters, filing events, price date), then Python's DCF with the
+   (annual reports, quarters, filing events, price date), then the DCF calculated by Stock Autopsy ("DCF by Stock Autopsy") with the
    sentence on what today's price assumes. A DCF the data cannot carry (no revenue, no
    share count, debt unknown) reads "DCF not computed: <reasons>" in a neutral notice
    colour; red is kept for a step that really failed (M8). From the moment Analyze is
@@ -49,11 +49,11 @@ the evidence, never "buy" or "sell".
    reached"; the screen is not reset (owner's decision, M6). Finished analyses still held
    by the server are listed under "Recent analyses" on the first screen.
 4. **Result.** On top: the verdict in words, confidence and its reason, the committee's
-   headline, "what the price assumes" (written by Python), and "not advice to buy or
+   headline, "what the price assumes" (written by Stock Autopsy, not by the AI), and "not advice to buy or
    sell". Then for (3), against (3), what we do not know, what to watch, the conditions.
    Then the number check counter, the analysts (each opens with its claims, each claim
    coloured by what code found: matches the data pack, reproduced by code, found only in a
-   table, not in the cited data), Python's valuation table, data quality in words (most
+   table, not in the cited data), "Valuation calculated by Stock Autopsy" (the code's table, not the AI's), data quality in words (most
    important first: a filed quarter missing from SEC company facts, then restatements grouped
    by year, conflicts, notes, rounding, one line for what this version never collects; the
    date the statements reach also stands at the top, M2), and

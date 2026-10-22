@@ -92,7 +92,9 @@ def shown_texts(value, key=None):
 
 
 def test_the_page_and_its_scripts_are_served(client):
-    assert "<title>Stock Autopsy</title>" in client.get("/").text
+    page = client.get("/").text
+    assert "<title>Stock Autopsy</title>" in page and "DCF by Stock Autopsy" in page and "Python" not in page
+    assert "Valuation calculated by Stock Autopsy" in client.get("/static/app.js").text
     for asset in ("app.js", "events.js", "cards.js", "collapsed.js", "lookup.js", "prefs.js", "reporttabs.js",
                   "markdown.js",
                   "tokens.css", "app.css"):

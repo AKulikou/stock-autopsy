@@ -19,11 +19,11 @@ revenue or share count silently breaks an analysis. Here the model never supplie
 numbers:
 
 ```
-1. Python fetches official data (SEC EDGAR) and prices → one DATA PACK (as_of dates, sources, data quality)
+1. Stock Autopsy's code fetches official data (SEC EDGAR) and prices → one DATA PACK (as_of dates, sources, data quality)
 2. Every evaluator gets the byte-identical pack → analyzes, tags every claim
-3. Python does the math: multiples, growth rates, DCF
+3. Stock Autopsy does the math in code, not the AI: multiples, growth rates, DCF
 4. The synthesis reads all evaluator reports → verdict, conflicts, monitoring plan, next research steps
-5. Python checks every number the model quotes as data against the pack
+5. Stock Autopsy's code checks every number the model quotes as data against the pack
 ```
 
 Every claim is tagged as data (with the pack path it comes from), derived, an
@@ -40,7 +40,7 @@ weak case, red-flagged.
 | Part | What it does |
 |------|--------------|
 | Data layer | SEC company facts, filing history and 8-K items, extension concepts from filing XBRL where needed, prices via yfinance; daily cache; ten fiscal years, discrete quarters, trailing twelve months; restatements and late filings detected; every missing value carries a reason |
-| Evaluators | Business Model, Forensic (accounting warning signs, restatements), Valuation (the model proposes DCF assumptions, Python computes bear / base / bull, reverse DCF, the yearly return a buyer at today's price gets if the base case comes true, and sensitivities; the model interprets what the price assumes), Pre-Mortem |
+| Evaluators | Business Model, Forensic (accounting warning signs, restatements), Valuation (the model proposes DCF assumptions, Stock Autopsy calculates bear / base / bull in code, reverse DCF, the yearly return a buyer at today's price gets if the base case comes true, and sensitivities; the model interprets what the price assumes), Pre-Mortem |
 | Committee | One call that reads the evaluators, names the conflicts and decides the verdict, with a headline and three reasons for and against in plain words; code lowers its confidence when too much rests on unverified claims or a perspective is missing |
 | Number check | Every number in a data claim is compared with the pack value at the path the claim cites (with its sign where the wording states one); calculated claims, numbers in prose and unknowns stated as zero are checked too |
 | Reports | `report.md` in plain words (no codes, tickers or field names), `report.json` with the codes, the exact pack and its provenance |
@@ -124,7 +124,7 @@ What the eval showed:
   2) and Plug Power (1 of 2), the two companies the owner has not labelled blind; on the
   three owner-labelled companies the committee scored exactly like the constant answer. The run cost 2.67 USD through the Message Batches API.
 - Valuation is judged by what the price assumes rather than by a DCF value at one
-  chosen discount rate: Python solves the yearly return a buyer at today's price gets if
+  chosen discount rate: Stock Autopsy solves, in code, the yearly return a buyer at today's price gets if
   the base case comes true. At the eval's prices that was about 5% a year for Coca-Cola
   (read as expensive), 3-4% for Snowflake, 7-8% for Kraft Heinz and 12-14% for Comcast (a
   case under conditions). The first two runs above used a Comcast data pack with a wrong

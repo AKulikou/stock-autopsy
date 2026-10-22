@@ -96,7 +96,7 @@ group the rows for review and are ignored by the code.
 | EV/Revenue / EV/EBIT / EV/EBITDA | EV/Revenue, EV/EBIT, EV/EBITDA | Multiples comparing enterprise value with revenue or profit. |
 | equity value | equity value | Enterprise value minus debt plus cash: the part that belongs to shareholders. |
 | value per share | value per share | Equity value divided by the number of shares. In the report it is a range for testing assumptions, not a price target. |
-| DCF / discounted cash flow | discounted cash flow (DCF) | The company valued as the sum of its future free cash flows, brought back to today. Very sensitive to assumptions. Stock Autopsy calculates it in code, not the model. |
+| DCF / discounted cash flow | discounted cash flow (DCF) | The company valued as the sum of its future free cash flows, brought back to today. Very sensitive to assumptions. Calculated by Stock Autopsy, not by the AI. |
 | discount rate | discount rate | The yearly return required, used to bring future money back to today. The higher the rate, the lower the value. |
 | terminal value / terminal growth | terminal value / terminal growth | The value of all cash flows after the forecast years, assuming steady growth. Often most of the whole valuation, so it depends heavily on assumptions. |
 | bear case / base case / bull case | bear / base / bull case | Three sets of assumptions (revenue growth, margin and so on) from which Stock Autopsy calculates three values. |

@@ -438,7 +438,7 @@ function renderResult(runId, view) {
   english.append(el("h2", null, "The analysts"));
   for (const card of view.evaluators) english.append(evaluatorDetails(card));
 
-  english.append(el("h2", null, "Valuation computed by Python"));
+  english.append(el("h2", null, "Valuation calculated by Stock Autopsy"));
   const v = view.valuation;
   const table = el("table", "kv");
   const rows = [...v.multiples.map((m) => [m.label, m.value])];
