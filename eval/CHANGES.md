@@ -8,6 +8,19 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — pre-release P1: the shared output schema is refused by the API (no change in behaviour)
+
+The paid check of `SHARED_OUTPUT_SCHEMA=on` on NVDA (the same pack as the morning run,
+340f5b779ac9) failed before any generation: every analyst call came back with HTTP 400
+"The compiled grammar is too large, which would cause performance issues. Simplify your tool
+schemas or reduce the number of strict tools." Nothing was billed (0 tokens, 0.00 USD). The
+envelope has 5 union parameters and 0 optional ones, within the documented explicit limits
+(16 and 24); the grammar of five full evaluator schemas exceeds an internal size limit that the
+docs mention only as "Schema is too complex" / compiled grammar size. Not a transient error, so
+no retry. Decision by the rule fixed before the run: the shared schema stays off; the eval of it
+(P2) was not run, since every attempt would fail the same way. Each analyst keeps writing its own
+cache entry (about 0.08 USD a run that a working shared prefix would save).
+
 ## 2026-10-22 — reports end with a collapsed glossary; the translator no longer sees it (D5)
 
 What changed (no analyst, committee or translation prompt text changed): report.md ends with a

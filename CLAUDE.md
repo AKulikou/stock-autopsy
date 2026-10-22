@@ -181,8 +181,9 @@ Checked against the SEC documentation on 2026-10-15; check again before relying 
   the schema ahead of our breakpoint. Each evaluator has its own schema, so by default
   each writes its own cache entry (NVDA 2026-10-22: five writes, no read).
   `SHARED_OUTPUT_SCHEMA=on` sends one envelope schema (`AnalystOutput`) to all five, so
-  step A's write is read by the other four (estimate: about 0.08 USD, 14% of a run);
-  off until one paid run and an eval pass confirm it (eval/CHANGES.md 2026-10-22).
+  step A's write would be read by the other four (estimate: about 0.08 USD, 14% of a run).
+  It does not work: the API answers 400 "The compiled grammar is too large" (NVDA,
+  2026-10-22, nothing billed), within the documented limits. Off; a smaller variant is open.
   The fake client's simulated cache keys on everything up to the breakpoint, schema included.
 - A prefix below the model's minimum is silently not cached (512 tokens for
   Sonnet 5.5); `structured_call` warns when caching was asked and nothing was cached.
@@ -264,8 +265,9 @@ are not fetched in Phase 1).
 - After 67404ad is measured: a `PATH_HELP` line asking for one exact value per quoted number (no table as a basis).
   Not added on 2026-10-15: a second unmeasured prompt change, and no evaluator used a table basis in M5.
 - More reps on the five golden tickers (one rep each after P2); the Forensic red-flag call on PLUG is unstable.
-- Confirm the shared output schema (`SHARED_OUTPUT_SCHEMA=on`, built 2026-10-22): one paid run
-  (cache reads), then one eval pass, then make it the default.
+- Prompt cache across analysts: the five-schema envelope is refused as too large to compile
+  (2026-10-22). Options: an envelope of the four parallel analysts with one of them as warm-up,
+  or one compact shared schema; each needs a cheap compile probe first, then an eval.
 - Form 4 insider transactions, peers and peer multiples, news, transcripts (Phase 2/3).
 - Company extension concepts beyond receivables (interest expense, others).
 - DCF sensitivity grid (Phase 2), remaining evaluators 2, 4, 6, 7.

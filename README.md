@@ -86,8 +86,9 @@ stay under 10 requests per second; set `SEC_USER_AGENT` in `.env`.
 **Cost and time.** A full run makes six Claude calls (Sonnet 5.5 at its default
 effort) and costs about 0.60 USD and three minutes (measured on Kraft Heinz,
 2026-10-15; later runs on the page cost 0.58-0.67 USD). Today each analyst writes its own
-prompt-cache entry; a shared output schema that lets them read one (`SHARED_OUTPUT_SCHEMA=on`,
-an estimated 14% less) is built but off until a paid check and an eval confirm it. Through the Message Batches API, as the eval runs it, an attempt costs
+prompt-cache entry, because the API counts each output schema as part of the cached prefix.
+One shared schema for all analysts would let them read one entry (an estimated 14% less), but
+the API refuses that schema as too large to compile (checked 2026-10-22), so it stays off. Through the Message Batches API, as the eval runs it, an attempt costs
 about 0.26-0.30 USD and takes longer.
 
 ## Testing and its honest limits

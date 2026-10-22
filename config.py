@@ -78,8 +78,10 @@ PROMPT_CACHING = os.getenv("PROMPT_CACHING", "on").strip().lower() not in ("0", 
 # adds a system prompt of its own for the output schema, and "changing the
 # output_config.format parameter will invalidate any prompt cache" (structured outputs
 # docs, checked 2026-10-22): with a schema per evaluator nothing is read from the cache
-# (NVDA run 2026-10-22: five writes of 10,030-10,677 tokens, no read). Off by default
-# until one paid run confirms the reads and an eval shows the answers did not change.
+# (NVDA run 2026-10-22: five writes of 10,030-10,677 tokens, no read). Off, and it does
+# not work as built: the API refuses the five-schema envelope with 400 "The compiled
+# grammar is too large" (NVDA, 2026-10-22, nothing billed), although it is within the
+# documented limits of 16 union and 24 optional parameters. Kept for a smaller variant.
 SHARED_OUTPUT_SCHEMA = os.getenv("SHARED_OUTPUT_SCHEMA", "off").strip().lower() in ("1", "true", "yes", "on")
 
 # Thinking before answering: "off" or "adaptive" (the model decides how much).
