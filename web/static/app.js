@@ -511,8 +511,10 @@ function reportTabs(runId, englishPane) {
   status.setAttribute("aria-live", "polite");
   status.textContent = "Translate: a machine translation, about 0.03 USD and up to a minute; every number is "
     + "checked against the English report.";
+  const actions = el("div", "toolbar-actions");
+  actions.append(picker, save);
   const row = el("div", "toolbar-row");
-  row.append(tablist, picker, save);
+  row.append(tablist, actions);
   toolbar.append(row, status);
   let open = ORIGINAL;
 

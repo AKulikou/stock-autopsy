@@ -269,21 +269,31 @@ select {
   text-align: left; vertical-align: top; }
 .markdown th { background: var(--surface-muted); }
 
-/* Report toolbar (D4, as in Startup Autopsy): tabs for the English report and each
-   translation, the language picker, Translate, and Save for the copy on screen. */
+/* Report toolbar (D4, E2, E3): tabs for the English report and each translation on the left,
+   the language picker, Translate and Save (the copy on screen) on the right, one row on a
+   desktop. Tabs look like tabs: an underline marks the open one, which is not clickable. */
 .report-toolbar { margin-bottom: var(--space-4); scroll-margin-top: var(--space-3); }
-.toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
-.tabs {
-  display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: var(--radius);
-  overflow: hidden; background: var(--surface);
+.toolbar-row {
+  display: flex; flex-wrap: nowrap; align-items: flex-end; gap: var(--space-4);
+  border-bottom: 1px solid var(--border);
 }
+.tabs { display: flex; gap: var(--space-1); }
 .tab {
-  border: 0; border-radius: 0; background: transparent; color: var(--text-muted);
-  padding: var(--space-2) var(--space-4);
+  border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent;
+  color: var(--text-muted); padding: var(--space-2) var(--space-3); margin-bottom: -1px;
 }
-.tab + .tab { border-left: 1px solid var(--border); }
-.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
-.translate-form { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-left: auto; }
+.tab:not([aria-selected="true"]):hover { color: var(--text); border-bottom-color: var(--border); }
+.tab[aria-selected="true"] {
+  color: var(--text); font-weight: 600; border-bottom-color: var(--accent); cursor: default;
+}
+.toolbar-actions {
+  display: flex; align-items: center; gap: var(--space-3); margin-left: auto; padding-bottom: var(--space-2);
+}
+.translate-form { display: flex; align-items: center; gap: var(--space-2); }
+@media (max-width: 760px) {
+  .toolbar-row { flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  .toolbar-actions { flex-wrap: wrap; margin-left: 0; gap: var(--space-2); }
+}
 .translate-form select { font: inherit; padding: var(--space-2); border-radius: var(--radius);
   border: 1px solid var(--border); background: var(--surface); color: var(--text); }
 .translate-status { margin: var(--space-2) 0 0; }
