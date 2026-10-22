@@ -24,8 +24,8 @@ from reporting.wording import (
     humanize,
     path_words,
 )
-from translate.languages import CODES, NATIVE_NAMES
-from translate.translator import kept_sections
+from translate.languages import CODES, LANGUAGES, NATIVE_NAMES
+from translate.translator import kept_sections, translated_path
 from web.runs import Run
 
 CODE_KEYS = {"verdict", "status", "kind", "key", "check"}
@@ -87,6 +87,10 @@ def run_view(run: Run) -> dict:
         "data_quality": _data_quality(pack),
         "number_check": _number_check(autopsy),
         "downloads": [{"kind": k, "label": DOWNLOAD_LABELS[k]} for k in download_paths(run)],
+        # Copies translated earlier (this session or before): their tabs come back for free.
+        "translations": [{"language": name, "label": native, "code": code}
+                         for name, native, code in LANGUAGES
+                         if run.out_dir and translated_path(run.out_dir, name).exists()],
         "cost_usd": round(run.cost_usd(), 4),
         "duration_s": round(autopsy.duration_s),
     }

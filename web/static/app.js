@@ -14,6 +14,7 @@ import {
 import { candidateCard, lookupNotice, orderCandidates } from "./lookup.js";
 import { renderMarkdown } from "./markdown.js";
 import { browserStorage, rememberLanguage, rememberedLanguage } from "./prefs.js";
+import { ORIGINAL, needsTranslation, saveTarget, tabKeyTarget, tabLabel } from "./reporttabs.js";
 
 const $ = (id) => document.getElementById(id);
 const VIEWS = ["input-view", "live-view", "result-view"];
@@ -399,9 +400,13 @@ function renderResult(runId, view) {
   document.title = tabTitle(subject?.ticker || view.company, outcomeWords(view));
   const root = $("result");
   root.replaceChildren();
+  const english = el("div", "report-pane");
+  english.id = "pane-original";
+  english.setAttribute("role", "tabpanel");
+  english.setAttribute("aria-labelledby", "tab-original");
   const c = view.committee;
   if (c.ok) {
-    root.append(banner(view));
+    english.append(banner(view));
     const grid = el("div", "result-grid");
     const forPanel = panel("For");
     forPanel.append(list(c.reasons_for));
@@ -417,22 +422,22 @@ function renderResult(runId, view) {
       conditions.append(list(c.conditions));
       grid.append(conditions);
     }
-    root.append(grid);
+    english.append(grid);
   } else {
-    root.append(el("div", "notice is-error", c.text));
+    english.append(el("div", "notice is-error", c.text));
   }
 
-  root.append(el("h2", null, "Number check"));
-  root.append(numberCounter(view.number_check));
+  english.append(el("h2", null, "Number check"));
+  english.append(numberCounter(view.number_check));
   if (view.number_check.absent_as_zero.length) {
-    root.append(el("p", null, "Unknown values stated as zero or none (the filings do not say so):"), list(view.number_check.absent_as_zero));
+    english.append(el("p", null, "Unknown values stated as zero or none (the filings do not say so):"), list(view.number_check.absent_as_zero));
   }
-  root.append(el("p", "muted", `${view.number_check.prose_unsourced} of ${view.number_check.prose_numbers} numbers in the analysts' prose have no source in the data; treat them as unverified.`));
+  english.append(el("p", "muted", `${view.number_check.prose_unsourced} of ${view.number_check.prose_numbers} numbers in the analysts' prose have no source in the data; treat them as unverified.`));
 
-  root.append(el("h2", null, "The analysts"));
-  for (const card of view.evaluators) root.append(evaluatorDetails(card));
+  english.append(el("h2", null, "The analysts"));
+  for (const card of view.evaluators) english.append(evaluatorDetails(card));
 
-  root.append(el("h2", null, "Valuation computed by Python"));
+  english.append(el("h2", null, "Valuation computed by Python"));
   const v = view.valuation;
   const table = el("table", "kv");
   const rows = [...v.multiples.map((m) => [m.label, m.value])];
@@ -446,32 +451,43 @@ function renderResult(runId, view) {
     tr.append(el("td", null, label), el("td", null, value));
     table.append(tr);
   }
-  root.append(table);
-  if (!v.computed) root.append(el("p", "muted", `DCF not computed: ${v.reason}`));
+  english.append(table);
+  if (!v.computed) english.append(el("p", "muted", `DCF not computed: ${v.reason}`));
 
-  root.append(el("h2", null, "Data quality"));
-  root.append(view.data_quality.length ? list(view.data_quality) : el("p", "muted", "No issues recorded."));
+  english.append(el("h2", null, "Data quality"));
+  english.append(view.data_quality.length ? list(view.data_quality) : el("p", "muted", "No issues recorded."));
+  english.append(el("p", "muted", `Estimated API cost of this run: $${view.cost_usd.toFixed(2)}, ${Math.round(view.duration_s / 60)} minutes.`));
 
-  root.append(el("h2", null, "Downloads"));
-  const downloads = el("div", "downloads");
-  for (const d of view.downloads) {
-    const link = el("a", "download", d.label);
-    link.href = `/api/runs/${runId}/files/${d.kind}`;
-    link.setAttribute("download", "");
-    downloads.append(link);
+  const tabs = reportTabs(runId, english);
+  root.append(tabs.toolbar, english);
+  for (const t of view.translations || []) {
+    tabs.add(t.language, { code: t.code, label: t.label, download_label: `Save report in ${t.language} (.md)` });
   }
-  root.append(downloads, el("p", "muted", `Estimated API cost of this run: $${view.cost_usd.toFixed(2)}, ${Math.round(view.duration_s / 60)} minutes.`));
-  root.append(translationPanel(runId));
 }
 
-// ---------- 5. Translation (on demand, after the result) ----------
+// ---------- 5. Report tabs: the English report and its translations (D4) ----------
 
-function translationPanel(runId) {
-  const box = el("section", "translate-box");
-  box.append(el("h2", null, "Read the report in another language"));
-  const form = el("div", "translate-form");
-  const label = el("label", null, "Language ");
+function tabButton(key, text, controls) {
+  const tab = el("button", "tab", text);
+  tab.type = "button";
+  tab.id = `tab-${key}`;
+  tab.setAttribute("role", "tab");
+  tab.setAttribute("aria-controls", controls);
+  return tab;
+}
+
+// One toolbar at the top of the result: the tabs, the language picker, Translate and Save.
+function reportTabs(runId, englishPane) {
+  const translations = new Map(); // language -> {code, label, download_label, markdown?, note?}
+  const panes = new Map([[ORIGINAL, englishPane]]);
+  const toolbar = el("div", "report-toolbar");
+  const tablist = el("div", "tabs");
+  tablist.setAttribute("role", "tablist");
+  tablist.setAttribute("aria-label", "Report language");
+  const save = el("a", "download");
+  save.setAttribute("download", "");
   const select = el("select");
+  select.setAttribute("aria-label", "Language of the translation");
   const chosen = rememberedLanguage(browserStorage(), languages, defaultLanguage);
   for (const language of languages) {
     const option = el("option", null, language.label);
@@ -480,49 +496,119 @@ function translationPanel(runId) {
     select.append(option);
   }
   select.addEventListener("change", () => rememberLanguage(browserStorage(), select.value));
-  label.append(select);
-  const button = el("button", "secondary", "Translate report");
-  button.type = "button";
-  form.append(label, button);
-  const status = el("p", "muted",
-    "A machine translation of report.md: about 0.03 USD and up to a minute. Every number is checked "
-    + "against the English report; a section that fails the check stays in English, marked.");
-  const output = el("div", "translation-output");
-  button.addEventListener("click", async () => {
-    button.disabled = true;
+  const translate = el("button", "secondary", "Translate");
+  translate.type = "button";
+  const picker = el("div", "translate-form");
+  picker.append(select, translate);
+  const status = el("p", "muted translate-status");
+  status.setAttribute("aria-live", "polite");
+  status.textContent = "Translate: a machine translation, about 0.03 USD and up to a minute; every number is "
+    + "checked against the English report.";
+  const row = el("div", "toolbar-row");
+  row.append(tablist, picker, save);
+  toolbar.append(row, status);
+  let open = ORIGINAL;
+
+  const allTabs = () => [...tablist.querySelectorAll('[role="tab"]')];
+
+  function show(key, focus = false) {
+    open = key;
+    for (const tab of allTabs()) {
+      const selected = tab.dataset.key === key;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected && focus) tab.focus();
+    }
+    for (const [k, pane] of panes) pane.hidden = k !== key;
+    const target = saveTarget(runId, key, translations);
+    save.href = target.href;
+    save.textContent = target.label;
+    if (key !== ORIGINAL && !translations.get(key).markdown) load(key);
+  }
+
+  function fill(language) {
+    const t = translations.get(language);
+    const notes = el("div", "notice notice-calm translation-notes", t.note);
+    const body = el("div", "markdown translated-report");
+    body.lang = t.code;
+    body.innerHTML = renderMarkdown(t.markdown); // escapes all text; raw HTML is never rendered
+    panes.get(language).replaceChildren(notes, body);
+  }
+
+  async function load(language) {
+    // A copy on disk (made earlier): the server returns it without translating again.
+    const pane = panes.get(language);
+    pane.replaceChildren(el("p", "muted", "Loading the translation…"));
+    const { status: code, data } = await request("POST", `/api/runs/${runId}/translation`, { language })
+      .catch(() => ({ status: 0, data: {} }));
+    if (code !== 200) {
+      pane.replaceChildren(el("div", "notice is-error", code === 0 ? "The local server does not answer." : detailText(data)));
+      return;
+    }
+    translations.set(language, data);
+    fill(language);
+  }
+
+  function add(language, translation) {
+    translations.set(language, translation);
+    if (!panes.has(language)) {
+      const pane = el("div", "report-pane");
+      pane.id = `pane-${translation.code}`;
+      pane.setAttribute("role", "tabpanel");
+      pane.setAttribute("aria-labelledby", `tab-${translation.code}`);
+      pane.hidden = true;
+      [...panes.values()].at(-1).after(pane);
+      panes.set(language, pane);
+      const tab = tabButton(translation.code, tabLabel(language, translations), pane.id);
+      tab.dataset.key = language;
+      tab.addEventListener("click", () => show(language));
+      tablist.append(tab);
+    }
+    if (translation.markdown) fill(language);
+    show(open);
+  }
+
+  tablist.addEventListener("keydown", (event) => {
+    const tabs = allTabs();
+    const target = tabKeyTarget(event.key, tabs.findIndex((tab) => tab.dataset.key === open), tabs.length);
+    if (target === null) return;
+    event.preventDefault();
+    show(tabs[target].dataset.key, true);
+  });
+
+  translate.addEventListener("click", async () => {
+    const language = select.value;
+    rememberLanguage(browserStorage(), language);
+    if (!needsTranslation(language, translations)) {
+      show(language, true); // translated already: open its tab, never pay twice
+      toolbar.scrollIntoView({ block: "start" });
+      return;
+    }
+    translate.disabled = true;
     select.disabled = true;
     status.classList.remove("is-error");
     status.textContent = "Translating the report section by section…";
-    const { status: code, data } = await request("POST", `/api/runs/${runId}/translation`, { language: select.value })
+    const { status: code, data } = await request("POST", `/api/runs/${runId}/translation`, { language })
       .catch(() => ({ status: 0, data: {} }));
-    button.disabled = false;
+    translate.disabled = false;
     select.disabled = false;
     if (code !== 200) {
       status.classList.add("is-error");
       status.textContent = code === 0 ? "The local server does not answer." : detailText(data);
       return;
     }
-    status.textContent = data.note;
-    showTranslation(runId, data, output);
+    status.textContent = `Translated into ${data.label}.`;
+    add(language, data);
+    show(language, true);
+    toolbar.scrollIntoView({ block: "start" });
   });
-  box.append(form, status, output);
-  return box;
-}
 
-function showTranslation(runId, translation, output) {
-  const link = el("a", "download", translation.download_label);
-  link.href = `/api/runs/${runId}/translations/${translation.code}`;
-  link.setAttribute("download", "");
-  const details = el("details", "translated-report");
-  details.open = true;
-  details.lang = translation.code;
-  details.append(el("summary", null, `Report in ${translation.language}`));
-  const body = el("div", "markdown");
-  body.innerHTML = renderMarkdown(translation.markdown); // escapes all text; raw HTML is never rendered
-  details.append(body);
-  const downloads = el("div", "downloads");
-  downloads.append(link);
-  output.replaceChildren(downloads, details);
+  const original = tabButton(ORIGINAL, tabLabel(ORIGINAL, translations), englishPane.id);
+  original.dataset.key = ORIGINAL;
+  original.addEventListener("click", () => show(ORIGINAL));
+  tablist.append(original);
+  show(ORIGINAL);
+  return { toolbar, add };
 }
 
 // ---------- Start ----------

@@ -93,7 +93,8 @@ def shown_texts(value, key=None):
 
 def test_the_page_and_its_scripts_are_served(client):
     assert "<title>Stock Autopsy</title>" in client.get("/").text
-    for asset in ("app.js", "events.js", "cards.js", "lookup.js", "markdown.js", "tokens.css", "app.css"):
+    for asset in ("app.js", "events.js", "cards.js", "lookup.js", "prefs.js", "reporttabs.js", "markdown.js",
+                  "tokens.css", "app.css"):
         assert client.get(f"/static/{asset}").status_code == 200, asset
 
 
@@ -187,6 +188,9 @@ def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client,
     calls = len(fake.requests)
     file = client.get(f"/api/runs/{run_id}/translations/ru")
     assert file.status_code == 200 and file.text.replace("\r\n", "\n") == done["markdown"]
+    # The result now lists the copy, so its tab comes back when the result is opened again.
+    listed = client.get(f"/api/runs/{run_id}/result").json()["translations"]
+    assert listed == [{"language": "Russian", "label": "Русский", "code": "ru"}]
     again = client.post(f"/api/runs/{run_id}/translation", json={"language": "ru"}).json()
     assert "nothing was paid" in again["note"] and len(fake.requests) == calls
     assert client.post(f"/api/runs/{run_id}/translation", json={"language": "Klingon"}).status_code == 422

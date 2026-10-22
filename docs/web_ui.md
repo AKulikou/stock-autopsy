@@ -61,7 +61,11 @@ the evidence, never "buy" or "sell".
    `Coca_Cola_Co_KO_2026-10-17_090436_report.md`; the folder in results/ keeps its ticker-first name). report.json is still written to the run folder for programs,
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 
-5. **Translation, on demand (M13, variant A).** Below the result: a language select
+5. **Translation, on demand (M13, variant A; tabs since 2026-10-22, D4).** One toolbar at the top
+   of the result: tabs "English report" and one per translated language (role tablist, arrow keys,
+   Home, End), a language select, Translate and Save (the copy in the open tab). A language
+   translated once is opened, not translated again; copies on disk come back as tabs when a
+   result is reopened. Before D4: below the result, a language select
    (Lithuanian first and the default since 2026-10-22, then Startup Autopsy's list; the page
    remembers the last choice in the browser) and "Translate report". One cheap call per
    report section (Haiku 5.5, low effort; 0.023-0.031 USD and 41-63 s per report, measured on
