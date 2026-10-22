@@ -38,11 +38,11 @@ Facts are not worse: fewer wrong numbers, the share of matched numbers and repro
 calculations within one point, fewer unsourced prose numbers. The constant answer "weak case"
 also scores error cost 0.80 on these attempts, so on this set the committee no longer beats it.
 Recorded, nothing changed because of it; the Kraft Heinz label (weak primary, conditional
-acceptable) stays as the owner wrote it.
+acceptable) stays as the author wrote it.
 
 ## 2026-10-22 — banks and other financial companies flagged by SIC code (E7; data pack change for them only)
 
-The owner's run on Goldman Sachs (SIC 6211) gave "insufficient data": revenue, total debt, EV and
+The author's run on Goldman Sachs (SIC 6211) gave "insufficient data": revenue, total debt, EV and
 the DCF were missing and a free cash flow yield of -15.8% meant nothing for a broker-dealer.
 Goldman reports net revenues under RevenuesNetOfInterestExpense (58.283 billion for FY2025),
 which the pack did not read. Now a company whose SIC code is in the SEC list's bank, credit,
@@ -57,7 +57,7 @@ the effect needs a paid run on a bank (about 0.6 USD), not made.
 
 ## 2026-10-22 — translation: look-alike letters fixed by code, the retry names the word, one-sentence reason (E4, E5)
 
-The owner's Lithuanian copy of Costco kept "Forensic Accountant" in English: both answers wrote
+The author's Lithuanian copy of Costco kept "Forensic Accountant" in English: both answers wrote
 "paketе", whose last letter is the Cyrillic "е" (U+0435); the check was right. Now, in a
 Latin-script language, a Latin word with a few Cyrillic look-alikes (а е о р с х у к ...) gets
 the Latin letters from code, with no retry; a word that is mostly Cyrillic or has a letter with
@@ -71,7 +71,7 @@ client; one live Lithuanian translation of the Costco report follows (about 0.03
 
 ## 2026-10-22 — pre-release P3 lost to batch-call timeouts; the batch client now survives them (eval instrument)
 
-The first `v4_release` run (5 cases x 2 reps, --batch) and a second run the owner started both
+The first `v4_release` run (5 cases x 2 reps, --batch) and a second run the author started both
 ended with every attempt "only 0 of 4 perspectives succeeded": the client's calls to the
 batches API timed out ("APITimeoutError", the SDK default of 10 minutes, retried twice), and
 the eval gave up. On the server both step-A batches of 10 requests still ran (created 08:27
@@ -139,8 +139,8 @@ page remembers the last choice in the browser. The number check reads Lithuanian
 (decimal comma, spaces or no-break spaces between thousands, "5,3 %", tūkst./mln./mlrd./trln.,
 "proc." as a percent, "procentinio punkto" as percentage points, "kartų", dates as
 "2024 m. gegužės 30 d."); the Russian cases are unchanged. translate/glossaries/lithuanian.md
-drafts the same 101 terms as the Russian glossary, every row marked "draft 2026-10-22, owner
-review"; with it the translator gets Lithuanian terms and analyst names for the first time. The
+drafts the same 101 terms as the Russian glossary, every row marked "draft, review
+pending"; with it the translator gets Lithuanian terms and analyst names for the first time. The
 translation prompt is unchanged.
 
 Expected effect: a Lithuanian copy uses one name per analyst and the glossary's terms; numbers
@@ -165,12 +165,12 @@ Expected effect: "openai" shows Microsoft and Nvidia as related companies under 
 instead of as unexplained suggestions. Risk: the model may call a brand owner "related" or a
 partner "exact"; the label then misleads, but the SEC checks still stop anything that cannot be
 analyzed. Checked with the fake client only (tests/test_resolve.py); no paid call. One lookup
-costs about 0.0002 USD, so the owner's manual checks of "openai", "chrysler" and "anthropic" on
+costs about 0.0002 USD, so the author's manual checks of "openai", "chrysler" and "anthropic" on
 the real page cost under 0.001 USD.
 
 ## 2026-10-22 — prompt cache: one output schema for all analysts, behind SHARED_OUTPUT_SCHEMA (D1; request change, off by default, NOT measured)
 
-Finding, from the owner's NVDA run of 2026-10-22 (logs/run_20261022_091656.log) and the 2026-10-21
+Finding, from the author's NVDA run of 2026-10-22 (its run log) and the 2026-10-21
 Coca-Cola run: every analyst wrote 10,030-10,677 tokens to the cache and read 0. The cached text
 was byte-identical (19,847 characters, same pack hash), the model, tools (none), thinking and
 effort settings were the same, and the four parallel analysts started a few milliseconds after
@@ -216,7 +216,7 @@ Expect in the cost table: the assumptions step writes about 16k tokens, the othe
 
 ## 2026-10-21 — live page run on Coca-Cola after C1-C8, and the fixes it led to
 
-Owner's OK for a paid run (0.667 USD) and its Russian translation (0.022 USD), through the page in
+The author's OK for a paid run (0.667 USD) and its Russian translation (0.022 USD), through the page in
 headless Chrome, code 474b12d. Result: weak case, medium confidence (acceptable by the label);
 28 of 34 quoted numbers match, 1 wrong; 20 of 25 calculations reproduced; 3 of 310 prose numbers
 without a source; cache reads 0 (each analyst has its own schema).
@@ -265,7 +265,7 @@ What changed: the translation prompt (our translation code, not an analyst promp
 analyst names in English"; it now asks for the names the term list gives, the same name every
 time, with the English name in brackets only in the heading of the analyst's own section. The
 Russian glossary has a last section with ten names (the eight analysts of the source of truth, the
-valuation assumptions step, the committee), marked "added/changed 2026-10-21, owner review". The
+valuation assumptions step, the committee), marked as drafts for review. The
 heading check no longer lets an analyst's heading come back in English.
 
 Why: the 2026-10-17 Russian copy of the Coca-Cola report mixed "Аналитик оценки" with "Business
@@ -316,7 +316,7 @@ Effect on the model: the note is pack data the analysts read; wording only, no n
 No paid run. Regrade of v3_release before and after: identical (198 of 211 calculations
 reproduced, 7 wrong numbers on exact paths in 379 data claims).
 
-Left for the owner: reading the missing quarter from the filing's own XBRL instance (as
+Left for the author: reading the missing quarter from the filing's own XBRL instance (as
 `datalayer/extensions.py` already does for receivables) would close the gap; that is a data-layer
 feature, not done.
 
@@ -340,10 +340,9 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
   (M8 untested live). The download name is covered by a test, not by the live run (M3).
 - Fixed after the review (5037b0f): "1 filing events" on the data pack step; "Report in
   Русский" above the translation, now "Report in Russian".
-- Left for the owner: the price sentence says "At today's price of 93.90" without a currency
+- Left for the author: the price sentence says "At today's price of 93.90" without a currency
   while the rest of the page writes $93.90. The sentence reaches the committee, so changing it
   is a behavior change, not made while 67404ad is unmeasured.
-- Screenshots: `screens_2026-10-17/` in the owner's handoff folder (01-06, 08-10).
 
 ## 2026-10-17 — calculation check: stated constants, parts of a formula, the sign of a difference (M15)
 
@@ -390,7 +389,7 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
 
 ## 2026-10-17 — report translation (M13, variant A): measured on three saved reports
 
-- **Measurement (owner's OK, Haiku 5.5, real Russian glossary of 96 terms):** final runs with
+- **Measurement (author's OK, Haiku 5.5, real Russian glossary of 96 terms):** final runs with
   all checks of the day (number check with labels, durations and dates in words; structure
   check):
 
@@ -408,7 +407,7 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
   one -> a section must keep its count of headings, table rows and list items.
 - **Remaining:** Haiku at low effort sometimes answers an analyst's section in English (6
   answers in the final three runs); the retry fixes most. The product name in the title was
-  translated once ("Стоп-анализ акций"). The owner reads one translation and reviews the
+  translated once ("Стоп-анализ акций"). The author reads one translation and reviews the
   glossary.
 - **Cost of the whole measurement:** 0.155 USD (six report translations, two of them before
   the fixes).
@@ -423,10 +422,10 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
 - **Checked so far (free):** unit tests with a fake client and a test glossary; the number
   parser on all seven saved reports (about 7,000 numbers): no section rejected when compared
   with itself or with a mechanical Russian rewrite of its numbers.
-- **To measure (owner's OK needed, about 0.1 USD):** translate the saved KO, TSLA and CMCSA
+- **To measure (author's OK needed, about 0.1 USD):** translate the saved KO, TSLA and CMCSA
   reports into Russian with the real glossary; record cost, time, sections kept in English and
-  number-check rejections here; the owner reads one. The real Russian glossary
-  (`translate/glossaries/russian.md`) is drafted in chat and reviewed by the owner first.
+  number-check rejections here; the author reads one. The real Russian glossary
+  (`translate/glossaries/russian.md`) is drafted first and reviewed by the author.
 
 ## 2026-10-16 — release eval `v3_release`: 5 golden cases x 2 reps after the data fix and the label revision
 
@@ -483,8 +482,8 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
   amends the FY2020 annual report (MD&A for the 2019-2020 quarters; the material weakness
   extended to 2018 and 2019): part of the 2021 history. New must_not: treating the Part III
   amendments as accounting red flags.
-- **Label status for both:** drafted by Claude Code from the pack under the owner's
-  delegation; reviewed in two independent reviews; not blind-labelled by the owner.
+- **Label status for both:** drafted by Claude Code from the pack under the author's
+  delegation; reviewed in two independent reviews; not blind-labelled by the author.
 
 ## 2026-10-16 — data pack: spin-off adjustments are not splits, stale cover-page share counts are not used (data change; Comcast's pack corrected)
 
@@ -657,13 +656,13 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
 - **Reading:** medium effort is much cheaper and found the restatement trail every time,
   but produced the one grounding failure of M5 and moved KHC's committee verdict. Two reps
   per ticker cannot separate that from noise.
-- **Decision (2026-10-15, delegated by the owner):** keep the default effort; medium is not the default.
+- **Decision (2026-10-15, delegated by the author):** keep the default effort; medium is not the default.
 
 ## 2026-10-15 — eval instrument: judge by majority of 3, substance-only must_find (no system change)
 
 - **Changed:** the judge answers three times and each statement is decided by majority
   (`JUDGE_VOTES`); the SNOW must_find "losses in every year" now reads "loss-making on a GAAP
-  basis" (owner-approved), as the owner first asked.
+  basis" (author-approved), as the author first asked.
 - **Why:** one judge answer flipped borderline statements between passes on identical text
   (must_find 6/6 -> 4/6; a must_not on SNOW rep1 judged present from "debt of 2.28B appeared
   after FY2024", which does not claim zero debt before; checked by hand).
@@ -673,7 +672,7 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
 ## 2026-10-15 — M5 baseline: golden tickers, 2 reps each (no prompt, schema or model change)
 
 - **Setup:** Sonnet 5.5, default effort, `--batch`; variant `baseline` in
-  `.claude/hillclimb/stock/` (git-ignored). Labels in `eval/cases.json` (owner-approved;
+  `.claude/hillclimb/stock/` (git-ignored). Labels in `eval/cases.json` (author-approved;
   KHC's restatement must_find reworded after the probe, before the regrade). Judge
   Haiku 5.5 at effort low.
 - **Cost:** baseline 1.65 USD for 6 attempts (0.26-0.30 each at batch prices, 498k input /
@@ -714,7 +713,7 @@ No behavior change; a check of the page after M1-M15 on code 922c655. Headless C
   verbatim and decisive. SNOW "losses in every year": both reports state large GAAP losses
   (net loss 1.33 billion FY2026, 1.09 billion TTM) but never "every year"; the judge said
   present on the first pass and absent on the regrade of the same text. Verdict by hand:
-  the substance is there, the label is over-specific (the owner asked for "losses").
+  the substance is there, the label is over-specific (the author asked for "losses").
   **The judge is not deterministic on borderline statements** (must_find 6/6 then 4/6 on
   identical input): read must_find rates with that in mind, and word statements by their
   substance.
