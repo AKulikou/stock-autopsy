@@ -1,4 +1,4 @@
-// The report's tabs (the pattern of Startup Autopsy): "English report" and one tab per
+// The report's tabs (the pattern of Startup Autopsy): "English" and one tab per
 // translated language; Save saves the copy on screen. Pure logic, tested in tests/js.
 
 export const ORIGINAL = "original";
@@ -20,9 +20,9 @@ export function saveTarget(runId, tab, translations) {
   return { href: `/api/runs/${runId}/translations/${t.code}`, label: t.download_label };
 }
 
-// The tab label of a translation: "Lietuvių" (the language's own name), "English report" for the original.
+// The tab label: the language's own name ("Lietuvių" for a translation, "English" for the original).
 export function tabLabel(tab, translations) {
-  return tab === ORIGINAL ? "English report" : translations.get(tab).label;
+  return tab === ORIGINAL ? "English" : translations.get(tab).label;
 }
 
 // Translate only a language this page has not translated yet: a second click on Translate

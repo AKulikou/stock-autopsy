@@ -70,7 +70,7 @@ the evidence, never "buy" or "sell".
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 
 5. **Translation, on demand.**
-   One toolbar at the top of the result: tabs "English report" and one per translated language
+   One toolbar at the top of the result: tabs "English" and one per translated language
    (role tablist; arrow keys, Home and End switch tabs), a language select (Lithuanian first and
    the default, then Startup Autopsy's list; the page remembers the last choice in the browser),
    Translate, and Save, which saves the copy in the open tab (report.lt.md, report.ru.md, named

@@ -26,8 +26,8 @@ test("Save saves the copy in the open tab, with its own file name", () => {
     { href: "/api/runs/r1/translations/lt", label: "Save report in Lithuanian (.md)" });
 });
 
-test("tabs are named English report and by each language's own name", () => {
-  assert.equal(tabLabel(ORIGINAL, translations), "English report");
+test("tabs are named English and by each language's own name", () => {
+  assert.equal(tabLabel(ORIGINAL, translations), "English");
   assert.equal(tabLabel("Russian", translations), "Русский");
 });
 
