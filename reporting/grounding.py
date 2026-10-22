@@ -331,9 +331,13 @@ FIELD_NOUNS = {
     "short_term_investments": r"short[- ]term\s+investments?",
 }
 # A sentence about the data itself ("the pack has no debt terms", "sat under another
-# tag") states that the value is unknown, which is right.
+# tag") states that the value is unknown, which is right. So does one about what cannot be
+# computed without it ("enterprise value cannot be built without debt", "no equity bridge"):
+# seven of the nine hits of v4_release (2026-10-22) were such sentences.
 _ABOUT_THE_DATA = re.compile(
-    r"\b(?:pack|fetched|not\s+reported|unreported|tags?|xbrl|unknown|missing|not\s+in\s+the\s+data)\b",
+    r"\b(?:pack|fetched|not\s+reported|unreported|tags?|xbrl|unknown|missing|not\s+in\s+the\s+data"
+    r"|null|partial|(?:is|are|was|were)\s+reported|figures?|bridge|cannot|could\s+not|nobody\s+can"
+    r"|(?:do|does|did)\s+not\s+(?:yet\s+)?know|how\s+much)\b",
     re.IGNORECASE,
 )
 _PERIOD = re.compile(r"\b(?:FY\d{4}(?:Q[1-4])?|TTM)\b", re.IGNORECASE)

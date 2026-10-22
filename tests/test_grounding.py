@@ -223,6 +223,14 @@ def test_no_debt_where_the_pack_says_unknown_is_flagged():
         "The pack has no debt figures before FY2024.",  # about the data, which is right
         "There are no peers in the pack.",  # not fetched: a statement about the pack
         "There was no change in debt.",
+        # v4_release, 2026-10-22: sentences that say the debt figure is unknown, not zero.
+        "Total debt is null for FY2024, FY2025 and 2026-06-30 and no short-term borrowings are reported.",
+        "Enterprise value cannot be built without debt.",
+        "Without the debt figure nobody can say whether the price already assumes it.",
+        "The valuation math could not be computed without total debt.",
+        "What we do not yet know is how much debt it has.",
+        "Without debt there is no enterprise value or equity bridge.",
+        "Total debt is partial: only non-current debt is captured and no short-term borrowings are reported.",
     ],
 )
 def test_statements_that_respect_the_unknown_are_not_flagged(text):
