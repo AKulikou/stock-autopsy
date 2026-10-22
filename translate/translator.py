@@ -15,7 +15,9 @@ financial terms:
   translator with it, and the terms of the report are appended as one section;
 - numbers in the language's format (translate/number_format.py): code writes the number
   cells of tables, and a number left in the English thousands form ("10,803" reads as a
-  decimal in a language with a decimal comma) is asked again once, then rewritten by code.
+  decimal in a language with a decimal comma) is asked again once, then rewritten by code;
+- the tables of a section against the English ones (translate/tables.py): a broken table is
+  asked again once, then repaired by code where it can be, else the section stays in English.
 """
 
 import logging
@@ -32,6 +34,7 @@ from translate.glossary import Glossary, load_glossary, split_glossary
 from translate.languages import CODES, number_format
 from translate.number_format import english_thousands, localize, localize_tables, rewrite_english_thousands
 from translate.numbers import missing_numbers
+from translate.tables import TABLE_BROKEN, repair_tables, table_problem
 
 logger = logging.getLogger(__name__)
 
@@ -293,6 +296,10 @@ def retry_detail(problem: str, language: str = "") -> str:
     What exactly was wrong, for the retry: each mixed word and its letters from the other
     alphabet, or the numbers written in the English thousands form and how to write them.
     """
+    if problem.startswith(TABLE_BROKEN):
+        return (f"In your previous answer {problem.partition(': ')[2]}. Keep every table exactly as in the "
+                "original: each row on one line that starts and ends with |, the same rows and the same "
+                "number of cells, and no blank line inside a table.")
     if problem.startswith(ENGLISH_FORM):
         numbers = problem.partition(": ")[2].split(", ")
         fmt = number_format(language)
@@ -360,6 +367,9 @@ def section_problem(source: str, translation: str, language: str) -> str | None:
     mixed = list(dict.fromkeys(mixed_script_words(translation, language)))
     if mixed:
         return f"not in {language}: words mixing alphabets ({', '.join(mixed[:3])})"
+    broken = table_problem(source, translation)
+    if broken:
+        return broken
     missing = missing_numbers(source, translation)
     if missing:
         return f"{NUMBERS_CHANGED}: {', '.join(missing[:5])}"
@@ -400,13 +410,14 @@ def _translate_section(section: str, language: str, glossary: Glossary | None) -
         _log_rejected(heading, second_problem, second["text"])
         attempts.append((second, second_problem))
     rejections = _number_rejections(attempts)
-    # Numbers left in the English form after the retry: their values are the English section's,
-    # so code writes them in the language's format (the later answer first).
+    # A broken table or numbers left in the English form after the retry: code repairs what it
+    # can (the later answer first) and the result is checked again like an answer.
     for attempt, problem in reversed(attempts):
-        if problem.startswith(ENGLISH_FORM):
-            fixed = rewrite_english_thousands(section, attempt["text"], language)
+        if problem.startswith((TABLE_BROKEN, ENGLISH_FORM)):
+            fixed = localize_tables(section, repair_tables(attempt["text"]), language)
+            fixed = rewrite_english_thousands(section, fixed, language)
             if section_problem(section, fixed, language) in (None, HEADING_LEFT):
-                logger.info(f"[Translation] '{heading}': numbers in the English form rewritten by code")
+                logger.info(f"[Translation] '{heading}': {problem.partition(':')[0]}, repaired by code")
                 return {**attempt, "text": fixed, **billed, "calls": 2, "untranslated": False,
                         "number_rejections": rejections}
     for attempt, problem in attempts:
@@ -442,6 +453,8 @@ def _problem_words(problem: str) -> tuple[str, list[str]]:
         return "a number came back changed", [x for x in rest.split(", ") if x]
     if problem.startswith(ENGLISH_FORM):
         return "numbers kept the English thousands separator", [x for x in rest.split(", ") if x]
+    if problem.startswith(TABLE_BROKEN):
+        return TABLE_BROKEN, [rest] if rest else []
     if problem.startswith("structure changed"):
         return "headings, table rows or list items came back changed", [rest] if rest else []
     if "words mixing alphabets" in problem:

@@ -24,6 +24,7 @@ from translate.languages import (
 )
 from translate.number_format import english_thousands, localize_tables, rewrite_english_thousands
 from translate.numbers import missing_numbers, numbers_in
+from translate.tables import table_problem
 from translate.translator import (
     MACHINE_TRANSLATION_NOTE,
     RETRY_NOTE,
@@ -519,7 +520,9 @@ def test_comments_and_a_repeated_heading_are_rejected():
 def test_a_stub_table_before_the_real_one_is_rejected():
     stub = "| Оценщик | Утверждение |\n|---|---|\n| Valuation Analyst | Базовый сценарий... |\n\n"
     answer = fake_russian(TABLE_SECTION).replace("| текст", stub + "| текст", 1)
-    assert "table rows 3 -> 6" in section_problem(TABLE_SECTION, answer, "Russian")
+    problem = section_problem(TABLE_SECTION, answer, "Russian")
+    assert problem == "a table came back broken: 2 tables instead of 1"
+    assert "table rows 3 -> 6" in structure_changed(TABLE_SECTION, answer)
 
 
 def test_a_faithful_translation_keeps_the_structure():
@@ -767,3 +770,104 @@ def test_a_cost_table_translates_in_one_call_per_section(fake):
     assert len(translation_calls(fake)) == 2 and outcome["untranslated_sections"] == 0
     assert f"11{NBSP}080" in outcome["text"] and "$402,24B" in outcome["text"]
     assert not re.search(r"\d,\d{3}(?!\d)", outcome["text"])
+
+
+# ---- tables of a translated section -----------------------------------------------
+
+CONFLICTS = """### Conflict map
+
+| Between | Conflict | Nature |
+|---|---|---|
+| Business vs Valuation | strong brand against a weak price | different angles |
+| Forensic vs Pre-Mortem | clean filings against a plausible fall | different angles |
+| Forensic vs Valuation | positive cash flow against a negative quarter | real disagreement |
+"""
+
+
+def broken(kind: str):
+    """The Russian 'translation' of CONFLICTS, its table broken one way."""
+    text = fake_russian(CONFLICTS)
+    rows = [line for line in text.split("\n") if line.startswith("|")]
+    if kind == "blank line":
+        return text.replace("\n" + rows[4], "\n\n" + rows[4])
+    if kind == "line break":
+        return text.replace(rows[4], rows[4].replace(" | ", " |\n", 1).replace(" текст ", " текст\n", 1))
+    if kind == "missing row":
+        return text.replace(rows[4] + "\n", "")
+    if kind == "lost border":  # the Russian copy of 2026-10-22
+        return text.replace(rows[4], rows[4].rstrip(" |"))
+    raise ValueError(kind)
+
+
+def table_translator(kind: str, times: int):
+    left = {"n": times}
+
+    def handler(kwargs):
+        source = kwargs["messages"][0]["content"]
+        if left["n"] > 0:
+            left["n"] -= 1
+            return text_response(broken(kind))
+        return text_response(fake_russian(source))
+
+    return handler
+
+
+def table_rows(text: str) -> list[str]:
+    """The rows of the first table as a renderer sees them: consecutive lines that start and end with |."""
+    lines = text.split("\n")
+    start = next(i for i, line in enumerate(lines) if line.startswith("|"))
+    rows = []
+    for line in lines[start:]:
+        if not (line.startswith("|") and line.rstrip().endswith("|")):
+            break
+        rows.append(line)
+    return rows
+
+
+def test_an_intact_table_passes_in_one_call(fake):
+    fake.create_handler = table_translator("blank line", times=0)
+    outcome = translate_document(CONFLICTS, "Russian")
+    assert len(translation_calls(fake)) == 1 and len(table_rows(outcome["text"])) == 5
+    assert table_problem(CONFLICTS, fake_russian(CONFLICTS)) is None
+
+
+@pytest.mark.parametrize(("kind", "problem"), [
+    ("blank line", "a blank line after row 2"),
+    ("line break", "row 3: a line break in the row or a lost | at its end"),
+    ("lost border", "row 3: a line break in the row or a lost | at its end"),
+    ("missing row", "2 rows instead of 3"),
+])
+def test_a_broken_table_is_named_with_its_row(kind, problem):
+    found = table_problem(CONFLICTS, broken(kind))
+    name = "the table with the columns Between, Conflict, Nature"
+    assert found == f"a table came back broken: {name}, {problem}"
+
+
+def test_the_retry_says_which_table_and_row_broke(fake):
+    fake.create_handler = table_translator("lost border", times=1)
+    outcome = translate_document(CONFLICTS, "Russian")
+    calls = translation_calls(fake)
+    assert len(calls) == 2
+    assert "the table with the columns Between, Conflict, Nature, row 3" in calls[1]["system"]
+    assert "each row on one line that starts and ends with |" in calls[1]["system"]
+    assert len(table_rows(outcome["text"])) == 5 and outcome["untranslated_sections"] == 0
+
+
+@pytest.mark.parametrize("kind", ["blank line", "line break", "lost border"])
+def test_a_table_broken_twice_is_repaired_by_code(fake, kind):
+    fake.create_handler = table_translator(kind, times=2)
+    outcome = translate_document(CONFLICTS, "Russian")
+    assert len(translation_calls(fake)) == 2 and outcome["untranslated_sections"] == 0
+    rows = table_rows(outcome["text"])
+    assert len(rows) == 5 and all(row.count("|") == 4 for row in rows)
+    assert table_problem(CONFLICTS, outcome["text"]) is None
+
+
+def test_a_table_missing_a_row_twice_stays_in_english(fake):
+    fake.create_handler = table_translator("missing row", times=2)
+    outcome = translate_document(CONFLICTS, "Russian")
+    assert outcome["untranslated_sections"] == 1
+    assert outcome["kept_sections"] == [{"heading": "Conflict map", "reason": (
+        "twice a table came back broken (the table with the columns Between, Conflict, Nature, "
+        "2 rows instead of 3)")}]
+    assert "| Forensic vs Valuation | positive cash flow against a negative quarter |" in outcome["text"]

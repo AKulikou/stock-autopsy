@@ -8,6 +8,24 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — translation: tables checked against the English ones, repaired by code
+
+What changed: a Russian copy of 2026-10-22 lost the closing "|" of the third row of the conflict
+map; the page ends a table at such a line and printed the row as a paragraph with "|" in it. The
+English report.md had the table intact, so the cause was the translation, not our rendering.
+Every section's tables are now compared with the English ones (translate/tables.py): the same
+number of tables, rows and cells, each row on one line that starts and ends with "|", no blank
+line inside a table. A broken table is asked again once, with a note naming the table by its
+columns and the row (new text the translator sees on that retry only); if it comes back broken,
+code joins a row split over lines, removes a blank line inside the table and puts back a lost
+closing "|", then checks again; a shape it cannot put right (a missing row) keeps the section in
+English with the usual one-line note. Before, a missing row was caught as "structure changed"; a
+lost "|", a line break in a cell and a blank line inside a table were not caught at all.
+
+Checked without an API call by replaying two stored Russian copies through the new code: the
+broken conflict map is found and repaired; no other table of either copy is flagged. Not yet
+measured on a live translation.
+
 ## 2026-10-22 — translation: numbers in the target language's format
 
 What changed: every offered language writes a decimal comma (translate/languages.py now says so
