@@ -61,6 +61,10 @@ EVENT_POLL_S = 0.3
 # a stream dropped in a 40-second silence and the page reported a failure).
 HEARTBEAT_S = 15.0
 MEDIA_TYPES = {"report": "text/markdown; charset=utf-8"}
+# The page and its files are checked with the server on every load (an unchanged file is a
+# 304 by its ETag), so after an update the browser cannot keep an old app.css or app.js,
+# nor an old module imported by app.js (2026-10-22: an old toolbar until a hard refresh).
+FRESH = {"Cache-Control": "no-cache"}
 EXAMPLES = (
     ("Coca-Cola", "KO"),
     ("Comcast", "CMCSA"),
@@ -69,6 +73,15 @@ EXAMPLES = (
     ("Plug Power", "PLUG"),
     ("KFC (a brand)", "KFC"),
 )
+
+
+class FreshStaticFiles(StaticFiles):
+    """Static files the browser revalidates on every load instead of reusing a stale copy."""
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers.update(FRESH)
+        return response
 
 
 def load_ticker_map() -> dict:
@@ -154,7 +167,7 @@ def create_app(
 
     @app.get("/", include_in_schema=False)
     def page():
-        return FileResponse(STATIC_DIR / "index.html")
+        return FileResponse(STATIC_DIR / "index.html", headers=FRESH)
 
     @app.get("/api/options")
     def options():
@@ -270,5 +283,5 @@ def create_app(
         return FileResponse(path, media_type="text/markdown; charset=utf-8",
                             filename=download_name(run, path))
 
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app.mount("/static", FreshStaticFiles(directory=STATIC_DIR), name="static")
     return app

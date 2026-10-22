@@ -107,6 +107,33 @@ def test_the_page_and_its_scripts_are_served(client):
         assert client.get(f"/static/{asset}").status_code == 200, asset
 
 
+def test_the_page_and_its_files_are_revalidated_after_an_update(client):
+    # An old app.css kept by the browser once showed the old toolbar until a hard refresh.
+    assert client.get("/").headers["cache-control"] == "no-cache"
+    for asset in ("app.css", "app.js", "reporttabs.js"):
+        first = client.get(f"/static/{asset}")
+        assert first.headers["cache-control"] == "no-cache", asset
+        again = client.get(f"/static/{asset}", headers={"If-None-Match": first.headers["etag"]})
+        assert again.status_code == 304 and again.headers["cache-control"] == "no-cache", asset
+        changed = client.get(f"/static/{asset}", headers={"If-None-Match": '"an-older-version"'})
+        assert changed.status_code == 200 and changed.content == first.content, asset
+
+
+def test_an_updated_file_reaches_a_browser_holding_the_old_copy(tmp_path, monkeypatch):
+    static = tmp_path / "static"
+    static.mkdir()
+    (static / "index.html").write_text("<title>Stock Autopsy</title>", encoding="utf-8")
+    (static / "app.css").write_text(".toolbar { display: block; }", encoding="utf-8")
+    monkeypatch.setattr(app_module, "STATIC_DIR", static)
+    app = create_app(tmp_path / "results", fetch=fake_fetch, ticker_map=lambda: TICKER_MAP,
+                     filer_check=fake_filer_check, sector_check=fake_sector_check)
+    with TestClient(app, base_url=BASE_URL) as fresh:
+        old_etag = fresh.get("/static/app.css").headers["etag"]
+        (static / "app.css").write_text(".toolbar { display: flex; gap: 8px; }", encoding="utf-8")
+        updated = fresh.get("/static/app.css", headers={"If-None-Match": old_etag})
+        assert updated.status_code == 200 and "display: flex" in updated.text
+
+
 def test_a_ticker_in_capitals_resolves_without_a_model_call(client, fake):
     found = client.post("/api/resolve", json={"query": "KO"}).json()
     assert found["candidates"] == [
