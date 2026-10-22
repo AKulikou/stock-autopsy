@@ -8,6 +8,24 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — pre-release P3 lost to batch-call timeouts; the batch client now survives them (eval instrument)
+
+The first `v4_release` run (5 cases x 2 reps, --batch) and a second run the owner started both
+ended with every attempt "only 0 of 4 perspectives succeeded": the client's calls to the
+batches API timed out ("APITimeoutError", the SDK default of 10 minutes, retried twice), and
+the eval gave up. On the server both step-A batches of 10 requests still ran (created 08:27
+and 08:54 UTC, ended 10:40 and 10:25 UTC, about two hours in the queue) and were billed:
+6,500 input, 157,582 cache-write, 66,434 cache-read and 120,292 output tokens, about
+0.81 USD at batch prices, for no result.
+
+What changed (`core/batch_client.py`, no request content changed): the create call has a
+120-second timeout and no SDK retry; if it fails, the client looks for a batch with the same
+number of requests made after it was sent and adopts it, so a lost answer never becomes a
+second, paid copy. Status checks and the results download have a 60-second timeout, and a
+failed one (timeout, dropped connection, 5xx, 429) is tried again at the next poll; the batch
+is given up only after 30 failures in a row. Tests with a fake batches API cover the adopted
+batch, failing status checks and a create that made no batch.
+
 ## 2026-10-22 — pre-release P5 fixes: lookup names the company, short banner; translation rejects mixed alphabets
 
 Found on the real page (lookups 2026-10-22, about 0.0002 USD each):

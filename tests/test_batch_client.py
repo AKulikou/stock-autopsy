@@ -2,6 +2,7 @@
 
 import json
 import threading
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -108,3 +109,55 @@ def test_batch_pricing_halves_token_cost(monkeypatch):
     full = token_summary.estimate_cost(1_000_000, 0, "claude-sonnet-4-6")
     monkeypatch.setattr(token_summary, "token_price_factor", token_summary.BATCH_TOKEN_DISCOUNT)
     assert token_summary.estimate_cost(1_000_000, 0, "claude-sonnet-4-6") == pytest.approx(full / 2)
+
+
+class FlakyBatches(FakeBatches):
+    """The network failures of 2026-10-22: the create call times out after the batch exists
+    on the server, and status checks time out now and then."""
+
+    def __init__(self, create_fails=0, retrieve_fails=0, adoptable=True):
+        super().__init__()
+        self.create_fails, self.retrieve_fails, self.adoptable = create_fails, retrieve_fails, adoptable
+        self.listed = 0
+
+    def create(self, requests):
+        batch = super().create(requests)
+        if self.create_fails:
+            self.create_fails -= 1
+            if not self.adoptable:
+                self.created.pop()
+            raise TimeoutError("create timed out")
+        return batch
+
+    def retrieve(self, batch_id):
+        if self.retrieve_fails:
+            self.retrieve_fails -= 1
+            raise TimeoutError("retrieve timed out")
+        return super().retrieve(batch_id)
+
+    def list(self, limit=20):
+        self.listed += 1
+        now = datetime.now(timezone.utc)
+        return [SimpleNamespace(id=f"batch_{n}", created_at=now, processing_status="in_progress",
+                                request_counts=SimpleNamespace(processing=len(requests), succeeded=0,
+                                                               errored=0, canceled=0, expired=0))
+                for n, requests in reversed(list(enumerate(self.created, start=1)))]
+
+
+def test_a_batch_created_although_the_create_call_timed_out_is_adopted_not_sent_again():
+    batches = FlakyBatches(create_fails=1)
+    out = ask_in_parallel(client_with(batches), ["a", "b"])
+    assert len(batches.created) == 1 and batches.listed == 1  # no second, paid copy
+    assert {k: v.parsed_output.value for k, v in out.items()} == {"a": "a", "b": "b"}
+
+
+def test_status_checks_that_time_out_do_not_fail_the_batch():
+    batches = FlakyBatches(retrieve_fails=3)
+    out = ask_in_parallel(client_with(batches), ["a"])
+    assert out["a"].parsed_output.value == "a"
+
+
+def test_a_create_that_failed_without_a_batch_reaches_the_callers():
+    batches = FlakyBatches(create_fails=1, adoptable=False)
+    out = ask_in_parallel(client_with(batches), ["a"])
+    assert isinstance(out["a"], TimeoutError) and batches.created == []

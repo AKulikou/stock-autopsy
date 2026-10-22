@@ -21,14 +21,24 @@ import logging
 import threading
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
+import anthropic
 from anthropic import Anthropic, transform_schema
 from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.messages.batch_create_params import Request
 from pydantic import BaseModel, TypeAdapter
 
 logger = logging.getLogger(__name__)
+
+# One call to the batches API, not the batch: it should answer in seconds (2026-10-22: a call
+# hung for the SDK's default 10 minutes, three times, and the eval lost two finished batches).
+CREATE_TIMEOUT_S = 120.0
+CALL_TIMEOUT_S = 60.0
+MAX_CALL_FAILURES = 30  # failed status checks in a row before the batch is given up
+TRANSIENT = (anthropic.APIConnectionError, anthropic.InternalServerError, anthropic.RateLimitError,
+             TimeoutError)
 
 
 @dataclass
@@ -50,6 +60,7 @@ class BatchingClient:
         self._pending: list[_Slot] = []
         self._timer: threading.Timer | None = None
         self.batches_sent = 0
+        self._seen: set[str] = set()  # batches already used, never adopted twice
         self.messages = SimpleNamespace(parse=self._parse)
 
     def _parse(self, *, output_format: type[BaseModel], **params) -> SimpleNamespace:
@@ -86,22 +97,77 @@ class BatchingClient:
                     slot.error = e
                     slot.done.set()
 
+    def _api(self, timeout_s: float, retries: int):
+        """The batches API with a per-call timeout (a fake client in tests has no with_options)."""
+        client = self._client
+        if hasattr(client, "with_options"):
+            client = client.with_options(timeout=timeout_s, max_retries=retries)
+        return client.messages.batches
+
+    def _create(self, requests: list) -> object:
+        """
+        Send the batch once. A create call that times out may still have made the batch on the
+        server (2026-10-22: two batches ran and were billed while the client gave up), so the
+        client looks for it before it gives up, and never sends a second, paid copy.
+        """
+        sent_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+        try:
+            return self._api(CREATE_TIMEOUT_S, 0).create(requests=requests)
+        except TRANSIENT as e:
+            logger.warning(f"Batch create failed ({type(e).__name__}); looking for the batch on the server")
+            time.sleep(self._poll_s)
+            for batch in self._api(CALL_TIMEOUT_S, 2).list(limit=20):
+                counts = batch.request_counts
+                total = sum(getattr(counts, k, 0) or 0 for k in ("processing", "succeeded", "errored",
+                                                                  "canceled", "expired"))
+                if batch.created_at >= sent_at and total == len(requests) and batch.id not in self._seen:
+                    logger.warning(f"Batch {batch.id}: adopted the batch the failed create call made")
+                    return batch
+            raise
+
+    def _retrieve(self, batch_id: str):
+        """The batch's status; a status check that fails is tried again at the next poll."""
+        failures = 0
+        while True:
+            try:
+                return self._api(CALL_TIMEOUT_S, 2).retrieve(batch_id)
+            except TRANSIENT as e:
+                failures += 1
+                if failures >= MAX_CALL_FAILURES:
+                    raise
+                logger.warning(f"Batch {batch_id}: status check failed ({type(e).__name__}), "
+                               f"{failures} in a row")
+                time.sleep(self._poll_s)
+
+    def _results(self, batch_id: str) -> list:
+        failures = 0
+        while True:
+            try:
+                return list(self._api(CALL_TIMEOUT_S, 2).results(batch_id))
+            except TRANSIENT as e:
+                failures += 1
+                if failures >= MAX_CALL_FAILURES:
+                    raise
+                logger.warning(f"Batch {batch_id}: results download failed ({type(e).__name__}), retrying")
+                time.sleep(self._poll_s)
+
     def _run_batch(self, slots: list[_Slot]) -> None:
         by_id = {f"r{i}": slot for i, slot in enumerate(slots)}
-        batch = self._client.messages.batches.create(requests=[
+        batch = self._create([
             Request(custom_id=custom_id, params=MessageCreateParamsNonStreaming(**slot.params))
             for custom_id, slot in by_id.items()
         ])
+        self._seen.add(batch.id)
         self.batches_sent += 1
         logger.info(f"Batch {batch.id}: {len(slots)} request(s) sent")
         started = time.monotonic()
         while batch.processing_status != "ended":
             time.sleep(self._poll_s)
-            batch = self._client.messages.batches.retrieve(batch.id)
+            batch = self._retrieve(batch.id)
         logger.info(f"Batch {batch.id}: ended after {time.monotonic() - started:.0f}s")
 
         # Results come in any order: match them by custom_id, never by position.
-        for item in self._client.messages.batches.results(batch.id):
+        for item in self._results(batch.id):
             slot = by_id.get(item.custom_id)
             if slot is None:
                 continue
