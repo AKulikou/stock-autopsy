@@ -23,6 +23,7 @@ from translate.translator import (
     heading_untranslated,
     kept_sections,
     looks_untranslated,
+    mixed_script_words,
     section_problem,
     split_sections,
     structure_changed,
@@ -400,6 +401,21 @@ def test_untranslated_or_wrong_language_text_is_recognised():
     assert not looks_untranslated(english, RUSSIAN)
     assert wrong_language(english, "Russian")
     assert wrong_language(RUSSIAN, "Russian") is None
+
+
+def test_words_mixing_two_alphabets_are_rejected():
+    # The real Lithuanian copy of 2026-10-22 had "## Vердикt", "Komitето diskusija" and "krītа".
+    source = "## Verdict: Weak case\n\nThe committee discussion of the margins and the price.\n"
+    assert mixed_script_words("## Vердикt: Silpni argumentai\n\nKomitето diskusija.", "Lithuanian") == [
+        "Vердикt", "Komitето"]
+    glitch = "## Vердикt: Silpni argumentai\n\nKomiteto diskusija apie maržas ir kainą.\n"
+    problem = section_problem(source, glitch, "Lithuanian")
+    assert problem.startswith("not in Lithuanian: words mixing alphabets")
+    assert mixed_script_words("## Verdiktas: Silpni argumentai, EBITDA ir FCF.", "Lithuanian") == []
+    # Russian text may hold Latin words (EBITDA, FCF), but not a word made of both alphabets.
+    assert mixed_script_words("Маржа EBITDA и FCF-доходность выросли.", "Russian") == []
+    assert mixed_script_words("## Вердиkt: слабые доводы", "Russian") == ["Вердиkt"]
+    assert mixed_script_words("Компания Stellantis", "Lithuanian") == ["Компания"]  # Cyrillic in Lithuanian
 
 
 # ---- files and the command line -----------------------------------------------

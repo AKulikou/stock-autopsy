@@ -211,6 +211,25 @@ def wrong_language(text: str, language: str) -> str | None:
     return None
 
 
+_WORD = re.compile(r"[^\W\d_]+")
+_ALPHABETS = {"LATIN", "CYRILLIC", "GREEK"}
+
+
+def mixed_script_words(text: str, language: str) -> list[str]:
+    """
+    Words a translation cannot hold: one word of two alphabets ("Vердикt", "Komitето" in a
+    Lithuanian copy of 2026-10-22), or a Cyrillic or Greek word in a Latin-script language.
+    The share checks of wrong_language() miss them: three words in a long section.
+    """
+    latin_target = language.strip().lower() in LATIN_ALPHABETS
+    found = []
+    for word in _WORD.findall(text):
+        scripts = {_script(c) for c in word} & _ALPHABETS
+        if len(scripts) > 1 or (latin_target and scripts - {"LATIN"}):
+            found.append(word)
+    return found
+
+
 def _heading(text: str) -> str:
     return text.strip().split("\n", 1)[0].strip()
 
@@ -256,6 +275,9 @@ def section_problem(source: str, translation: str, language: str) -> str | None:
         wrong = wrong_language(translation, language)
         if wrong:
             return f"not in {language}: {wrong}"
+    mixed = mixed_script_words(translation, language)
+    if mixed:
+        return f"not in {language}: words mixing alphabets ({', '.join(mixed[:3])})"
     missing = missing_numbers(source, translation)
     if missing:
         return f"{NUMBERS_CHANGED}: {', '.join(missing[:5])}"
