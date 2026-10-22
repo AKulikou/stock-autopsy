@@ -183,3 +183,13 @@ def test_a_long_not_listed_reason_gives_a_short_banner(lookup):
     found = resolve("chrysler", TICKER_MAP, filer_check)
     assert found["banner"] == ("Chrysler is not listed in the US on its own and files no reports with "
                                "the SEC. Related public companies:")
+
+
+def test_a_typed_ticker_says_which_company_holds_it_now(lookup):
+    # PARA was Paramount Global's ticker; the SEC list gives it to Banzai International now.
+    fake = lookup(answer("unused", []))
+    found = resolve("PARA", TICKER_MAP, filer_check)
+    (card,) = found["candidates"]
+    assert card["name"] == "Banzai International, Inc."
+    assert card["note"] == "The ticker PARA belongs to Banzai International, Inc. in the SEC list."
+    assert fake.requests == []  # no model call for a ticker

@@ -105,7 +105,8 @@ def test_the_page_and_its_scripts_are_served(client):
 def test_a_ticker_in_capitals_resolves_without_a_model_call(client, fake):
     found = client.post("/api/resolve", json={"query": "KO"}).json()
     assert found["candidates"] == [
-        {"ticker": "KO", "name": "Coca Cola Co", "note": None, "unsupported": None,
+        {"ticker": "KO", "name": "Coca Cola Co",
+         "note": "The ticker KO belongs to Coca Cola Co in the SEC list.", "unsupported": None,
          "match_type": "exact", "relation": None, "share_class": None}
     ]
     assert found["suggested"] is False and fake.requests == []

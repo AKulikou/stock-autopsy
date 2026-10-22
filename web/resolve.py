@@ -166,6 +166,9 @@ def resolve(query: str, ticker_map: dict, filer_check: FilerCheck = lambda ticke
 
     if _TICKER.match(text) and normalize_ticker(text) in known:
         found = candidate(known[normalize_ticker(text)], None)
+        # A ticker can pass to another company (PARA: Paramount Global, then Banzai International):
+        # say whose it is now, so a typed ticker is never taken for the company it used to be.
+        found["note"] = f"The ticker {found['ticker']} belongs to {found['name']} in the SEC list."
         logger.info(f"Company lookup {text!r}: a ticker in the SEC list, no model call"
                     f"{'; cannot be analyzed: ' + found['unsupported'] if found['unsupported'] else ''}")
         return {"candidates": [found], "suggested": False, "query_name": None, "banner": None,
