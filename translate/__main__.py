@@ -2,9 +2,10 @@
 Translate the report of a saved run (paid: one cheap call per report section,
 about 0.02-0.03 USD for a long report; the English report.md is never changed).
 
-    python -m translate results/KO_2026-10-17_090436 --language Russian
+    python -m translate results/KO_2026-10-17_090436 --language Lithuanian
 
-Writes report.<code>.md next to report.md (report.ru.md for Russian); an existing
+Lithuanian is the default. Writes report.<code>.md next to report.md (report.lt.md for
+Lithuanian, report.ru.md for Russian); an existing
 translation is reused, not paid for again.
 """
 

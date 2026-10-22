@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 import pytest
-from conftest import fake_russian, text_response
+from conftest import fake_lithuanian, fake_russian, text_response
 
 from translate.glossary import GLOSSARY_DIR, GlossaryError, load_glossary, parse_glossary
 from translate.languages import LANGUAGES, language_name
@@ -51,7 +51,7 @@ def test_a_changed_or_dropped_number_is_found(source, translation):
     [
         ("revenue of 1.5 billion", "выручка 1,5 млрд"),
         ("revenue of 1.5 billion", "выручка 1.5 billion"),      # kept as it was
-        ("$36.21B, 36,212,000,000", "36,21 млрд $, 36 212 000 000"),
+        ("$36.21B, 36,212,000,000", "36,21 млрд $, 36\u00a0212\u00a0000\u00a0000"),
         ("$841.00M and 11,539 tokens", "841 млн и 11 539 токенов"),
         ("12.2% a year, 4.5 percentage points", "12,2 % в год, 4,5 п. п."),
         ("2.1 times EBITDA, a 6.71x multiple", "в 2,1 раза больше EBITDA, мультипликатор 6,71х"),
@@ -87,6 +87,43 @@ def test_labels_durations_and_dates_may_be_written_in_words(source, translation)
      ("FY2017 and FY2018", "FY2017")],
 )
 def test_a_wrong_or_dropped_date_or_year_is_still_found(source, translation):
+    assert missing_numbers(source, translation)
+
+
+@pytest.mark.parametrize(
+    ("source", "translation"),
+    [
+        ("revenue of 1.5 billion", "pajamos 1,5 mlrd."),
+        ("revenue of 1.5 billion", "pajamos – 1,5 milijardo"),
+        ("$36.21B, 36,212,000,000", "36,21 mlrd. $, 36 212 000 000"),
+        ("$36.21B, 36,212,000,000", "36,21 mlrd. $, 36\u00a0212\u00a0000\u00a0000"),  # non-breaking spaces
+        ("$841.00M and 11,539 tokens", "841 mln. ir 11\u202f539 žetonų"),             # narrow no-break space
+        ("12.2% a year, 5.3%", "12,2 % per metus, 5,3\u00a0%"),
+        ("12.2% a year", "12,2 proc. per metus"),
+        ("4.5 percentage points", "4,5 procentinio punkto"),
+        ("4.5 percentage points", "4,5 proc. punkto"),
+        ("2.1 times EBITDA, a 6.71x multiple", "2,1 karto daugiau nei EBITDA, 6,71x daugiklis"),
+        ("3 thousand employees", "3 tūkst. darbuotojų"),
+        ("a 2 trillion market", "2 trln. rinka"),
+        ("filed 2024-05-30", "pateikta 2024 m. gegužės 30 d."),
+        ("filed 2024-05-30", "pateikta 2024-05-30"),
+    ],
+)
+def test_the_same_numbers_written_the_lithuanian_way_pass(source, translation):
+    assert missing_numbers(source, translation) == []
+
+
+@pytest.mark.parametrize(
+    ("source", "translation"),
+    [
+        ("revenue of 1.5 billion", "pajamos 1,5 mln."),          # wrong scale
+        ("a step of 4.5 points", "žingsnis 4,5 %"),              # points became a percentage
+        ("12.2% a year", "12,2 procentinio punkto"),             # a percentage became points
+        ("filed 2024-05-30", "pateikta 2024 m. birželio 30 d."),  # wrong month
+        ("P/E 6.71", "P/E 67,1"),
+    ],
+)
+def test_a_changed_number_written_the_lithuanian_way_is_found(source, translation):
     assert missing_numbers(source, translation)
 
 
@@ -228,6 +265,14 @@ def test_sections_are_translated_in_order_with_the_cheap_model(fake):
     assert len(calls) == 6 and {c["model"] for c in calls} == {"claude-haiku-5-5"}
     assert all(c["output_config"] == {"effort": "low"} for c in calls)
     assert all("Forensic Accountant" in c["system"] for c in calls)  # the names to translate are listed
+
+
+def test_a_report_translated_with_lithuanian_number_formatting_passes_the_checks(fake):
+    fake.create_handler = lambda kwargs: text_response(fake_lithuanian(kwargs["messages"][0]["content"]))
+    outcome = translate_document(REPORT, "Lithuanian")
+    assert outcome["status"] == "success"
+    assert (outcome["untranslated_sections"], outcome["number_rejections"]) == (0, 0)
+    assert re.search(r"\d,\d", outcome["text"]) and "\u00a0%" in outcome["text"]
 
 
 def test_a_section_whose_numbers_changed_is_asked_again(fake):
@@ -394,8 +439,9 @@ def test_the_cli_translates_a_saved_run(fake, tmp_path, monkeypatch):
 
 
 def test_languages_are_named_by_their_english_name_or_code():
-    assert LANGUAGES[0][0] == "Russian"
+    assert LANGUAGES[0][0] == "Lithuanian"  # the default (owner, 2026-10-22)
     assert language_name("RU") == language_name(" russian ") == "Russian"
+    assert language_name("LT") == language_name("lithuanian") == "Lithuanian"
     assert language_name("Chinese") is None
 
 
@@ -470,3 +516,17 @@ def test_the_report_title_keeps_the_product_and_company_name(fake):
     fake.create_handler = translated_title
     outcome = translate_document(REPORT, "Russian")
     assert outcome["text"].startswith("# Stock Autopsy: Coca Cola Co\n")
+
+
+def test_the_lithuanian_glossary_drafts_the_same_terms_as_the_russian_one():
+    lithuanian, russian = load_glossary("Lithuanian"), load_glossary("Russian")
+    assert lithuanian.title == "Terminų žodynas" and len(lithuanian.entries) == 101
+    assert [e.variants for e in lithuanian.entries] == [e.variants for e in russian.entries]
+    assert all(len(e.explanation) > 20 for e in lithuanian.entries)
+    text = (GLOSSARY_DIR / "lithuanian.md").read_text(encoding="utf-8")
+    rows = [line for line in text.splitlines() if line.startswith("| ") and not line.startswith("| English")]
+    assert len(rows) == 101 and all("draft 2026-10-22, owner review" in row.split(" | ")[0] for row in rows)
+    by_name = {e.english: e.term for e in lithuanian.entries}
+    assert by_name["Forensic Accountant"] == "Apskaitos tyrėjas"
+    assert by_name["Valuation Analyst (assumptions)"] == "Vertinimo analitikas (prielaidos)"
+    assert by_name["Weak case"] == "Silpni argumentai"

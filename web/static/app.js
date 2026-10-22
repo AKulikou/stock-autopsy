@@ -13,6 +13,7 @@ import {
 } from "./live.js";
 import { candidateCard, lookupNotice, orderCandidates } from "./lookup.js";
 import { renderMarkdown } from "./markdown.js";
+import { browserStorage, rememberLanguage, rememberedLanguage } from "./prefs.js";
 
 const $ = (id) => document.getElementById(id);
 const VIEWS = ["input-view", "live-view", "result-view"];
@@ -471,12 +472,14 @@ function translationPanel(runId) {
   const form = el("div", "translate-form");
   const label = el("label", null, "Language ");
   const select = el("select");
+  const chosen = rememberedLanguage(browserStorage(), languages, defaultLanguage);
   for (const language of languages) {
     const option = el("option", null, language.label);
     option.value = language.name;
-    option.selected = language.name === defaultLanguage;
+    option.selected = language.name === chosen;
     select.append(option);
   }
+  select.addEventListener("change", () => rememberLanguage(browserStorage(), select.value));
   label.append(select);
   const button = el("button", "secondary", "Translate report");
   button.type = "button";

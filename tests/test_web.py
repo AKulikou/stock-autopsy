@@ -176,7 +176,7 @@ def test_a_finished_report_is_translated_on_demand_and_offered_as_a_file(client,
 
     fake.create_handler = russian
     options = client.get("/api/options").json()
-    assert options["default_language"] == "Russian" and options["languages"][0]["label"] == "Русский"
+    assert options["default_language"] == "Lithuanian" and options["languages"][0]["label"] == "Lietuvių"
     run_id = client.post("/api/runs", json={"ticker": "KO"}).json()["run_id"]
     follow(client, run_id)
     assert client.get(f"/api/runs/{run_id}/translations/ru").status_code == 404

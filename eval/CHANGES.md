@@ -8,6 +8,22 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — translation: Lithuanian by default, its number formats, a draft Lithuanian glossary (D3)
+
+What changed: Lithuanian is the default language on the page and in `python -m translate`; the
+page remembers the last choice in the browser. The number check reads Lithuanian formatting
+(decimal comma, spaces or no-break spaces between thousands, "5,3 %", tūkst./mln./mlrd./trln.,
+"proc." as a percent, "procentinio punkto" as percentage points, "kartų", dates as
+"2024 m. gegužės 30 d."); the Russian cases are unchanged. translate/glossaries/lithuanian.md
+drafts the same 101 terms as the Russian glossary, every row marked "draft 2026-10-22, owner
+review"; with it the translator gets Lithuanian terms and analyst names for the first time. The
+translation prompt is unchanged.
+
+Expected effect: a Lithuanian copy uses one name per analyst and the glossary's terms; numbers
+written the Lithuanian way are not rejected. Risk: the glossary is a machine draft; a person
+fluent in Lithuanian must review it. Checked with the fake client only; no Lithuanian translation
+has been paid for yet (about 0.03 USD for one report).
+
 ## 2026-10-22 — company lookup: exact match or related company (D2; lookup prompt and schema, not an analyst)
 
 What changed: the lookup call (Haiku 5.5, web/resolve.py; it never touches the data pack or the

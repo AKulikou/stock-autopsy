@@ -66,11 +66,13 @@ reopened from the next event (the server also sends a heartbeat during the long 
 steps), so a lost connection is never reported as a failed run, and finished analyses can
 be reopened from "Recent analyses". Design: [docs/web_ui.md](docs/web_ui.md).
 
-A finished report can be translated on demand (Russian first; the same languages as
-Startup Autopsy), on the page or with `python -m translate results/<run> --language Russian`:
+A finished report can be translated on demand (Lithuanian by default, and the page remembers
+the last choice; the same languages as Startup Autopsy), on the page or with
+`python -m translate results/<run> --language Lithuanian`:
 one cheap call per section, and a section whose numbers do not come back with the same value
 and scale stays in English. A glossary per language fixes the terms and is appended to the
-copy (Russian so far, awaiting the owner's review). The English report remains the source
+copy (Russian, and a Lithuanian draft that a fluent reader still has to review). The English
+report remains the source
 of truth.
 
 Only companies that file 10-K and 10-Q reports can be analyzed. Foreign companies filing

@@ -11,10 +11,11 @@ compared after reading the separators and the scale words of both sides:
   be read two ways ("1,234": a thousand-separated 1234 or a decimal 1.234) counts as
   either;
 - scale words (thousand, million, billion, trillion and B / M / K / T after a number,
-  тыс., млн, млрд, трлн) multiply the value, so "1,5 млн" for "1.5 billion" is a
-  different number;
+  тыс., млн, млрд, трлн, Lithuanian tūkst., mln., mlrd., trln.) multiply the value, so
+  "1,5 млн" for "1.5 billion" is a different number;
 - a percent, percentage points and a multiple ("x", "times", "раза") must not
-  contradict each other: "4.5 points" written as "4,5 %" is rejected. A number with
+  contradict each other: "4.5 points" written as "4,5 %" is rejected (Russian "п. п.",
+  Lithuanian "procentinio punkto" or "proc. punkto" are points; "proc." alone is a percent). A number with
   no such word may stand for one with it ("21-25%" can come back as "21 %–25 %").
 
 Signs are not compared ("-3 billion" may become "убыток 3 млрд"), and neither are
@@ -34,18 +35,19 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 SCALES = (
-    (r"трлн|триллион\w*|trillion", 12),
-    (r"млрд|миллиард\w*|billion|bn", 9),
-    (r"млн|миллион\w*|million|mn", 6),
-    (r"тыс\.?|тысяч\w*|thousand", 3),
+    (r"трлн|триллион\w*|trln\.?|trilijon\w*|trillion", 12),
+    (r"млрд|миллиард\w*|mlrd\.?|milijard\w*|billion|bn", 9),
+    (r"млн|миллион\w*|mln\.?|milijon\w*|million|mn", 6),
+    (r"тыс\.?|тысяч\w*|tūkst\.?|tūkstan\w*|tūkstanč\w*|thousand", 3),
 )
 # One capital letter right after the digits: "$9.99B", "$841.00M".
 LETTER_SCALES = {"T": 12, "B": 9, "M": 6, "K": 3}
 PERCENT, POINTS, MULTIPLE = "percent", "percentage points", "multiple"
 KINDS = (
-    (r"п\.\s?п\.|пп\b|процентн\w*\s+пункт\w*|пункт\w*|percentage\s+points?|pp\b|points?\b", POINTS),
-    (r"%|процент\w*|percent\b", PERCENT),
-    (r"[xх×](?!\w)|times\b|раз\w*", MULTIPLE),
+    (r"п\.\s?п\.|пп\b|процентн\w*\s+пункт\w*|пункт\w*|p\.\s?p\.|proc\.\s?punkt\w*|procentin\w*\s+punkt\w*"
+     r"|punkt\w*|percentage\s+points?|pp\b|points?\b", POINTS),
+    (r"%|процент\w*|proc\.|procent\w*|percent\b", PERCENT),
+    (r"[xх×](?!\w)|times\b|раз\w*|kart\w*", MULTIPLE),
 )
 _SCALE = "|".join(f"(?:{pattern})" for pattern, _ in SCALES)
 _KIND = "|".join(f"(?:{pattern})" for pattern, _ in KINDS)
@@ -129,9 +131,12 @@ _NOT_COMPARED = re.compile(
     re.IGNORECASE,
 )
 _ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+# (Russian, English, Lithuanian genitive) month names or stems.
 MONTHS = (
-    ("янв", "jan"), ("фев", "feb"), ("мар", "mar"), ("апр", "apr"), ("ма[яй]", "may"), ("июн", "jun"),
-    ("июл", "jul"), ("авг", "aug"), ("сен", "sep"), ("окт", "oct"), ("ноя", "nov"), ("дек", "dec"),
+    ("янв", "jan", "sausio"), ("фев", "feb", "vasario"), ("мар", "mar", "kovo"), ("апр", "apr", "balandžio"),
+    ("ма[яй]", "may", "gegužės"), ("июн", "jun", "birželio"), ("июл", "jul", "liepos"),
+    ("авг", "aug", "rugpjūčio"), ("сен", "sep", "rugsėjo"), ("окт", "oct", "spalio"),
+    ("ноя", "nov", "lapkričio"), ("дек", "dec", "gruodžio"),
 )
 
 
@@ -140,14 +145,18 @@ def _blank(pattern: re.Pattern, text: str) -> str:
 
 
 def date_found(year: str, month: str, day: str, translation: str) -> bool:
-    """2024-05-30 as written, as 30.05.2024 or 30/05/2024, or as "30 мая 2024" / "May 30, 2024"."""
+    """
+    2024-05-30 as written, as 30.05.2024 or 30/05/2024, or as "30 мая 2024", "May 30, 2024"
+    or "2024 m. gegužės 30 d.".
+    """
     d, m = int(day), int(month)
-    ru, en = MONTHS[m - 1]
+    ru, en, lt = MONTHS[m - 1]
     forms = (
         rf"\b{year}-{month}-{day}\b",
         rf"\b0?{d}[./]0?{m}[./]{year}\b",
         rf"\b0?{d}\s+(?:{ru}|{en})\w*\.?\s+{year}\b",
         rf"\b{en}\w*\.?\s+0?{d},?\s+{year}\b",
+        rf"\b{year}\s*m\.\s+{lt}\s+0?{d}\s*d\.",
     )
     return any(re.search(form, translation, re.IGNORECASE) for form in forms)
 

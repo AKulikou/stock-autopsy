@@ -1,6 +1,7 @@
 """
 Languages offered for a translated copy of the report: the same list as Startup
-Autopsy's web page (decision D8: no Chinese), Russian first as the default.
+Autopsy's web page (decision D8: no Chinese), Lithuanian first as the default
+(owner, 2026-10-22).
 
 The page shows each language by its own name; the English name goes to the
 translator (prompt, glossary file) and the code into the file name
@@ -9,6 +10,7 @@ translator (prompt, glossary file) and the code into the file name
 
 # (English name for the translator, the language's own name for the page, file code)
 LANGUAGES: tuple[tuple[str, str, str], ...] = (
+    ("Lithuanian", "Lietuvių", "lt"),
     ("Russian", "Русский", "ru"),
     ("German", "Deutsch", "de"),
     ("Estonian", "Eesti", "et"),
@@ -16,7 +18,6 @@ LANGUAGES: tuple[tuple[str, str, str], ...] = (
     ("French", "Français", "fr"),
     ("Italian", "Italiano", "it"),
     ("Latvian", "Latviešu", "lv"),
-    ("Lithuanian", "Lietuvių", "lt"),
     ("Polish", "Polski", "pl"),
     ("Ukrainian", "Українська", "uk"),
 )

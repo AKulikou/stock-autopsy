@@ -148,3 +148,31 @@ def fake_russian(source: str) -> str:
 
     kept = re.split(r"(`[^`]*`)", source)
     return "".join(part if part.startswith("`") else re.sub(r"\b[A-Za-z]{2,}\b", word, part) for part in kept)
+
+
+LITHUANIAN_UNITS = {"trillion": "trln.", "billion": "mlrd.", "million": "mln.", "thousand": "tūkst.",
+                    "percent": "proc.", "times": "kartų", "points": "procentinio punkto",
+                    "point": "procentinio punkto", "percentage": ""}
+
+
+def fake_lithuanian(source: str) -> str:
+    """
+    Like fake_russian, in Lithuanian and with Lithuanian number formatting: a decimal
+    comma, non-breaking spaces between thousands and before a percent sign.
+    """
+    import re
+
+    def word(match: re.Match) -> str:
+        return LITHUANIAN_UNITS.get(match.group(0).lower(), "tekstas")
+
+    def number(match: re.Match) -> str:
+        return match.group(0).replace(",", "\u00a0").replace(".", ",")
+
+    def lithuanian(part: str) -> str:
+        english = r"(?<![\d.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d,])|(?<![\d.,])\d+\.\d+(?![\d.])"
+        part = re.sub(english, number, part)
+        part = re.sub(r"(?<=\d)%", "\u00a0%", part)
+        return re.sub(r"\b[A-Za-z]{2,}\b", word, part)
+
+    kept = re.split(r"(`[^`]*`)", source)
+    return "".join(part if part.startswith("`") else lithuanian(part) for part in kept)

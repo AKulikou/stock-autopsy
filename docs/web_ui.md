@@ -62,7 +62,8 @@ the evidence, never "buy" or "sell".
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 
 5. **Translation, on demand (M13, variant A).** Below the result: a language select
-   (Russian first, then Startup Autopsy's list) and "Translate report". One cheap call per
+   (Lithuanian first and the default since 2026-10-22, then Startup Autopsy's list; the page
+   remembers the last choice in the browser) and "Translate report". One cheap call per
    report section (Haiku 5.5, low effort; 0.023-0.031 USD and 41-63 s per report, measured on
    three reports on 2026-10-17). A section must also keep its headings, table rows and list
    items. The translated copy appears on the page as
@@ -70,12 +71,13 @@ the evidence, never "buy" or "sell".
    (.md)" (report.ru.md, named company first like the English report). Every number of a section must come back with the same value and scale
    (`translate/numbers.py`); a section that fails the check twice stays in English, marked with
    the reason in words ("Kept in English: ..."), and the page names it under the translation.
-   A glossary per language (`translate/glossaries/<language>.md`; Russian only so far, 101
-   terms drafted on 2026-10-17, the analyst names added on 2026-10-21, awaiting the owner's review) gives the translator its
+   A glossary per language (`translate/glossaries/<language>.md`; Russian: 101 terms drafted on
+   2026-10-17, the analyst names added on 2026-10-21; Lithuanian: the same 101 terms drafted on
+   2026-10-22; both awaiting review, Lithuanian by a fluent reader) gives the translator its
    terms and is appended as a final section with the terms the report uses. The English
    report stays the source of truth; report.json and the page cards stay English (variant B,
    translating the cards, is not planned). Reports of earlier runs:
-   `python -m translate results/<run> --language Russian`.
+   `python -m translate results/<run> --language Lithuanian` (the default).
 
 Everything a person reads goes through `reporting/wording.py` (the same last pass as
 report.md): no verdict codes, field names, pack paths or tickers. The ticker appears only
