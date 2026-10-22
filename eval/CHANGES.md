@@ -11,7 +11,7 @@ was checked so far, and the eval result once there is one.
 ## 2026-10-22 — release eval `v4_release`: 5 golden cases x 2 reps on the code of 2026-10-22 (measured)
 
 Setup: --reps 2 --batch, default configuration (shared output schema off: the API refuses it),
-code 935bc59; it measures everything since v3_release that the model sees: C2 (the reverse DCF
+code bb7a02f; it measures everything since v3_release that the model sees: C2 (the reverse DCF
 names its discount rate), C3 and M14 (the price sentence), the Coca-Cola pack refrozen (C1), and
 the prompts of 67404ad, already in v3. Cost 2.75 USD, 32 minutes, cache read 21% on average.
 Graded with the checks of 2026-10-22, v3_release regraded with the same checks:
