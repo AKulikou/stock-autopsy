@@ -159,3 +159,34 @@ class PreMortemResult(VerdictBlock):
     )
     verification_checklist: list[VerificationItem]
     claims: list[Claim]
+
+
+# ---- One output schema for every evaluator (prompt cache) -------------------------
+
+
+class AnalystOutput(BaseModel):
+    """
+    The evaluators' schemas in one envelope. The API turns the output schema into a
+    system prompt of its own, ahead of the cached prefix, so five schemas give five
+    prefixes and no evaluator reads another's cache. With one envelope every
+    evaluator sends the same schema; each fills its own field and leaves the others
+    null (config.SHARED_OUTPUT_SCHEMA).
+    """
+
+    business_model: BusinessModelResult | None = Field(
+        description="Only the Business Model Analyst fills this; null for every other analyst."
+    )
+    forensic: ForensicResult | None = Field(
+        description="Only the Forensic Accountant fills this; null for every other analyst."
+    )
+    valuation_assumptions: ValuationAssumptions | None = Field(
+        description="Only the Valuation Analyst's assumptions step fills this; null for every other "
+        "analyst."
+    )
+    valuation: ValuationResult | None = Field(
+        description="Only the Valuation Analyst's interpretation step fills this; null for every other "
+        "analyst."
+    )
+    pre_mortem: PreMortemResult | None = Field(
+        description="Only the Pre-Mortem Analyst fills this; null for every other analyst."
+    )

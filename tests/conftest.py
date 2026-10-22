@@ -3,6 +3,7 @@ Shared test fixtures. No test calls the Anthropic API: a fake client stands in
 for it and answers each structured request according to the test's script.
 """
 
+import json
 import os
 import threading
 from types import SimpleNamespace
@@ -42,8 +43,10 @@ class FakeClaude:
     response() or raises. Every request is recorded (thread-safe).
 
     With `simulate_cache`, a request whose first system block carries a cache
-    breakpoint reports a cache write the first time that text is seen and a cache
-    read afterwards, like the API once the first response has begun.
+    breakpoint reports a cache write the first time its prefix is seen and a cache
+    read afterwards, like the API once the first response has begun. The prefix is
+    everything the API renders up to the breakpoint: model, tools, thinking and
+    effort, the output schema (rendered as a system prompt of its own) and the text.
     """
 
     def __init__(self, handler=None, simulate_cache=False, create_handler=None):
@@ -69,8 +72,8 @@ class FakeClaude:
             write = read = 0
             system = kwargs.get("system")
             if self.simulate_cache and isinstance(system, list) and system[0].get("cache_control"):
-                prefix = system[0]["text"]
-                size = len(prefix) // 4
+                prefix = cached_prefix_of(kwargs)
+                size = len(system[0]["text"]) // 4
                 if prefix in self._cached:
                     read = size
                 else:
@@ -80,6 +83,19 @@ class FakeClaude:
         answer.usage.cache_creation_input_tokens = write or answer.usage.cache_creation_input_tokens
         answer.usage.cache_read_input_tokens = read or answer.usage.cache_read_input_tokens
         return answer
+
+
+def cached_prefix_of(request: dict) -> str:
+    """What decides a cache hit for a request: every part rendered up to the breakpoint."""
+    schema = request.get("output_format")
+    return json.dumps({
+        "model": request.get("model"),
+        "tools": request.get("tools"),
+        "thinking": request.get("thinking"),
+        "output_config": request.get("output_config"),
+        "schema": schema.model_json_schema() if schema is not None else None,
+        "system": request["system"][0],
+    }, sort_keys=True)
 
 
 def text_response(text, stop_reason="end_turn", input_tokens=3000, output_tokens=4000):

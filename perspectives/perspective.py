@@ -9,7 +9,11 @@ Prompt layout, chosen for prompt caching:
     user message:            the questions of this perspective     <- differs
 
 Anything that differs between perspectives comes after the cache breakpoint, so
-every perspective after the first reads the shared part from the cache.
+every perspective after the first reads the shared part from the cache, provided the
+requests also share the output schema: the API renders the schema as a system prompt
+of its own ahead of block 1, so a schema per perspective is a prefix per perspective.
+With SHARED_OUTPUT_SCHEMA the evaluators send one envelope schema (AnalystOutput) and
+each fills its own field.
 """
 
 import time
@@ -18,9 +22,10 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from config import ANALYSIS_EFFORT, MAX_TOKENS, MODEL, PROMPT_CACHING, THINKING
+from config import ANALYSIS_EFFORT, MAX_TOKENS, MODEL, PROMPT_CACHING, SHARED_OUTPUT_SCHEMA, THINKING
 from core.claude_client import get_client
 from core.structured_call import billed_usage, request_structured
+from evaluators.schemas import AnalystOutput
 
 
 @dataclass(frozen=True)
@@ -48,6 +53,37 @@ def perspective_user(perspective: Perspective, material: str | None = None) -> s
     return f"{text}\n\n{material}" if material else text
 
 
+def envelope_field(output_format: type[BaseModel]) -> str | None:
+    """The AnalystOutput field that carries this schema, or None for a schema outside it."""
+    for name, field in AnalystOutput.model_fields.items():
+        if output_format in getattr(field.annotation, "__args__", ()):
+            return name
+    return None
+
+
+def envelope_request(
+    output_format: type[BaseModel], validate: Callable[[BaseModel], list[str]], user: str
+) -> tuple[type[BaseModel], Callable[[BaseModel], list[str]], str, Callable[[BaseModel], BaseModel]]:
+    """
+    The shared schema in place of `output_format`: the same request for every
+    evaluator up to the user message, which names the field to fill. Returns the
+    schema, a validator of the envelope, the user text and the unwrapping function.
+    """
+    field = envelope_field(output_format)
+    others = [name for name in AnalystOutput.model_fields if name != field]
+
+    def validate_envelope(envelope: AnalystOutput) -> list[str]:
+        answer = getattr(envelope, field)
+        filled = [name for name in others if getattr(envelope, name) is not None]
+        problems = [f"fill only the field {field}; set {', '.join(filled)} to null"] if filled else []
+        if answer is None:
+            return [*problems, f"the field {field} is null; your answer belongs there"]
+        return problems + validate(answer)
+
+    note = f"Put your answer in the output field {field} and set every other field to null."
+    return AnalystOutput, validate_envelope, f"{user}\n\n{note}", lambda envelope: getattr(envelope, field)
+
+
 def evaluate(
     perspective: Perspective,
     prefix: str,
@@ -62,6 +98,10 @@ def evaluate(
     """
     started = time.monotonic()
     base = {"key": perspective.key, "label": perspective.name, "model": MODEL}
+    user = perspective_user(perspective, material)
+    unwrap = None
+    if SHARED_OUTPUT_SCHEMA and envelope_field(output_format):
+        output_format, validate, user, unwrap = envelope_request(output_format, validate, user)
     try:
         response = request_structured(
             get_client(),
@@ -69,7 +109,7 @@ def evaluate(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=perspective_system(perspective),
-            user=perspective_user(perspective, material),
+            user=user,
             output_format=output_format,
             validate=validate,
             cached_prefix=prefix if PROMPT_CACHING else None,
@@ -79,7 +119,7 @@ def evaluate(
         return {
             **base,
             "status": "success",
-            **response.result.model_dump(mode="json"),
+            **(unwrap(response.result) if unwrap else response.result).model_dump(mode="json"),
             **response.usage.as_dict(),
             "duration_s": time.monotonic() - started,
         }

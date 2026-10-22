@@ -8,6 +8,52 @@ results are read: which changes a pass covers, and what each was expected to do.
 Entry format: date, commit, what changed, expected effect, risk to watch, how it
 was checked so far, and the eval result once there is one.
 
+## 2026-10-22 — prompt cache: one output schema for all analysts, behind SHARED_OUTPUT_SCHEMA (D1; request change, off by default, NOT measured)
+
+Finding, from the owner's NVDA run of 2026-10-22 (logs/run_20261022_091656.log) and the 2026-10-21
+Coca-Cola run: every analyst wrote 10,030-10,677 tokens to the cache and read 0. The cached text
+was byte-identical (19,847 characters, same pack hash), the model, tools (none), thinking and
+effort settings were the same, and the four parallel analysts started a few milliseconds after
+the Valuation Analyst's assumptions step had returned, so neither the layout, the timing nor the
+TTL (5 minutes, the whole fan-out took 67 s) is the cause. The writes differ per analyst by the size of its output
+schema (a fit over the five calls: about 8,600 tokens + 0.57 tokens per character of schema JSON).
+The structured outputs docs (checked 2026-10-22): "Claude automatically receives an additional
+system prompt explaining the expected output format ... Changing the output_config.format parameter
+will invalidate any prompt cache". That prompt sits ahead of our breakpoint, so five schemas are
+five prefixes. The minimum cacheable length (512 tokens for Sonnet 5.5, prompt caching docs,
+checked 2026-10-22) is far below the prefix. The committee sends no cached prefix: it is one call
+with nothing to share. The fake client used by the tests keyed its simulated cache on the system
+text only, which is why the test "step A warms the cache" passed; it now keys on everything
+rendered up to the breakpoint (model, tools, thinking, effort, output schema, text) and reproduces
+the five writes.
+
+What changed (code only; no analyst or committee prompt text changed): `SHARED_OUTPUT_SCHEMA=on`
+sends one envelope schema, `AnalystOutput`, to all five analyst calls (fields business_model,
+forensic, valuation_assumptions, valuation, pre_mortem, each the analyst's own schema or null;
+5 union parameters, 0 optional, within the documented limits of 16 and 24). The user message,
+after the breakpoint, ends with one generated line: "Put your answer in the output field <field>
+and set every other field to null." Code rejects an answer in another field or a null own field
+(one retry, as for any validation problem) and unwraps the field, so results, reports and the eval
+see the same dicts as before. Default off.
+
+Expected effect (estimate from config.py prices, Sonnet 5.5: input 2 USD/MTok, cache write 1.25x,
+cache read 0.05x): the NVDA run cost 0.577 USD, of which cache writes 51,529 tokens = 0.129 USD.
+With the shared schema the prefix grows to about 16,400 tokens (8,600 + 0.57 x 13,836 characters of
+the envelope schema): one write 0.041 USD + four reads 0.007 USD = 0.048 USD. Saving about
+0.08 USD a run (about 14%): about 0.50 USD instead of 0.58 USD for the same NVDA pack. Output tokens
+(most of the cost) are unchanged.
+
+Risk to watch: the model now sees all five schemas in the format prompt. It could fill the wrong
+field (code catches it and retries, each retry costs a call) or let another analyst's field
+descriptions colour its answer. This is why it is off until measured.
+
+How to check: one paid run, same NVDA pack (the daily cache holds it on the same day; otherwise any
+ticker): `$env:SHARED_OUTPUT_SCHEMA="on"; venv\Scripts\python.exe main.py NVDA`, about 0.50 USD.
+Expect in the cost table: the assumptions step writes about 16k tokens, the other four read about
+16k and write 0, and no "invalid result" retry in the log. If that holds, one eval pass
+(`$env:SHARED_OUTPUT_SCHEMA="on"; venv\Scripts\python.exe -m eval.run_eval --reps 1 --batch
+--variant shared_schema`, about 1.4 USD) before making it the default.
+
 ## 2026-10-21 — live page run on Coca-Cola after C1-C8, and the fixes it led to
 
 Owner's OK for a paid run (0.667 USD) and its Russian translation (0.022 USD), through the page in

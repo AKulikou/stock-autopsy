@@ -4,6 +4,7 @@ from conftest import response
 
 from evaluators.paths import resolve
 from evaluators.schemas import (
+    AnalystOutput,
     AssumptionNote,
     BusinessModelResult,
     Claim,
@@ -202,10 +203,17 @@ def handler_for(pack: dict, overrides: dict | None = None):
     builders.update(overrides or {})
 
     def handle(request: dict):
-        builder = builders[request["output_format"]]
-        result = builder(pack)
+        schema = request["output_format"]
+        if schema is AnalystOutput:  # the shared schema: the user message names the field
+            field = next(name for name in AnalystOutput.model_fields
+                         if f"output field {name} " in request["messages"][0]["content"])
+            schema = AnalystOutput.model_fields[field].annotation.__args__[0]
+        result = builders[schema](pack)
         if isinstance(result, Exception):
             raise result
+        if request["output_format"] is AnalystOutput:
+            result = AnalystOutput(**{name: result if name == field else None
+                                      for name in AnalystOutput.model_fields})
         return response(result)
 
     return handle

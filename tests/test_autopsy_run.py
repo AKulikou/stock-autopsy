@@ -5,13 +5,14 @@ import json
 import re
 
 import pytest
-from conftest import response
+from conftest import cached_prefix_of, response
 from sample_outputs import forensic, handler_for, synthesis
 
 from analysis.runner import dcf_event, pack_summary_text, run_autopsy
 from core.shared_context import context_block
 from datalayer.pack import build_pack
-from evaluators.schemas import Claim, ForensicResult, PreMortemResult, ValuationAssumptions
+from evaluators.schemas import AnalystOutput, Claim, ForensicResult, PreMortemResult, ValuationAssumptions
+from perspectives import perspective as perspective_module
 from reporting.json_export import build_json
 from reporting.markdown import DISCLAIMER, build_report
 from scripts.freeze_golden import FIXTURES, raw_from_fixture
@@ -69,12 +70,91 @@ def test_a_missing_value_reaches_the_prompt_as_null_and_a_zero_only_when_filed()
     assert provenance["FY2024.total_debt"]["formula"] == "ConvertibleDebtNoncurrent"
 
 
-def test_valuation_step_a_runs_first_and_warms_the_cache(fake_claude, raw_ko, ko_pack):
+def test_a_schema_per_analyst_gives_each_its_own_cache_entry(fake_claude, raw_ko, ko_pack):
+    # The NVDA run of 2026-10-22: five cache writes, no read. The API renders the output
+    # schema ahead of the cached prefix, so five schemas are five prefixes.
     run, fake = run_with(fake_claude, raw_ko, ko_pack, simulate_cache=True)
     assert fake.requests[0]["output_format"] is ValuationAssumptions
-    first, *others = [c for c in run.results]
-    assert first["cache_creation_input_tokens"] > 0
-    assert all(r["cache_read_input_tokens"] > 0 for r in others)
+    analysts = run.results
+    assert all(r["cache_creation_input_tokens"] > 0 and r["cache_read_input_tokens"] == 0 for r in analysts)
+
+
+@pytest.fixture
+def shared_schema(monkeypatch):
+    monkeypatch.setattr(perspective_module, "SHARED_OUTPUT_SCHEMA", True)
+
+
+def test_with_the_shared_schema_step_a_warms_the_cache_for_the_others(
+    shared_schema, fake_claude, raw_ko, ko_pack
+):
+    run, fake = run_with(fake_claude, raw_ko, ko_pack, simulate_cache=True)
+    first, *others = run.results
+    assert first["key"] == "valuation_assumptions" and first["cache_creation_input_tokens"] > 0
+    assert len(others) == 4
+    assert all(r["cache_read_input_tokens"] > 0 and r["cache_creation_input_tokens"] == 0 for r in others)
+    assert [r["status"] for r in run.results] == ["success"] * 5
+
+
+def test_every_analyst_request_has_the_identical_prefix(shared_schema, fake_claude, raw_ko, ko_pack):
+    _, fake = run_with(fake_claude, raw_ko, ko_pack)
+    analysts = [r for r in fake.requests if r["output_format"] is not SynthesisResult]
+    assert len(analysts) == 5
+    assert len({cached_prefix_of(r) for r in analysts}) == 1
+    assert {r["output_format"] for r in analysts} == {AnalystOutput}
+    # Each still answers in its own field, named after the breakpoint.
+    fields = [re.search(r"output field (\w+) ", r["messages"][0]["content"]).group(1) for r in analysts]
+    assert sorted(fields) == sorted(AnalystOutput.model_fields)
+
+
+def test_the_shared_schema_unwraps_to_the_same_result_fields(
+    shared_schema, monkeypatch, fake_claude, raw_ko, ko_pack
+):
+    shared, _ = run_with(fake_claude, raw_ko, ko_pack)
+    monkeypatch.setattr(perspective_module, "SHARED_OUTPUT_SCHEMA", False)
+    separate, _ = run_with(fake_claude, raw_ko, ko_pack)
+
+    def content(result):
+        return {k: v for k, v in result.items() if k != "duration_s"}
+
+    assert [content(r) for r in shared.results] == [content(r) for r in separate.results]
+
+
+def test_the_analysts_start_only_after_step_a_has_returned(shared_schema, fake_claude, raw_ko, ko_pack):
+    # A cache entry is readable only once the first response has started (prompt caching docs).
+    events = []
+    handler = handler_for(ko_pack)
+
+    def timed(request):
+        field = re.search(r"output field (\w+) ", request["messages"][0]["content"])
+        name = field.group(1) if field else "committee"
+        events.append(("start", name))
+        answer = handler(request)
+        events.append(("end", name))
+        return answer
+
+    fake_claude(timed)
+    run_autopsy(raw_ko)
+    assert events[:2] == [("start", "valuation_assumptions"), ("end", "valuation_assumptions")]
+    assert {name for kind, name in events[2:] if kind == "start"} >= {
+        "business_model", "forensic", "valuation", "pre_mortem"}
+
+
+def test_an_answer_in_the_wrong_field_is_rejected(shared_schema, fake_claude, raw_ko, ko_pack):
+    handler = handler_for(ko_pack)
+
+    def misplaced(request):
+        answer = handler(request)
+        envelope = answer.parsed_output
+        if "output field forensic " in request["messages"][0]["content"]:
+            answer.parsed_output = AnalystOutput(**{**dict(envelope), "forensic": None,
+                                                    "pre_mortem": None})
+        return answer
+
+    fake_claude(misplaced)
+    run = run_autopsy(raw_ko)
+    forensic_result = next(r for r in run.results if r["key"] == "forensic")
+    assert forensic_result["status"] == "error"
+    assert "the field forensic is null" in forensic_result["error"]
 
 
 def test_step_b_receives_the_python_dcf(fake_claude, raw_ko, ko_pack):

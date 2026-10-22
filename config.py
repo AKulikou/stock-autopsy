@@ -74,6 +74,14 @@ CACHE_READ_MULTIPLIER_BY_MODEL: dict[str, float] = {
 # disables it, e.g. to measure its effect.
 PROMPT_CACHING = os.getenv("PROMPT_CACHING", "on").strip().lower() not in ("0", "false", "no", "off")
 
+# One output schema for every evaluator (evaluators/schemas.py AnalystOutput). The API
+# adds a system prompt of its own for the output schema, and "changing the
+# output_config.format parameter will invalidate any prompt cache" (structured outputs
+# docs, checked 2026-10-22): with a schema per evaluator nothing is read from the cache
+# (NVDA run 2026-10-22: five writes of 10,030-10,677 tokens, no read). Off by default
+# until one paid run confirms the reads and an eval shows the answers did not change.
+SHARED_OUTPUT_SCHEMA = os.getenv("SHARED_OUTPUT_SCHEMA", "off").strip().lower() in ("1", "true", "yes", "on")
+
 # Thinking before answering: "off" or "adaptive" (the model decides how much).
 # "off" sends no thinking parameter. Sonnet 4.6 then does not think, but Sonnet 5.5,
 # Opus 5.5 and Haiku 5.5 think adaptively anyway (their thinking cannot be disabled
