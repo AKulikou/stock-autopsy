@@ -65,8 +65,8 @@ the evidence, never "buy" or "sell".
    table, not in the cited data), "Valuation calculated by Stock Autopsy" (the code's table, not the AI's), data quality in words (most
    important first: a filed quarter missing from SEC company facts, then restatements grouped
    by year, conflicts, notes, rounding, one line for what this version never collects; the
-   date the statements reach also stands at the top, M2), and
-   "Save report (.md)" (report.md; the downloaded file is named company first, then the run folder:
+   date the statements reach also stands at the top, M2), the cost table and the glossary
+   (both collapsed). "Save report (.md)" sits in the toolbar above the result (item 5) (report.md; the downloaded file is named company first, then the run folder:
    `Coca_Cola_Co_KO_2026-10-17_090436_report.md`; the folder in results/ keeps its ticker-first name). report.json is still written to the run folder for programs,
    but the page does not offer it: it is not for the reader (as in Startup Autopsy).
 

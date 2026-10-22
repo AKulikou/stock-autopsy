@@ -85,14 +85,17 @@ stay under 10 requests per second; set `SEC_USER_AGENT` in `.env`.
 
 **Cost and time.** A full run makes six Claude calls (Sonnet 5.5 at its default
 effort) and costs about 0.60 USD and three minutes (measured on Kraft Heinz,
-2026-10-15). Through the Message Batches API, as the eval runs it, an attempt costs
+2026-10-15; later runs on the page cost 0.58-0.67 USD). Today each analyst writes its own
+prompt-cache entry; a shared output schema that lets them read one (`SHARED_OUTPUT_SCHEMA=on`,
+an estimated 14% less) is built but off until a paid check and an eval confirm it. Through the Message Batches API, as the eval runs it, an attempt costs
 about 0.26-0.30 USD and takes longer.
 
 ## Testing and its honest limits
 
 Unit tests use a scripted fake Claude client and frozen fixtures, so they never
-touch the network; the page's own logic (reconnecting a dropped stream, card states) is
-tested with Node's test runner, which pytest starts when Node 22+ is installed (CI installs
+touch the network; the page's own logic (reconnecting a dropped stream, card states, lookup
+cards, report tabs, collapsed blocks, and that every page script parses) is tested with
+Node's test runner, which pytest starts when Node 22+ is installed (CI installs
 it). The behaviour eval runs the real pipeline on frozen packs of
 five golden companies: Coca-Cola (boring quality), Snowflake (fast-growing,
 loss-making), Kraft Heinz (the 2019 restatement), Comcast (cheap and flat, where
