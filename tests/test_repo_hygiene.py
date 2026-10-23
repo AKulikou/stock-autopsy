@@ -20,6 +20,9 @@ ALLOWED_TOP_LEVEL = {
 }
 FORBIDDEN_PARTS = {"logs", "results", "data_cache", "private", ".claude", "venv", "__pycache__"}
 MAX_BYTES = 250 * 1024
+# The only binary files: images for the README, in this folder and nowhere else.
+IMAGE_DIR = ("docs", "images")
+IMAGE_SUFFIXES = {".jpg", ".png"}
 
 # Built from pieces, so this file does not flag itself.
 _DRIVE = r"(?<![A-Za-z])[A-Za-z]:[\\/]"
@@ -61,6 +64,8 @@ def problems(names: list[str]) -> list[str]:
             continue  # deleted in the working tree, not yet committed
         if (ROOT / name).stat().st_size > MAX_BYTES:
             found.append(f"{name}: larger than {MAX_BYTES // 1024} KB")
+        if parts[:-1] == IMAGE_DIR and Path(name).suffix.lower() in IMAGE_SUFFIXES:
+            continue
         try:
             text = text_of(name)
         except UnicodeDecodeError:
@@ -87,6 +92,8 @@ def test_the_check_catches_what_must_not_be_committed(tmp_path, monkeypatch):
     bad = {
         "notes_console.txt": "run log".encode("utf-16"),  # a console capture: not UTF-8, wrong place
         "logs/run.log": b"ok",
+        "docs/banner.jpg": b"\xff\xd8\xff\xe0 not text",  # an image outside docs/images
+        "docs/images/banner.jpg": b"\xff\xd8\xff\xe0 not text",  # the one place it may be
         "core/leak.py": ("path = r'" + "C:" + "\\Users\\someone'\n"
                          "who = 'someone@" + "gmail.com'\n"
                          "key = 'sk-" + "ant-api03-abcdef'\n").encode(),
@@ -99,4 +106,6 @@ def test_the_check_catches_what_must_not_be_committed(tmp_path, monkeypatch):
     assert "notes_console.txt: not an allowed top-level path" in found
     assert "notes_console.txt: not UTF-8" in found
     assert "logs/run.log: under a folder that is never tracked" in found
+    assert "docs/banner.jpg: not UTF-8" in found
+    assert "docs/images/banner.jpg" not in found
     assert "local path" in found and "email address" in found and "API key" in found

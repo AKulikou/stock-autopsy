@@ -1,9 +1,17 @@
 # Stock Autopsy
 
+<p align="center">
+  <img src="docs/images/stock_autopsy_banner.jpg"
+       alt="Stock Autopsy: a doctor dissects a safe full of money and jewels on an examination table"
+       width="100%">
+</p>
+
 Analyzes one US public company from several independent perspectives (business
 model, forensic accounting, valuation, pre-mortem) and reconciles them in an
 "Investment Committee" synthesis that looks for productive conflicts instead of
 averaging opinions.
+
+Part of the Autopsy series: [Startup Autopsy](https://github.com/AKulikou/startup-autopsy)
 
 **Not investment advice.** Stock Autopsy is a research-structuring and learning tool.
 It never says buy, sell or hold; its verdicts describe how strong the evidence is.
@@ -11,6 +19,63 @@ It never says buy, sell or hold; its verdicts describe how strong the evidence i
 > Status: Phase 1 works end to end (data layer, four evaluators, committee, number
 > check, eval on five golden companies, a local web page). Not published as a product;
 > see the honest limits below.
+
+## Example
+
+Abridged from a real run on Coca-Cola, one of the five golden companies (data as of
+2026-10-21, price of 2026-10-20):
+
+> ## Verdict: Weak case: the evidence does not support the investment thesis
+>
+> Confidence: medium.
+>
+> The return math is clear and holds across reasonable choices, but the cash-flow and
+> margin swings are unexplained and the latest quarter and peer data are missing.
+>
+> **The research case is weak: Coca-Cola is a strong business, but the current price
+> leaves only about 4.9% a year if growth stays close to its recent pace.**
+>
+> **For:**
+> - The business keeps a large share of each sale, with profit margins that have stayed
+>   high for ten years.
+> - Filings have been on time, with no sign of accounting restatements for errors, and
+>   debts are comfortably covered by profit.
+>
+> **Against:**
+> - At today's price, a buyer would earn only about 4.9% a year if growth stays near
+>   recent levels, and even the optimistic case values the shares below the price.
+> - In 2024 and 2025 the cash the business produced was well below its reported profit,
+>   and dividends were more than the cash left after spending, with no explanation in
+>   the data.
+>
+> **What the price assumes:** At today's price of $93.49, if the base case comes true
+> (revenue growth slowing from 4% to 3% a year and an operating margin of 28% over five
+> years), a buyer earns about 4.9% a year.
+>
+> […]
+>
+> ## Number check
+>
+> 34 claims that quote the data were checked against it by code. 28: every number
+> matches the cited data; 5: no number to check; 1: some numbers are not in the cited
+> data.
+>
+> | Evaluator | Statement | Basis | Problem |
+> |---|---|---|---|
+> | Valuation Analyst | A 1-point change in the discount rate moves the base value by up to $12.01 per share, the largest of the four sensitivities. | valuation math › sensitivities › item 1 › largest change per share | some numbers are not in the cited data: 0.01 |
+>
+> **Calculated claims:** 20 of 25 could be reproduced by code from the data they cite.
+>
+> | Evaluator | Statement | Not reproduced |
+> |---|---|---|
+> | Pre-Mortem Analyst | A 50% price fall at unchanged trailing earnings would imply a price-to-earnings ratio of about 14.7. | 0.5 |
+
+The four analysts did not agree: the business model was rated strong, the accounting
+and the pre-mortem adequate, the valuation weak. The committee did not average them. It
+found that nobody disputed the quality of the business, only the price, and let the
+price carry the verdict. In the number check, $12.01 and 14.7 match the data; the check
+lists the step and the factor it could not tie to the data, and leaves the judgement to
+the reader instead of hiding them.
 
 ## The idea: data first, model second
 
@@ -85,11 +150,70 @@ stay under 10 requests per second; set `SEC_USER_AGENT` in `.env`.
 
 **Cost and time.** A full run makes six Claude calls (Sonnet 5.5 at its default
 effort) and costs about 0.60 USD and three minutes (measured on Kraft Heinz,
-2026-10-15; later runs on the page cost 0.58-0.67 USD). Today each analyst writes its own
-prompt-cache entry, because the API counts each output schema as part of the cached prefix.
-One shared schema for all analysts would let them read one entry (an estimated 14% less), but
-the API refuses that schema as too large to compile (checked 2026-10-22), so it stays off. Through the Message Batches API, as the eval runs it, an attempt costs
-about 0.26-0.30 USD and takes longer.
+2026-10-15; later runs on the page cost 0.58-0.67 USD). Each analyst writes its own
+prompt-cache entry today (see `SHARED_OUTPUT_SCHEMA` under [Configuration](#configuration)).
+Through the Message Batches API, as the eval runs it, an attempt costs about 0.26-0.30 USD
+and takes longer.
+
+## Configuration
+
+Two values in `.env` are required (copy [.env.example](.env.example)):
+
+| Variable | Purpose |
+|---|---|
+| `ANTHROPIC_API_KEY` | The Claude API key; the program stops at startup if it is missing or does not start with `sk-ant-` |
+| `SEC_USER_AGENT` | Your name and a contact email, sent to SEC EDGAR as the `User-Agent`; without an email (or with the placeholder from `.env.example`) the data layer refuses to call the SEC, which would answer 403 |
+
+Fixed settings in [`config.py`](config.py):
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `DEFAULT_MODEL` | `claude-sonnet-5-5` | Model for every analysis call |
+| `MODEL_PRICING_PER_MTOK` | Sonnet, Opus and Haiku rates | Prices for the cost estimate after a run, with the date they were checked; add an entry when changing the model |
+| `MAX_TOKENS` | `20000` | Output limit per call, thinking included; a truncated answer is an error. Above about 21,333 the SDK refuses a request without streaming |
+| `TRANSLATION_MODEL` | `claude-haiku-5-5` | Translated copies of a report, at `low` effort, a rejected section retried once at `medium` |
+
+**Experiments.** Five `.env` switches change what the model is asked or how; they stay
+at their defaults until the eval shows a change helps (see [eval/CHANGES.md](eval/CHANGES.md)):
+
+| Switch | Default | Effect |
+|---|---|---|
+| `ANALYSIS_MODEL` | unset (`claude-sonnet-5-5`) | Another model for the evaluators and the committee |
+| `ANALYSIS_EFFORT` | unset (the model's own default) | `low` ... `max`: how much the model thinks and writes; the real depth control on the 5.5 models |
+| `THINKING` | `off` | `adaptive` sends a thinking parameter; with `off` the 5.5 models still think adaptively, Sonnet 4.6 does not |
+| `PROMPT_CACHING` | `on` | `off` stops caching the shared rules and data pack, to measure what the cache saves |
+| `SHARED_OUTPUT_SCHEMA` | `off` | One output schema for all analysts instead of one each |
+
+Why `SHARED_OUTPUT_SCHEMA` is off: the API renders the output schema as a system prompt
+of its own ahead of the cached prefix, so with a schema per analyst each analyst writes
+its own cache entry and none reads another's. One shared schema would let them read one
+entry (an estimated 14% less per run), but the API refuses the five-analyst schema as
+too large to compile (checked 2026-10-22, nothing billed). The switch stays for a
+smaller variant.
+
+## Project structure
+
+```
+main.py              CLI: one company, one full run, the report saved under results/
+config.py            API key check, model, prices, token limit, experiment switches
+datalayer/           SEC EDGAR and price data, daily cache, statements, data quality, the DATA PACK
+evaluators/          the four analysts as data, their output schemas and validators
+perspectives/        one analyst call: prompt layout for the shared cache, one structured request
+valuation/           DCF for bear, base and bull, reverse DCF, implied annual return, sensitivities
+synthesis/           the Investment Committee: schema, principles and validator
+analysis/            run_autopsy(): pack, valuation, the other analysts in parallel, committee, number check
+reporting/           number check and grounding, report.md and report.json, plain-word wording
+translate/           translated copies of report.md, glossaries per language, number formats
+web/                 local web page: FastAPI app, one run at a time, name-to-ticker lookup, static page
+core/                Anthropic client, batching client, structured calls, token costs, parallel calls
+eval/                eval cases, runner, grading, judge and the behaviour-change log (CHANGES.md)
+examples/            a minimal run of two perspectives on one shared context
+scripts/             golden fixture freezing, private ticker guard
+tests/               unit tests with a fake Claude client, golden fixtures, page tests (tests/js)
+docs/                specification, web page design, golden companies, images
+```
+
+`results/`, `logs/`, `data_cache/` and `private/` are generated or personal and git-ignored.
 
 ## Testing and its honest limits
 
@@ -189,4 +313,4 @@ What the eval showed:
 
 ## License
 
-MIT
+MIT, see [LICENSE](LICENSE).
