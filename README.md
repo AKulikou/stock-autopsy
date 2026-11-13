@@ -11,7 +11,7 @@ model, forensic accounting, valuation, pre-mortem) and reconciles them in an
 "Investment Committee" synthesis that looks for productive conflicts instead of
 averaging opinions.
 
-Part of the Autopsy series: [Startup Autopsy](https://github.com/AKulikou/startup-autopsy)
+Part of the Autopsy series: [Startup Autopsy](https://github.com/AKulikou/startup-autopsy) · [Talk Autopsy](https://github.com/AKulikou/talk-autopsy)
 
 **Not investment advice.** Stock Autopsy is a research-structuring and learning tool.
 It never says buy, sell or hold; its verdicts describe how strong the evidence is.
